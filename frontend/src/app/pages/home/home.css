@@ -1,0 +1,102 @@
+:host {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222222;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 60px;
+  border-bottom: 1px solid #dddddd;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.navigation {
+  display: flex;
+  gap: 30px;
+}
+
+.navigation a {
+  text-decoration: none;
+  color: #333333;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.login-button,
+.register-button,
+.primary-button {
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.login-button {
+  background: white;
+  border: 1px solid #333333;
+}
+
+.register-button,
+.primary-button {
+  background: #222222;
+  color: white;
+  border: 1px solid #222222;
+}
+
+.hero {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 450px;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 750px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.benefits {
+  padding: 60px;
+  text-align: center;
+  background: #f6f6f6;
+}
+
+.benefits h2 {
+  margin-bottom: 40px;
+}
+
+.benefits-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.benefit-card {
+  width: 280px;
+  padding: 30px;
+  background: white;
+  border-radius: 8px;
+  text-align: left;
+}
