@@ -1,13 +1,19 @@
 package es.uclm.esibuy.backend.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+@Document(collection = "usuarios")
 public abstract class Usuario {
 
 	@Id
@@ -26,6 +32,8 @@ public abstract class Usuario {
 
 	@NotBlank
 	private String contrasenaHash;
+
+	private List<String> historialContrasenasHash = new ArrayList<>();
 
 	private String telefono;
 
@@ -70,12 +78,29 @@ public abstract class Usuario {
 		this.email = email == null ? null : email.trim().toLowerCase(Locale.ROOT);
 	}
 
+	@JsonIgnore
 	public String getContrasenaHash() {
 		return contrasenaHash;
 	}
 
 	public void setContrasenaHash(String contrasenaHash) {
 		this.contrasenaHash = contrasenaHash;
+	}
+
+	@JsonIgnore
+	public List<String> getHistorialContrasenasHash() {
+		return historialContrasenasHash == null ? List.of() : List.copyOf(historialContrasenasHash);
+	}
+
+	public void registrarContrasenaHash(String contrasenaHash) {
+		this.contrasenaHash = contrasenaHash;
+		if (historialContrasenasHash == null) {
+			historialContrasenasHash = new ArrayList<>();
+		}
+		historialContrasenasHash.add(0, contrasenaHash);
+		if (historialContrasenasHash.size() > 5) {
+			historialContrasenasHash = new ArrayList<>(historialContrasenasHash.subList(0, 5));
+		}
 	}
 
 	public String getTelefono() {
