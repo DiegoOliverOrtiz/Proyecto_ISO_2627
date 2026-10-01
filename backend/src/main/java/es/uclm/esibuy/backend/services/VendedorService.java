@@ -1,3 +1,4 @@
+
 package es.uclm.esibuy.backend.services;
 
 import java.util.Locale;
@@ -6,6 +7,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
@@ -18,55 +20,70 @@ import jakarta.validation.Validator;
 @Service
 public class VendedorService {
 
-	private final VendedorDAO vendedorDAO;
-	private final UsuarioDAO usuarioDAO;
-	private final PasswordEncoder passwordEncoder;
-	private final PasswordPolicy passwordPolicy;
-	private final Validator validator;
+    private final VendedorDAO vendedorDAO;
+    private final UsuarioDAO usuarioDAO;
+    private final CategoriaDAO categoriaDAO;
+    private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
+    private final Validator validator;
 
-	public VendedorService(
-			VendedorDAO vendedorDAO,
-			UsuarioDAO usuarioDAO,
-			PasswordEncoder passwordEncoder,
-			PasswordPolicy passwordPolicy,
-			Validator validator) {
-		this.vendedorDAO = vendedorDAO;
-		this.usuarioDAO = usuarioDAO;
-		this.passwordEncoder = passwordEncoder;
-		this.passwordPolicy = passwordPolicy;
-		this.validator = validator;
-	}
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            UsuarioDAO usuarioDAO,
+            CategoriaDAO categoriaDAO,
+            PasswordEncoder passwordEncoder,
+            PasswordPolicy passwordPolicy,
+            Validator validator) {
 
-	public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
-		if (request == null || !validator.validate(request).isEmpty()) {
-			throw new InvalidRegistrationException();
-		}
-		passwordPolicy.validate(request.contrasena());
+        this.vendedorDAO = vendedorDAO;
+        this.usuarioDAO = usuarioDAO;
+        this.categoriaDAO = categoriaDAO;
+        this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
+        this.validator = validator;
+    }
 
-		String email = request.email().trim().toLowerCase(Locale.ROOT);
-		String nombreComercial = request.nombreComercial().trim();
-		if (usuarioDAO.existsByEmail(email) || vendedorDAO.existsByNombreComercial(nombreComercial)) {
-			throw new DuplicateRegistrationException();
-		}
+    public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
 
-		Vendedor vendedor = new Vendedor();
-		vendedor.setNombre(request.nombre().trim());
-		vendedor.setApellidos(request.apellidos().trim());
-		vendedor.setEmail(email);
-		vendedor.setCategoria(request.categoria().trim());
-		vendedor.setDniNif(request.dniNif().trim());
-		vendedor.setNombreComercial(nombreComercial);
-		vendedor.setTelefono(request.telefono());
-		vendedor.setImagenPerfil(request.imagenPerfil());
-		vendedor.setBloqueada(false);
-		vendedor.setActivada(false);
-		vendedor.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
+        if (request == null || !validator.validate(request).isEmpty()) {
+            throw new InvalidRegistrationException();
+        }
 
-		try {
-			Vendedor guardado = vendedorDAO.save(vendedor);
-			return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
-		} catch (DuplicateKeyException exception) {
-			throw new DuplicateRegistrationException();
-		}
-	}
+        passwordPolicy.validate(request.contrasena());
+
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        String nombreComercial = request.nombreComercial().trim();
+        String categoriaId = request.categoriaId().trim();
+
+        // La categoría seleccionada debe existir realmente en MongoDB.
+        if (!categoriaDAO.existsById(categoriaId)) {
+            throw new InvalidRegistrationException();
+        }
+
+        if (usuarioDAO.existsByEmail(email)
+                || vendedorDAO.existsByNombreComercial(nombreComercial)) {
+            throw new DuplicateRegistrationException();
+        }
+
+        Vendedor vendedor = new Vendedor();
+
+        vendedor.setNombre(request.nombre().trim());
+        vendedor.setApellidos(request.apellidos().trim());
+        vendedor.setEmail(email);
+        vendedor.setCategoriaId(categoriaId);
+        vendedor.setDniNif(request.dniNif().trim());
+        vendedor.setNombreComercial(nombreComercial);
+        vendedor.setTelefono(request.telefono());
+        vendedor.setImagenPerfil(request.imagenPerfil());
+        vendedor.setBloqueada(false);
+        vendedor.setActivada(false);
+        vendedor.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
+
+        try {
+            Vendedor guardado = vendedorDAO.save(vendedor);
+            return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
+        } catch (DuplicateKeyException exception) {
+            throw new DuplicateRegistrationException();
+        }
+    }
 }

@@ -1,26 +1,56 @@
+
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { RegistrationService, type ClienteRegistrationRequest, type VendedorRegistrationRequest } from './registration.service';
+
+import {
+  RegistrationService,
+  type CategoriaRegistro,
+  type ClienteRegistrationRequest,
+  type VendedorRegistrationRequest
+} from './registration.service';
 
 type UserRole = 'cliente' | 'vendedor';
-type Feedback = { kind: 'success' | 'error'; text: string } | null;
 
-const SELLER_CATEGORIES: readonly string[] = [];
-const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+type Feedback = {
+  kind: 'success' | 'error';
+  text: string;
+} | null;
+
+const passwordMatchValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
   const password = control.get('contrasena')?.value;
   const confirmation = control.get('repetirContrasena')?.value;
-  return password === confirmation ? null : { passwordMismatch: true };
+
+  return password === confirmation
+    ? null
+    : { passwordMismatch: true };
 };
 
-const notFutureDateValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+const notFutureDateValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
   if (!control.value) return null;
-  return control.value > new Date().toISOString().slice(0, 10) ? { futureDate: true } : null;
+
+  return control.value > new Date().toISOString().slice(0, 10)
+    ? { futureDate: true }
+    : null;
 };
 
-const optionalPhoneValidator = Validators.pattern(/^\+?[0-9\s().-]{7,20}$/);
-const optionalImageUrlValidator = Validators.pattern(/^https?:\/\/.+/i);
+const optionalPhoneValidator =
+  Validators.pattern(/^\+?[0-9\s().-]{7,20}$/);
+
+const optionalImageUrlValidator =
+  Validators.pattern(/^https?:\/\/.+/i);
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -29,11 +59,20 @@ const optionalImageUrlValidator = Validators.pattern(/^https?:\/\/.+/i);
   templateUrl: './register.html',
 })
 export class Register {
+
   private readonly formBuilder = inject(FormBuilder);
   private readonly registrationService = inject(RegistrationService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly sellerCategories = SELLER_CATEGORIES;
+  // Categorías obtenidas del backend.
+  sellerCategories: CategoriaRegistro[] = [];
+
+  categoriesLoading = false;
+  categoriesError = false;
+  private categoriesLoaded = false;
+
   readonly today = new Date().toISOString().slice(0, 10);
+
   role: UserRole = 'cliente';
   isSubmitting = false;
   avatarFailed = false;
@@ -42,38 +81,71 @@ export class Register {
   readonly clienteForm = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
     apellidos: ['', Validators.required],
-    fechaNacimiento: ['', [Validators.required, notFutureDateValidator]],
-    dniNif: ['', [Validators.required, Validators.maxLength(9)]],
-    email: ['', [Validators.required, Validators.email]],
+    fechaNacimiento: ['', [
+      Validators.required,
+      notFutureDateValidator
+    ]],
+    dniNif: ['', [
+      Validators.required,
+      Validators.maxLength(9)
+    ]],
+    email: ['', [
+      Validators.required,
+      Validators.email
+    ]],
     telefono: ['', optionalPhoneValidator],
     imagenPerfil: ['', optionalImageUrlValidator],
-    contrasena: ['', [Validators.required, Validators.minLength(8)]],
+    contrasena: ['', [
+      Validators.required,
+      Validators.minLength(8)
+    ]],
     repetirContrasena: ['', Validators.required],
     tipoCliente: ['normal'],
-  }, { validators: passwordMatchValidator });
+  }, {
+    validators: passwordMatchValidator
+  });
 
   readonly vendedorForm = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
     apellidos: ['', Validators.required],
-    categoria: ['', Validators.required],
+
+    categoriaId: ['', Validators.required],
+
     nombreComercial: ['', Validators.required],
-    dniNif: ['', [Validators.required, Validators.maxLength(9)]],
-    email: ['', [Validators.required, Validators.email]],
+    dniNif: ['', [
+      Validators.required,
+      Validators.maxLength(9)
+    ]],
+    email: ['', [
+      Validators.required,
+      Validators.email
+    ]],
     telefono: ['', optionalPhoneValidator],
     imagenPerfil: ['', optionalImageUrlValidator],
-    contrasena: ['', [Validators.required, Validators.minLength(8)]],
+    contrasena: ['', [
+      Validators.required,
+      Validators.minLength(8)
+    ]],
     repetirContrasena: ['', Validators.required],
-  }, { validators: passwordMatchValidator });
+  }, {
+    validators: passwordMatchValidator
+  });
 
   get fallbackAvatar(): string {
-    return this.role === 'cliente' ? '/avatars/cliente.svg' : '/avatars/vendedor.svg';
+    return this.role === 'cliente'
+      ? '/avatars/cliente.svg'
+      : '/avatars/vendedor.svg';
   }
 
   get avatarSource(): string {
-    if (this.avatarFailed) return this.fallbackAvatar;
+    if (this.avatarFailed) {
+      return this.fallbackAvatar;
+    }
+
     const imageUrl = this.role === 'cliente'
       ? this.clienteForm.controls.imagenPerfil.value
       : this.vendedorForm.controls.imagenPerfil.value;
+
     return imageUrl.trim() || this.fallbackAvatar;
   }
 
@@ -81,6 +153,52 @@ export class Register {
     this.role = role;
     this.feedback = null;
     this.avatarFailed = false;
+
+    if (
+      role === 'vendedor' &&
+      !this.categoriesLoaded &&
+      !this.categoriesLoading
+    ) {
+      this.loadSellerCategories();
+    }
+  }
+
+  private loadSellerCategories(): void {
+    this.categoriesLoading = true;
+    this.categoriesError = false;
+
+    this.registrationService.obtenerCategoriasRegistro().subscribe({
+      next: (categories) => {
+        this.sellerCategories = categories;
+        this.categoriesLoaded = true;
+        this.categoriesLoading = false;
+
+        const selectedId =
+          this.vendedorForm.controls.categoriaId.value;
+
+        if (
+          selectedId &&
+          !categories.some(category => category.id === selectedId)
+        ) {
+          this.vendedorForm.controls.categoriaId.setValue('');
+        }
+
+        // Actualizamos la vista al recibir las categorías.
+        this.cdr.markForCheck();
+      },
+
+      error: () => {
+        this.sellerCategories = [];
+        this.categoriesError = true;
+        this.categoriesLoaded = false;
+        this.categoriesLoading = false;
+
+        this.vendedorForm.controls.categoriaId.setValue('');
+
+        // Actualizamos la vista si falla la consulta.
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   resetAvatarError(): void {
@@ -89,30 +207,86 @@ export class Register {
 
   controlError(form: AbstractControl, name: string): string {
     const control = form.get(name);
-    if (!control?.touched || !control.errors) return '';
-    if (control.hasError('required')) return 'Este campo es obligatorio.';
-    if (control.hasError('email')) return 'Introduce un correo electrónico válido.';
-    if (control.hasError('maxlength')) return 'El DNI/NIF no puede superar los 9 caracteres.';
-    if (control.hasError('minlength')) return 'La contraseña debe tener al menos 8 caracteres.';
-    if (control.hasError('futureDate')) return 'La fecha no puede ser posterior a hoy.';
-    if (control.hasError('pattern') && name === 'telefono') return 'Introduce un teléfono válido o deja el campo vacío.';
-    if (control.hasError('pattern')) return 'Introduce una URL que empiece por http:// o https://.';
+
+    if (!control?.touched || !control.errors) {
+      return '';
+    }
+
+    if (control.hasError('required')) {
+      return 'Este campo es obligatorio.';
+    }
+
+    if (control.hasError('email')) {
+      return 'Introduce un correo electrónico válido.';
+    }
+
+    if (control.hasError('maxlength')) {
+      return 'El DNI/NIF no puede superar los 9 caracteres.';
+    }
+
+    if (control.hasError('minlength')) {
+      return 'La contraseña debe tener al menos 8 caracteres.';
+    }
+
+    if (control.hasError('futureDate')) {
+      return 'La fecha no puede ser posterior a hoy.';
+    }
+
+    if (
+      control.hasError('pattern') &&
+      name === 'telefono'
+    ) {
+      return 'Introduce un teléfono válido o deja el campo vacío.';
+    }
+
+    if (control.hasError('pattern')) {
+      return 'Introduce una URL que empiece por http:// o https://.';
+    }
+
     return 'Revisa este campo.';
   }
 
   passwordMismatch(form: AbstractControl): boolean {
-    return form.hasError('passwordMismatch') && Boolean(form.get('repetirContrasena')?.touched);
+    return form.hasError('passwordMismatch') &&
+      Boolean(form.get('repetirContrasena')?.touched);
   }
 
   register(): void {
     this.feedback = null;
-    const form = this.role === 'cliente' ? this.clienteForm : this.vendedorForm;
+
+    const form = this.role === 'cliente'
+      ? this.clienteForm
+      : this.vendedorForm;
+
     form.markAllAsTouched();
-    if (form.invalid || this.isSubmitting) return;
+
+    if (form.invalid || this.isSubmitting) {
+      return;
+    }
+
+    // Comprobación adicional para vendedores.
+    if (this.role === 'vendedor') {
+      const selectedId =
+        this.vendedorForm.controls.categoriaId.value;
+
+      const validCategory = this.sellerCategories.some(
+        category => category.id === selectedId
+      );
+
+      if (
+        this.categoriesLoading ||
+        this.categoriesError ||
+        !validCategory
+      ) {
+        return;
+      }
+    }
 
     this.isSubmitting = true;
+
     if (this.role === 'cliente') {
       const values = this.clienteForm.getRawValue();
+
       const request: ClienteRegistrationRequest = {
         nombre: values.nombre.trim(),
         apellidos: values.apellidos.trim(),
@@ -121,56 +295,89 @@ export class Register {
         email: values.email.trim(),
         contrasena: values.contrasena,
         esPremium: values.tipoCliente === 'premium',
-        ...this.optionalDetails(values.telefono, values.imagenPerfil),
+        ...this.optionalDetails(
+          values.telefono,
+          values.imagenPerfil
+        ),
       };
+
       this.registrationService.registerCliente(request).subscribe({
         next: () => this.completeRegistration(),
         error: (error: unknown) => this.failRegistration(error),
       });
+
       return;
     }
 
     const values = this.vendedorForm.getRawValue();
+
     const request: VendedorRegistrationRequest = {
       nombre: values.nombre.trim(),
       apellidos: values.apellidos.trim(),
       dniNif: values.dniNif.trim(),
       email: values.email.trim(),
       contrasena: values.contrasena,
-      categoria: values.categoria,
+
+      // Enviamos el identificador, no el nombre de la categoría.
+      categoriaId: values.categoriaId,
+
       nombreComercial: values.nombreComercial.trim(),
-      ...this.optionalDetails(values.telefono, values.imagenPerfil),
+      ...this.optionalDetails(
+        values.telefono,
+        values.imagenPerfil
+      ),
     };
+
     this.registrationService.registerVendedor(request).subscribe({
       next: () => this.completeRegistration(),
       error: (error: unknown) => this.failRegistration(error),
     });
   }
 
-  private optionalDetails(telefono: string, imagenPerfil: string): Pick<ClienteRegistrationRequest, 'telefono' | 'imagenPerfil'> {
+  private optionalDetails(
+    telefono: string,
+    imagenPerfil: string
+  ): Pick<ClienteRegistrationRequest, 'telefono' | 'imagenPerfil'> {
     return {
-      ...(telefono.trim() ? { telefono: telefono.trim() } : {}),
-      ...(imagenPerfil.trim() ? { imagenPerfil: imagenPerfil.trim() } : {}),
+      ...(telefono.trim()
+        ? { telefono: telefono.trim() }
+        : {}),
+      ...(imagenPerfil.trim()
+        ? { imagenPerfil: imagenPerfil.trim() }
+        : {}),
     };
   }
 
   private completeRegistration(): void {
     this.isSubmitting = false;
+
     this.feedback = {
       kind: 'success',
       text: 'Registro realizado correctamente. El equipo administrador revisará tus datos antes de activar la cuenta.',
     };
+
     this.avatarFailed = false;
+
+    // Refrescamos la interfaz al completar el registro.
+    this.cdr.markForCheck();
   }
 
   private failRegistration(error: unknown): void {
     this.isSubmitting = false;
-    const backendMessage = error instanceof HttpErrorResponse && typeof error.error?.error === 'string'
-      ? error.error.error
-      : null;
+
+    const backendMessage =
+      error instanceof HttpErrorResponse &&
+      typeof error.error?.error === 'string'
+        ? error.error.error
+        : null;
+
     this.feedback = {
       kind: 'error',
-      text: backendMessage ?? 'No se pudo completar el registro. Comprueba los datos e inténtalo de nuevo.',
+      text: backendMessage ??
+        'No se pudo completar el registro. Comprueba los datos e inténtalo de nuevo.',
     };
+
+    // Refrescamos también la interfaz si hay algún error.
+    this.cdr.markForCheck();
   }
 }

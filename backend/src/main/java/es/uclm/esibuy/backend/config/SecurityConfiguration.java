@@ -1,3 +1,4 @@
+
 package es.uclm.esibuy.backend.config;
 
 import java.util.List;
@@ -17,35 +18,49 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class SecurityConfiguration {
 
-	@Bean
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource)
-			throws Exception {
-		http
-				.cors(cors -> cors.configurationSource(corsConfigurationSource))
-				.csrf(csrf -> csrf.ignoringRequestMatchers("/cliente/register", "/vendedor/register"))
-				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers(HttpMethod.POST, "/cliente/register", "/vendedor/register").permitAll()
-						.anyRequest().authenticated());
-		return http.build();
-	}
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
 
-	@Bean
-	CorsConfigurationSource corsConfigurationSource(
-			@Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of(allowedOrigin));
-		configuration.setAllowedMethods(List.of("POST", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Content-Type", "Accept"));
-		configuration.setAllowCredentials(false);
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        "/cliente/register",
+                        "/vendedor/register"))
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/cliente/register",
+                                "/vendedor/register").permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/categorias/registro").permitAll()
+                        .anyRequest().authenticated());
 
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-		return source;
-	}
+        return http.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "Accept"));
+        configuration.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
+    }
 }

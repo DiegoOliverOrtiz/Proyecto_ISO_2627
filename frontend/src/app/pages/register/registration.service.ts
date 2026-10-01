@@ -1,3 +1,4 @@
+
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -20,10 +21,15 @@ export interface VendedorRegistrationRequest {
   dniNif: string;
   email: string;
   contrasena: string;
-  categoria: string;
+  categoriaId: string;
   nombreComercial: string;
   telefono?: string;
   imagenPerfil?: string;
+}
+
+export interface CategoriaRegistro {
+  id: string;
+  nombre: string;
 }
 
 export interface RegistrationResponse {
@@ -31,19 +37,37 @@ export interface RegistrationResponse {
   tipoUsuario: string;
 }
 
-const apiBaseUrl = globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8080'
-  : globalThis.location.origin;
+const apiBaseUrl =
+  globalThis.location.hostname === 'localhost' ||
+  globalThis.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8080'
+    : globalThis.location.origin;
 
 @Injectable({ providedIn: 'root' })
 export class RegistrationService {
   private readonly http = inject(HttpClient);
 
-  registerCliente(request: ClienteRegistrationRequest): Observable<RegistrationResponse> {
-    return this.http.post<RegistrationResponse>(`${apiBaseUrl}/cliente/register`, request);
+  obtenerCategoriasRegistro(): Observable<CategoriaRegistro[]> {
+    return this.http.get<CategoriaRegistro[]>(
+      `${apiBaseUrl}/categorias/registro`
+    );
   }
 
-  registerVendedor(request: VendedorRegistrationRequest): Observable<RegistrationResponse> {
-    return this.http.post<RegistrationResponse>(`${apiBaseUrl}/vendedor/register`, request);
+  registerCliente(
+    request: ClienteRegistrationRequest
+  ): Observable<RegistrationResponse> {
+    return this.http.post<RegistrationResponse>(
+      `${apiBaseUrl}/cliente/register`,
+      request
+    );
+  }
+
+  registerVendedor(
+    request: VendedorRegistrationRequest
+  ): Observable<RegistrationResponse> {
+    return this.http.post<RegistrationResponse>(
+      `${apiBaseUrl}/vendedor/register`,
+      request
+    );
   }
 }
