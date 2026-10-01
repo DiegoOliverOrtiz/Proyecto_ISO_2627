@@ -1,57 +1,36 @@
 
 package es.uclm.esibuy.backend.services;
 
-import java.util.Locale;
-
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
-import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Vendedor;
-import jakarta.validation.Validator;
 
 @Service
 public class VendedorService {
 
     private final VendedorDAO vendedorDAO;
-    private final UsuarioDAO usuarioDAO;
     private final CategoriaDAO categoriaDAO;
-    private final PasswordEncoder passwordEncoder;
-    private final PasswordPolicy passwordPolicy;
-    private final Validator validator;
+    private final RegistrationSupport registrationSupport;
 
     public VendedorService(
             VendedorDAO vendedorDAO,
-            UsuarioDAO usuarioDAO,
             CategoriaDAO categoriaDAO,
-            PasswordEncoder passwordEncoder,
-            PasswordPolicy passwordPolicy,
-            Validator validator) {
+            RegistrationSupport registrationSupport) {
 
         this.vendedorDAO = vendedorDAO;
-        this.usuarioDAO = usuarioDAO;
         this.categoriaDAO = categoriaDAO;
-        this.passwordEncoder = passwordEncoder;
-        this.passwordPolicy = passwordPolicy;
-        this.validator = validator;
+        this.registrationSupport = registrationSupport;
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
-
-        if (request == null || !validator.validate(request).isEmpty()) {
-            throw new InvalidRegistrationException();
-        }
-
-        passwordPolicy.validate(request.contrasena());
-
-        String email = request.email().trim().toLowerCase(Locale.ROOT);
+		registrationSupport.validate(request, request == null ? null : request.contrasena());
+		String email = registrationSupport.normalizeEmail(request.email());
         String nombreComercial = request.nombreComercial().trim();
         String categoriaId = request.categoriaId().trim();
 
@@ -60,10 +39,10 @@ public class VendedorService {
             throw new InvalidRegistrationException();
         }
 
-        if (usuarioDAO.existsByEmail(email)
-                || vendedorDAO.existsByNombreComercial(nombreComercial)) {
+        if (vendedorDAO.existsByNombreComercial(nombreComercial)) {
             throw new DuplicateRegistrationException();
         }
+        registrationSupport.ensureEmailIsAvailable(email);
 
         Vendedor vendedor = new Vendedor();
 
@@ -77,13 +56,9 @@ public class VendedorService {
         vendedor.setImagenPerfil(request.imagenPerfil());
         vendedor.setBloqueada(false);
         vendedor.setActivada(false);
-        vendedor.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
+        vendedor.registrarContrasenaHash(registrationSupport.encodePassword(request.contrasena()));
 
-        try {
-            Vendedor guardado = vendedorDAO.save(vendedor);
-            return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
-        } catch (DuplicateKeyException exception) {
-            throw new DuplicateRegistrationException();
-        }
+        Vendedor guardado = registrationSupport.save(() -> vendedorDAO.save(vendedor));
+        return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
     }
 }

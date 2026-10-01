@@ -57,6 +57,14 @@ class RegistrationSecurityTests {
     @Mock
     private CategoriaDAO categoriaDAO;
 
+        private RegistrationSupport registrationSupport() {
+                return new RegistrationSupport(
+                                usuarioDAO,
+                                passwordEncoder,
+                                new PasswordPolicy(),
+                                VALIDATOR);
+        }
+
     @Test
     void acceptsStrongPasswordAndRejectsWeakOrCommonPasswords() {
         PasswordPolicy policy = new PasswordPolicy();
@@ -113,12 +121,7 @@ class RegistrationSecurityTests {
             return cliente;
         });
 
-        ClienteService service = new ClienteService(
-                clienteDAO,
-                usuarioDAO,
-                passwordEncoder,
-                new PasswordPolicy(),
-                VALIDATOR);
+        ClienteService service = new ClienteService(clienteDAO, registrationSupport());
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -166,12 +169,7 @@ class RegistrationSecurityTests {
         when(usuarioDAO.existsByEmail("ana@example.com"))
                 .thenReturn(true);
 
-        ClienteService service = new ClienteService(
-                clienteDAO,
-                usuarioDAO,
-                passwordEncoder,
-                new PasswordPolicy(),
-                VALIDATOR);
+        ClienteService service = new ClienteService(clienteDAO, registrationSupport());
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -218,11 +216,8 @@ class RegistrationSecurityTests {
 
         VendedorService service = new VendedorService(
                 vendedorDAO,
-                usuarioDAO,
                 categoriaDAO,
-                passwordEncoder,
-                new PasswordPolicy(),
-                VALIDATOR);
+                registrationSupport());
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
@@ -281,11 +276,8 @@ class RegistrationSecurityTests {
 
         VendedorService service = new VendedorService(
                 vendedorDAO,
-                usuarioDAO,
                 categoriaDAO,
-                passwordEncoder,
-                new PasswordPolicy(),
-                VALIDATOR);
+                registrationSupport());
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
@@ -312,12 +304,7 @@ class RegistrationSecurityTests {
 
     @Test
     void serviceRejectsPasswordThatDoesNotMeetStrengthPolicy() {
-        ClienteService service = new ClienteService(
-                clienteDAO,
-                usuarioDAO,
-                passwordEncoder,
-                new PasswordPolicy(),
-                VALIDATOR);
+        ClienteService service = new ClienteService(clienteDAO, registrationSupport());
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -336,4 +323,44 @@ class RegistrationSecurityTests {
 
         verify(clienteDAO, never()).save(any(Cliente.class));
     }
+
+        @Test
+        void rejectsCustomersYoungerThanEighteenBeforePersisting() {
+                ClienteService service = new ClienteService(clienteDAO, registrationSupport());
+                RegistroClienteRequest request = new RegistroClienteRequest(
+                                "Ana",
+                                "García",
+                                LocalDate.now().minusYears(17),
+                                "12345678Z",
+                                "ana@example.com",
+                                "ClaveSegura9!",
+                                null,
+                                null,
+                                false);
+
+                assertThrows(InvalidRegistrationException.class, () -> service.registrar(request));
+                verify(clienteDAO, never()).save(any(Cliente.class));
+        }
+
+        @Test
+        void acceptsCustomerOnEighteenthBirthday() {
+                when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false);
+                when(passwordEncoder.encode("ClaveSegura9!")).thenReturn("bcrypt-hash");
+                when(clienteDAO.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                ClienteService service = new ClienteService(clienteDAO, registrationSupport());
+                RegistroClienteRequest request = new RegistroClienteRequest(
+                                "Ana",
+                                "García",
+                                LocalDate.now().minusYears(18),
+                                "12345678Z",
+                                "ana@example.com",
+                                "ClaveSegura9!",
+                                null,
+                                null,
+                                false);
+
+                service.registrar(request);
+
+                verify(clienteDAO).save(any(Cliente.class));
+        }
 }

@@ -23,7 +23,17 @@ type UserRole = 'cliente' | 'vendedor';
 type Feedback = {
   kind: 'success' | 'error';
   text: string;
+  details?: string[];
 } | null;
+
+const getLatestBirthDate = (): string => {
+  const today = new Date();
+  const year = today.getFullYear() - 18;
+  const month = today.getMonth();
+  const day = Math.min(today.getDate(), new Date(year, month + 1, 0).getDate());
+
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
 
 const passwordMatchValidator: ValidatorFn = (
   control: AbstractControl
@@ -36,13 +46,13 @@ const passwordMatchValidator: ValidatorFn = (
     : { passwordMismatch: true };
 };
 
-const notFutureDateValidator: ValidatorFn = (
+const adultDateValidator: ValidatorFn = (
   control: AbstractControl
 ): ValidationErrors | null => {
   if (!control.value) return null;
 
-  return control.value > new Date().toISOString().slice(0, 10)
-    ? { futureDate: true }
+  return control.value > getLatestBirthDate()
+    ? { underage: true }
     : null;
 };
 
@@ -71,7 +81,7 @@ export class Register {
   categoriesError = false;
   private categoriesLoaded = false;
 
-  readonly today = new Date().toISOString().slice(0, 10);
+  readonly latestBirthDate = getLatestBirthDate();
 
   role: UserRole = 'cliente';
   isSubmitting = false;
@@ -83,7 +93,7 @@ export class Register {
     apellidos: ['', Validators.required],
     fechaNacimiento: ['', [
       Validators.required,
-      notFutureDateValidator
+      adultDateValidator
     ]],
     dniNif: ['', [
       Validators.required,
@@ -228,8 +238,8 @@ export class Register {
       return 'La contraseña debe tener al menos 8 caracteres.';
     }
 
-    if (control.hasError('futureDate')) {
-      return 'La fecha no puede ser posterior a hoy.';
+    if (control.hasError('underage')) {
+      return 'Debes tener al menos 18 años para registrarte como cliente.';
     }
 
     if (
@@ -365,16 +375,37 @@ export class Register {
   private failRegistration(error: unknown): void {
     this.isSubmitting = false;
 
-    const backendMessage =
-      error instanceof HttpErrorResponse &&
-      typeof error.error?.error === 'string'
-        ? error.error.error
-        : null;
+    const responseBody = error instanceof HttpErrorResponse
+      ? error.error
+      : null;
+    const backendMessage = typeof responseBody?.error === 'string'
+      ? responseBody.error
+      : null;
+    const fieldErrors = responseBody?.errores;
+    const fieldLabels: Record<string, string> = {
+      nombre: 'Nombre',
+      apellidos: 'Apellidos',
+      fechaNacimiento: 'Fecha de nacimiento',
+      dniNif: 'DNI/NIF',
+      email: 'Correo electrónico',
+      contrasena: 'Contraseña',
+      categoriaId: 'Categoría',
+      nombreComercial: 'Nombre comercial',
+    };
+    const details = fieldErrors && typeof fieldErrors === 'object'
+      ? Object.entries(fieldErrors as Record<string, unknown>)
+          .flatMap(([field, messages]) => Array.isArray(messages)
+            ? messages
+                .filter((message): message is string => typeof message === 'string')
+                .map(message => `${fieldLabels[field] ?? field}: ${message}`)
+            : [])
+      : [];
 
     this.feedback = {
       kind: 'error',
       text: backendMessage ??
         'No se pudo completar el registro. Comprueba los datos e inténtalo de nuevo.',
+      ...(details.length ? { details } : {}),
     };
 
     // Refrescamos también la interfaz si hay algún error.

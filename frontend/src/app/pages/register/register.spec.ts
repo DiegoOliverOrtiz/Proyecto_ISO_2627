@@ -88,6 +88,24 @@ describe('Register', () => {
     httpMock.expectNone('http://localhost:8080/cliente/register');
   });
 
+  it('prevents customers under 18 from submitting', () => {
+    component.clienteForm.patchValue({
+      nombre: 'Ada',
+      apellidos: 'Lovelace',
+      fechaNacimiento: '2020-01-01',
+      dniNif: '12345678A',
+      email: 'ada@example.com',
+      contrasena: 'strong-pass-123',
+      repetirContrasena: 'strong-pass-123',
+    });
+
+    component.register();
+
+    expect(component.clienteForm.controls.fechaNacimiento.hasError('underage')).toBe(true);
+    expect(component.controlError(component.clienteForm, 'fechaNacimiento')).toContain('18 años');
+    httpMock.expectNone('http://localhost:8080/cliente/register');
+  });
+
   it('maps a premium customer request and confirms pending activation', () => {
     component.clienteForm.setValue({
       nombre: 'Ada',
@@ -165,6 +183,43 @@ describe('Register', () => {
     expect(
       fixture.nativeElement.querySelector('output').textContent
     ).toContain('Ya existe un usuario');
+  });
+
+  it('shows all field errors returned together by the backend', () => {
+    component.clienteForm.setValue({
+      nombre: 'Ada',
+      apellidos: 'Lovelace',
+      fechaNacimiento: '1990-12-10',
+      dniNif: '12345678A',
+      email: 'ada@example.com',
+      telefono: '',
+      imagenPerfil: '',
+      contrasena: 'strong-pass-123',
+      repetirContrasena: 'strong-pass-123',
+      tipoCliente: 'normal',
+    });
+
+    component.register();
+    httpMock.expectOne('http://localhost:8080/cliente/register').flush(
+      {
+        error: 'Revisa los campos del formulario.',
+        errores: {
+          fechaNacimiento: ['El cliente debe tener al menos 18 años.'],
+          email: ['Introduce un correo electrónico válido.'],
+        },
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    fixture.detectChanges();
+
+    const errorItems = Array.from(
+      fixture.nativeElement.querySelectorAll('.feedback li'),
+      (item: Element) => item.textContent,
+    );
+    expect(errorItems).toEqual([
+      'Fecha de nacimiento: El cliente debe tener al menos 18 años.',
+      'Correo electrónico: Introduce un correo electrónico válido.',
+    ]);
   });
 
   // HU11: comprobar que el registro carga las categorías del backend.
