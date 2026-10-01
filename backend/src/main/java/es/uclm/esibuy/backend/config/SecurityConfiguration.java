@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -15,6 +16,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfiguration {
 
 	@Bean
@@ -27,11 +29,15 @@ public class SecurityConfiguration {
 			throws Exception {
 		http
 				.cors(cors -> cors.configurationSource(corsConfigurationSource))
-				.csrf(csrf -> csrf.ignoringRequestMatchers("/cliente/register", "/vendedor/register"))
+				.csrf(csrf -> csrf.ignoringRequestMatchers(
+						"/cliente/register",
+						"/vendedor/register",
+						"/administrador/register"))
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/cliente/register", "/vendedor/register").permitAll()
 						.anyRequest().authenticated());
+		http.httpBasic(httpBasic -> {});
 		return http.build();
 	}
 
