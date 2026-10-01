@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import es.uclm.esibuy.backend.dto.CategoriaRegistroResponse;
 import es.uclm.esibuy.backend.model.Categoria;
 import es.uclm.esibuy.backend.services.CategoriaService;
 
@@ -31,5 +32,15 @@ public class CategoriaController {
         return categoriaService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/registro")
+    public List<CategoriaRegistroResponse> obtenerCategoriasRegistro() {
+        return categoriaService.obtenerTodas()
+                .stream()
+                .map(categoria -> new CategoriaRegistroResponse(
+                        categoria.getId(),
+                        categoria.getNombre()))
+                .toList();
     }
 }

@@ -10,7 +10,7 @@ public record RegistroVendedorRequest(
 		@NotBlank @Size(max = 9) String dniNif,
 		@NotBlank @Email String email,
 		@NotBlank String contrasena,
-		@NotBlank String categoria,
+		@NotBlank String categoriaId,
 		@NotBlank String nombreComercial,
 		String telefono,
 		String imagenPerfil) {
