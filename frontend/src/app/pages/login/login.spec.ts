@@ -1,21 +1,29 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Login } from './login';
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
-describe('Login', () => {
-  let component: Login;
-  let fixture: ComponentFixture<Login>;
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [RouterLink, ReactiveFormsModule],
+  templateUrl: './login.html',
+  styleUrl: './login.css'
+})
+export class Login {
+  loginForm: FormGroup;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [Login],
-    }).compileComponents();
+  constructor(private fb: FormBuilder) {
+    this.loginForm = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required]
+    });
+  }
 
-    fixture = TestBed.createComponent(Login);
-    component = fixture.componentInstance;
-    await fixture.whenStable();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
+  onSubmit() {
+    if (this.loginForm.valid) {
+      console.log('Valores a enviar al backend:', this.loginForm.value);
+    } else {
+      this.loginForm.markAllAsTouched();
+    }
+  }
+}
