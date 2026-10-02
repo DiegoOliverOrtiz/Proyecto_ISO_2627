@@ -1,8 +1,10 @@
 package es.uclm.esibuy.backend.dao;
+import java.util.List;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import es.uclm.esibuy.backend.model.Producto;
 
 public interface ProductoDAO extends MongoRepository<Producto, String> {
-    
+    List<Producto> findByVendedor(String vendedor);
 }
