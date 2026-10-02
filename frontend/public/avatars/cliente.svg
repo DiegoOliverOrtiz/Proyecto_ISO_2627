@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Avatar predeterminado de cliente">
+  <rect width="96" height="96" rx="48" fill="#e3efe7"/>
+  <circle cx="48" cy="37" r="17" fill="#d88b69"/>
+  <path d="M18 91c2-20 13-31 30-31s28 11 30 31" fill="#275f52"/>
+  <path d="M31 36c1-14 8-22 18-22 12 0 19 9 18 24-4-7-11-11-22-11-4 4-8 7-14 9" fill="#293a3a"/>
+  <path d="M39 46c3 3 6 4 9 4s7-1 10-4" fill="none" stroke="#874e40" stroke-linecap="round" stroke-width="2"/>
+</svg>

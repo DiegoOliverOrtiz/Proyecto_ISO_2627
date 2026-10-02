@@ -1,72 +1,64 @@
+
 package es.uclm.esibuy.backend.services;
 
-import java.util.Locale;
-
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import es.uclm.esibuy.backend.dao.UsuarioDAO;
+import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Vendedor;
-import jakarta.validation.Validator;
 
 @Service
 public class VendedorService {
 
-	private final VendedorDAO vendedorDAO;
-	private final UsuarioDAO usuarioDAO;
-	private final PasswordEncoder passwordEncoder;
-	private final PasswordPolicy passwordPolicy;
-	private final Validator validator;
+    private final VendedorDAO vendedorDAO;
+    private final CategoriaDAO categoriaDAO;
+    private final RegistrationSupport registrationSupport;
 
-	public VendedorService(
-			VendedorDAO vendedorDAO,
-			UsuarioDAO usuarioDAO,
-			PasswordEncoder passwordEncoder,
-			PasswordPolicy passwordPolicy,
-			Validator validator) {
-		this.vendedorDAO = vendedorDAO;
-		this.usuarioDAO = usuarioDAO;
-		this.passwordEncoder = passwordEncoder;
-		this.passwordPolicy = passwordPolicy;
-		this.validator = validator;
-	}
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            RegistrationSupport registrationSupport) {
 
-	public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
-		if (request == null || !validator.validate(request).isEmpty()) {
-			throw new InvalidRegistrationException();
-		}
-		passwordPolicy.validate(request.contrasena());
+        this.vendedorDAO = vendedorDAO;
+        this.categoriaDAO = categoriaDAO;
+        this.registrationSupport = registrationSupport;
+    }
 
-		String email = request.email().trim().toLowerCase(Locale.ROOT);
-		String nombreComercial = request.nombreComercial().trim();
-		if (usuarioDAO.existsByEmail(email) || vendedorDAO.existsByNombreComercial(nombreComercial)) {
-			throw new DuplicateRegistrationException();
-		}
+    public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
+		registrationSupport.validate(request, request == null ? null : request.contrasena());
+		String email = registrationSupport.normalizeEmail(request.email());
+        String nombreComercial = request.nombreComercial().trim();
+        String categoriaId = request.categoriaId().trim();
 
-		Vendedor vendedor = new Vendedor();
-		vendedor.setNombre(request.nombre().trim());
-		vendedor.setApellidos(request.apellidos().trim());
-		vendedor.setEmail(email);
-		vendedor.setCategoria(request.categoria().trim());
-		vendedor.setDniNif(request.dniNif().trim());
-		vendedor.setNombreComercial(nombreComercial);
-		vendedor.setTelefono(request.telefono());
-		vendedor.setImagenPerfil(request.imagenPerfil());
-		vendedor.setBloqueada(false);
-		vendedor.setActivada(false);
-		vendedor.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
+        // La categoría seleccionada debe existir realmente en MongoDB.
+        if (!categoriaDAO.existsById(categoriaId)) {
+            throw new InvalidRegistrationException();
+        }
 
-		try {
-			Vendedor guardado = vendedorDAO.save(vendedor);
-			return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
-		} catch (DuplicateKeyException exception) {
-			throw new DuplicateRegistrationException();
-		}
-	}
+        if (vendedorDAO.existsByNombreComercial(nombreComercial)) {
+            throw new DuplicateRegistrationException();
+        }
+        registrationSupport.ensureEmailIsAvailable(email);
+
+        Vendedor vendedor = new Vendedor();
+
+        vendedor.setNombre(request.nombre().trim());
+        vendedor.setApellidos(request.apellidos().trim());
+        vendedor.setEmail(email);
+        vendedor.setCategoriaId(categoriaId);
+        vendedor.setDniNif(request.dniNif().trim());
+        vendedor.setNombreComercial(nombreComercial);
+        vendedor.setTelefono(request.telefono());
+        vendedor.setImagenPerfil(request.imagenPerfil());
+        vendedor.setBloqueada(false);
+        vendedor.setActivada(false);
+        vendedor.registrarContrasenaHash(registrationSupport.encodePassword(request.contrasena()));
+
+        Vendedor guardado = registrationSupport.save(() -> vendedorDAO.save(vendedor));
+        return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
+    }
 }

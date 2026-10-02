@@ -1,0 +1,67 @@
+:host {
+	--ink: #19313a;
+	--muted: #64777b;
+	--line: #d7e0dc;
+	--paper: #fbfcf8;
+	--leaf: #245f52;
+	--leaf-light: #e6f0e9;
+	--coral: #d36b50;
+	display: block;
+	min-height: 100vh;
+	color: var(--ink);
+	background-color: var(--paper);
+	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.register-page { min-height: 100vh; padding: 28px clamp(20px, 5vw, 72px) 56px; }
+.brand { display: inline-block; color: var(--ink); font-size: 24px; font-weight: 800; text-decoration: none; }
+.brand span { color: var(--coral); }
+.register-shell { display: grid; grid-template-columns: minmax(220px, .78fr) minmax(460px, 1.22fr); gap: clamp(32px, 7vw, 104px); align-items: start; max-width: 1120px; margin: 52px auto 0; }
+.register-intro { padding-top: 42px; }
+.eyebrow { margin: 0 0 10px; color: var(--leaf); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.register-intro h1 { max-width: 430px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(38px, 4vw, 54px); font-weight: 500; line-height: 1.08; }
+.intro-copy { max-width: 350px; margin: 22px 0 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.form-panel { padding: 30px clamp(22px, 4vw, 42px) 26px; border: 1px solid var(--line); border-top: 4px solid var(--leaf); background: #fff; }
+.panel-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.panel-heading h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-weight: 500; }
+.avatar-wrap { width: 58px; height: 58px; overflow: hidden; border: 2px solid var(--line); border-radius: 50%; background: var(--leaf-light); }
+.avatar-wrap img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.role-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-width: 0; margin-bottom: 20px; padding: 4px; border: 0; background: #f0f4f1; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.role-switch button { min-height: 42px; border: 0; color: var(--muted); background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
+.role-switch button.active { color: white; background: var(--leaf); }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.field { display: flex; min-width: 0; flex-direction: column; gap: 6px; color: var(--ink); font-size: 13px; font-weight: 700; }
+.field-wide { grid-column: 1 / -1; }
+.field em { margin-left: 4px; color: var(--muted); font-size: 11px; font-style: normal; font-weight: 400; }
+.field input, .field select { width: 100%; min-height: 42px; box-sizing: border-box; padding: 9px 11px; border: 1px solid #cbd6d1; border-radius: 3px; outline: none; color: var(--ink); background: white; font: inherit; font-size: 14px; }
+.field input:focus, .field select:focus { border-color: var(--leaf); }
+.field-error, .field-hint { color: #a33f32; font-size: 11px; font-weight: 500; line-height: 1.35; }
+.field-hint { color: #806137; }
+.customer-type { margin: 17px 0; padding: 0; border: 0; }
+.customer-type legend { margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+.customer-type label { margin-right: 16px; cursor: pointer; }
+.customer-type input { margin-right: 5px; accent-color: var(--leaf); }
+.password-grid { margin-top: 2px; }
+.submit-button { width: 100%; min-height: 46px; margin-top: 20px; border: 0; color: white; background: var(--coral); font: inherit; font-weight: 800; cursor: pointer; }
+.submit-button:hover:not(:disabled) { background: #b9553e; }
+.submit-button:disabled { cursor: not-allowed; opacity: .55; }
+.feedback { display: block; margin: 0 0 16px; padding: 12px 14px; border-left: 3px solid; font-size: 13px; line-height: 1.5; }
+.feedback.success { border-color: var(--leaf); color: var(--leaf); background: var(--leaf-light); }
+.feedback.error { border-color: var(--coral); color: #923e31; background: #fff0ea; }
+.feedback ul { margin: 8px 0 0; padding-left: 20px; }
+.login-prompt { margin: 18px 0 0; color: var(--muted); text-align: center; font-size: 13px; }
+.login-prompt a { color: var(--leaf); font-weight: 700; }
+
+@media (max-width: 860px) {
+	.register-page { padding: 20px 16px 36px; }
+	.register-shell { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
+	.register-intro { padding-top: 0; }
+	.intro-copy { margin-top: 12px; }
+}
+
+@media (max-width: 480px) {
+	.form-panel { padding: 22px 17px; }
+	.form-grid { grid-template-columns: 1fr; }
+	.field-wide { grid-column: auto; }
+}
