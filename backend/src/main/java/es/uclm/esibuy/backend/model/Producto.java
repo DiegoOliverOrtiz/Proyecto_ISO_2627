@@ -27,6 +27,8 @@ public class Producto {
 
     private boolean esVisible;
 
+    private String vendedor;
+
     public String getNombre() {
         return nombre;
     }
@@ -57,6 +59,10 @@ public class Producto {
 
     public boolean isEsVisible() {
         return esVisible;
+    }
+
+    public String getVendedor() {
+        return vendedor;
     }
 
     public void setNombre(String nombre) {
@@ -91,5 +97,7 @@ public class Producto {
         this.esVisible = esVisible;
     }
     
-    
+    public void setVendedor(String vendedor) {
+        this.vendedor = vendedor;
+    }
 }

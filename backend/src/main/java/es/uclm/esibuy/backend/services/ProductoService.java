@@ -25,7 +25,8 @@ public class ProductoService {
         producto.setCategoria(request.categoria().trim());
         producto.setDescripcion(request.descripcion().trim());
         producto.setPrecio(request.precio());
-        producto.setStock(request.stock() - 1);
+        producto.setStock(request.stock());
+        producto.setVendedor(request.vendedor());
 
         try{
             Producto nuevoProducto = productoDAO.save(producto);

@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "BackendApplication",
+      "request": "launch",
+      "mainClass": "es.uclm.esibuy.backend.BackendApplication",
+      "projectName": "backend",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "MONGODB_URI": "mongodb+srv://blancaalanon_db_user:XR4eOaADBlz5MycS@esibuy-cluster.cx7lqwd.mongodb.net"
+      }
+    }
+  ]
+}
