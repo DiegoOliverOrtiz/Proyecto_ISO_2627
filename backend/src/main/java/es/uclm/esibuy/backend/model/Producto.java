@@ -1,5 +1,6 @@
 package es.uclm.esibuy.backend.model;
 
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,6 +10,9 @@ import jakarta.validation.constraints.NotNull;
 @Document(collection = "productos")
 @TypeAlias ("producto")
 public class Producto {
+    @Id 
+    private String id;
+
     @NotBlank 
     private String nombre;
 
@@ -20,7 +24,7 @@ public class Producto {
     private String descripcion;
 
     @NotNull 
-    private double precio;
+    private Double precio;
 
     private int descuento;
     private int descuentoPremium;
@@ -29,6 +33,11 @@ public class Producto {
 
     private String vendedor;
 
+    private String imagen;
+
+    public String getId() {
+        return id;
+    }
     public String getNombre() {
         return nombre;
     }
@@ -45,7 +54,7 @@ public class Producto {
         return descripcion;
     }
 
-    public double getPrecio() {
+    public Double getPrecio() {
         return precio;
     }
 
@@ -65,6 +74,14 @@ public class Producto {
         return vendedor;
     }
 
+    public String getImagen() {
+        return imagen;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
@@ -81,7 +98,7 @@ public class Producto {
         this.descripcion = descripcion;
     }
 
-    public void setPrecio(double precio) {
+    public void setPrecio(Double precio) {
         this.precio = precio;
     }
 
@@ -100,4 +117,9 @@ public class Producto {
     public void setVendedor(String vendedor) {
         this.vendedor = vendedor;
     }
+    
+    public void setImagen(String imagen) {
+        this.imagen = imagen;
+    }
+    
 }

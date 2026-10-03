@@ -6,7 +6,7 @@ public record CrearProductoRequest(
     @NotBlank String nombre,
     @NotBlank String categoria,
     String descripcion,
-    double precio,
+    Double precio,
     int stock,
     int descuento,
     int descuentoPremium,
