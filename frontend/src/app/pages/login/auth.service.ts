@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 
 export interface RespuestaInicioSesion {
   email: string;
-  role: 'ADMINISTRADOR' | 'CLIENTE' | 'VENDEDOR';
+  role: 'ADMIN' | 'CLIENTE' | 'VENDEDOR';
 }
 
 interface RespuestaTokenCsrf {

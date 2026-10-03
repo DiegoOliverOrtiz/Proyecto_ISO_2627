@@ -22,6 +22,7 @@ import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.dto.LoginResponse;
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
+import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -94,6 +95,9 @@ public class AuthController {
     }
 
     private String obtenerRol(Usuario usuario) {
+        if (usuario instanceof Administrador) {
+            return "ADMIN";
+        }
         if (usuario instanceof Cliente) {
             return "CLIENTE";
         }

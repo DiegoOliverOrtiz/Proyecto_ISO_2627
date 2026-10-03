@@ -29,7 +29,7 @@ export const routes: Routes = [
     path: 'admin',
     component: PanelAdministrador,
     canActivate: [rolGuard],
-    data: { rol: 'ADMINISTRADOR' }
+    data: { rol: 'ADMIN' }
   },
   {
     path: 'cliente',
