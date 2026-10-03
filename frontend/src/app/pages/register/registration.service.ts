@@ -2,6 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface ClienteRegistrationRequest {
   nombre: string;
@@ -37,19 +38,13 @@ export interface RegistrationResponse {
   tipoUsuario: string;
 }
 
-const apiBaseUrl =
-  globalThis.location.hostname === 'localhost' ||
-  globalThis.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8080'
-    : globalThis.location.origin;
-
 @Injectable({ providedIn: 'root' })
 export class RegistrationService {
   private readonly http = inject(HttpClient);
 
   obtenerCategoriasRegistro(): Observable<CategoriaRegistro[]> {
     return this.http.get<CategoriaRegistro[]>(
-      `${apiBaseUrl}/categorias/registro`
+      `${environment.apiUrl}/categorias/registro`
     );
   }
 
@@ -57,7 +52,7 @@ export class RegistrationService {
     request: ClienteRegistrationRequest
   ): Observable<RegistrationResponse> {
     return this.http.post<RegistrationResponse>(
-      `${apiBaseUrl}/cliente/register`,
+      `${environment.apiUrl}/cliente/register`,
       request
     );
   }
@@ -66,7 +61,7 @@ export class RegistrationService {
     request: VendedorRegistrationRequest
   ): Observable<RegistrationResponse> {
     return this.http.post<RegistrationResponse>(
-      `${apiBaseUrl}/vendedor/register`,
+      `${environment.apiUrl}/vendedor/register`,
       request
     );
   }

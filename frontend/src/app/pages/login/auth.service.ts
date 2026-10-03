@@ -1,21 +1,63 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, switchMap } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+export interface RespuestaInicioSesion {
+  email: string;
+  role: 'ADMINISTRADOR' | 'CLIENTE' | 'VENDEDOR';
+}
+
+interface RespuestaTokenCsrf {
+  token: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly http = inject(HttpClient);
 
-  constructor() { }
+  iniciarSesion(correo: string, contrasena: string): Observable<RespuestaInicioSesion> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.post<RespuestaInicioSesion>(
+            `${environment.apiUrl}/usuarios/login`,
+            { email: correo, password: contrasena },
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
+  }
 
-  // Simula una petición al backend que tarda 1 segundo en responder
-  login(email: string, password: string): Observable<any> {
-    console.log(`Simulando envío al servidor: ${email}`);
-    
-    // Aquí más adelante usaremos HttpClient para llamar a Java
-    // Por ahora, fingimos que el servidor responde que todo ha ido bien
-    return of({ success: true, token: 'fake-jwt-token', role: 'CLIENTE' }).pipe(
-      delay(1000) 
+  obtenerSesionActual(): Observable<RespuestaInicioSesion> {
+    return this.http.get<RespuestaInicioSesion>(
+      `${environment.apiUrl}/usuarios/sesion-actual`,
+      { withCredentials: true }
     );
+  }
+
+  cerrarSesion(): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.post<void>(`${environment.apiUrl}/usuarios/logout`, null, {
+            withCredentials: true,
+            headers: new HttpHeaders({
+              'X-XSRF-TOKEN': respuestaCsrf.token
+            })
+          })
+        )
+      );
   }
 }

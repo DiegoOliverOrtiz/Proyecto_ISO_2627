@@ -11,6 +11,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -24,24 +27,50 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
+    CookieCsrfTokenRepository csrfTokenRepository(
+            @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookieCustomizer(cookie -> cookie.secure(cookieSeguro).sameSite("Lax"));
+        return repository;
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource,
+            SecurityContextRepository securityContextRepository,
+            CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(csrf -> csrf.ignoringRequestMatchers(
-                        "/cliente/register",
-                        "/vendedor/register"))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .ignoringRequestMatchers(
+                                "/cliente/register",
+                                "/vendedor/register"))
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
+                .logout(logout -> logout
+                        .logoutUrl("/usuarios/logout")
+                        .logoutSuccessHandler((request, response, authentication) ->
+                                response.setStatus(204)))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
+                                "/usuarios/login",
                                 "/cliente/register",
                                 "/vendedor/register").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/usuarios/csrf").permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/categorias/registro").permitAll()
+                        .requestMatchers("/cliente/**").hasRole("CLIENTE")
+                        .requestMatchers("/vendedor/**").hasRole("VENDEDOR")
                         .anyRequest().authenticated());
 
         return http.build();
@@ -55,8 +84,8 @@ public class SecurityConfiguration {
 
         configuration.setAllowedOrigins(List.of(allowedOrigin));
         configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Content-Type", "Accept"));
-        configuration.setAllowCredentials(false);
+        configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

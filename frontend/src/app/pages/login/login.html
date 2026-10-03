@@ -19,6 +19,12 @@
       </div>
       
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        @if (mensajeError()) {
+          <p class="error-text" role="alert">{{ mensajeError() }}</p>
+        }
+        @if (mensajeExito()) {
+          <p class="success-text" role="status">{{ mensajeExito() }}</p>
+        }
         
         <div class="form-group">
           <label for="email">Correo electrónico</label>
@@ -58,11 +64,11 @@
         </div>
 
         <div class="form-actions">
-          <a href="#" class="forgot-password">He olvidado mi contraseña</a>
+          <a routerLink="/recuperar-contrasena" class="forgot-password">He olvidado mi contraseña</a>
         </div>
 
-        <button type="submit" class="primary-button" [disabled]="isLoading">
-          {{ isLoading ? 'Comprobando datos...' : 'Iniciar sesión' }}
+        <button type="submit" class="primary-button" [disabled]="isLoading()">
+          {{ isLoading() ? 'Comprobando datos...' : 'Iniciar sesión' }}
         </button>
 
         <div class="register-prompt">

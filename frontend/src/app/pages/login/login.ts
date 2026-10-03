@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from './auth.service'; // 1. Importamos el servicio
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { AuthService } from './auth.service';
+import { rutaParaRol } from './rutas-por-rol';
 
 @Component({
   selector: 'app-login',
@@ -13,10 +16,15 @@ import { AuthService } from './auth.service'; // 1. Importamos el servicio
 export class Login {
   loginForm: FormGroup;
   hidePassword = true;
-  isLoading = false; // Para mostrar un estado de carga
+  isLoading = signal(false);
+  mensajeError = signal('');
+  mensajeExito = signal('');
 
-  // 2. Inyectamos el servicio en el constructor junto al FormBuilder
-  constructor(private fb: FormBuilder, private authService: AuthService) {
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
@@ -29,19 +37,27 @@ export class Login {
 
   onSubmit() {
     if (this.loginForm.valid) {
-      this.isLoading = true;
+      this.isLoading.set(true);
+      this.mensajeError.set('');
+      this.mensajeExito.set('');
       const { email, password } = this.loginForm.value;
 
-      // 3. Llamamos al servicio
-      this.authService.login(email, password).subscribe({
+      this.authService.iniciarSesion(email ?? '', password ?? '').subscribe({
         next: (respuesta) => {
-          console.log('Respuesta del servidor:', respuesta);
-          this.isLoading = false;
-          // Aquí más adelante redirigiremos al usuario a su panel
+          this.isLoading.set(false);
+          this.router.navigateByUrl(rutaParaRol(respuesta.role));
         },
-        error: (err) => {
-          console.error('Error al iniciar sesión', err);
-          this.isLoading = false;
+        error: (error: HttpErrorResponse) => {
+          this.isLoading.set(false);
+          const cuerpo = error.error;
+          this.mensajeError.set(
+            typeof cuerpo === 'object' &&
+            cuerpo !== null &&
+            'error' in cuerpo &&
+            typeof cuerpo.error === 'string'
+              ? cuerpo.error
+              : 'No se pudo conectar con el servicio. Inténtalo de nuevo más tarde.'
+          );
         }
       });
       

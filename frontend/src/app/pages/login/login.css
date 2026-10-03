@@ -159,6 +159,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   margin-top: 6px;
 }
 
+.success-text {
+  color: #255B4D;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
 /* Botones y enlaces */
 .form-actions {
   text-align: right;
