@@ -77,8 +77,20 @@ public class AuthController {
 
     @GetMapping("/sesion-actual")
     public ResponseEntity<LoginResponse> obtenerSesionActual(Authentication authentication) {
-        String rol = authentication.getAuthorities().iterator().next().getAuthority()
-                .substring("ROLE_".length());
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String autoridad = authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .filter(value -> value != null && value.startsWith("ROLE_"))
+                .findFirst()
+                .orElse(null);
+        if (autoridad == null || autoridad.length() == "ROLE_".length()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String rol = autoridad.substring("ROLE_".length());
         return ResponseEntity.ok(new LoginResponse(authentication.getName(), rol));
     }
 
