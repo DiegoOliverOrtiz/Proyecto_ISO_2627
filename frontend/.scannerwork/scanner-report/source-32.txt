@@ -1,0 +1,171 @@
+<main class="register-page">
+	<a class="brand" routerLink="/" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
+
+	<section class="register-shell" aria-labelledby="register-title">
+		<div class="register-intro">
+			<p class="eyebrow">Únete a ESIBuy</p>
+			<h1 id="register-title">Una cuenta para comprar o vender.</h1>
+			<p class="intro-copy">Crea tu perfil y empieza a formar parte de una comunidad de compra segura.</p>
+		</div>
+
+		<section class="form-panel" aria-label="Formulario de registro">
+			<div class="panel-heading">
+				<div>
+					<p class="eyebrow">Registro</p>
+					<h2>Crear cuenta</h2>
+				</div>
+				<div class="avatar-wrap">
+					<img [src]="avatarSource" (error)="avatarFailed = true" [alt]="role === 'cliente' ? 'Avatar de cliente' : 'Avatar de vendedor'" />
+				</div>
+			</div>
+
+			<fieldset class="role-switch">
+				<legend class="visually-hidden">Tipo de cuenta</legend>
+				<button type="button" [class.active]="role === 'cliente'" [attr.aria-pressed]="role === 'cliente'" (click)="selectRole('cliente')">Cliente</button>
+				<button type="button" [class.active]="role === 'vendedor'" [attr.aria-pressed]="role === 'vendedor'" (click)="selectRole('vendedor')">Vendedor</button>
+			</fieldset>
+
+			@if (feedback; as result) {
+				<output class="feedback" [class.success]="result.kind === 'success'" [class.error]="result.kind === 'error'" aria-live="polite">
+					{{ result.text }}
+				</output>
+			}
+
+			@if (role === 'cliente') {
+				<form [formGroup]="clienteForm" (ngSubmit)="register()" novalidate>
+					<div class="form-grid">
+						<label class="field">
+							<span>Nombre</span>
+							<input type="text" formControlName="nombre" autocomplete="given-name" />
+							@if (controlError(clienteForm, 'nombre'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Apellidos</span>
+							<input type="text" formControlName="apellidos" autocomplete="family-name" />
+							@if (controlError(clienteForm, 'apellidos'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Fecha de nacimiento</span>
+							<input type="date" [max]="today" formControlName="fechaNacimiento" autocomplete="bday" />
+							@if (controlError(clienteForm, 'fechaNacimiento'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>DNI</span>
+							<input type="text" formControlName="dniNif" maxlength="9" autocomplete="off" />
+							@if (controlError(clienteForm, 'dniNif'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field field-wide">
+							<span>Correo electrónico</span>
+							<input type="email" formControlName="email" autocomplete="email" />
+							@if (controlError(clienteForm, 'email'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Teléfono <em>Opcional</em></span>
+							<input type="tel" formControlName="telefono" autocomplete="tel" />
+							@if (controlError(clienteForm, 'telefono'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Imagen de perfil <em>Opcional</em></span>
+							<input type="url" formControlName="imagenPerfil" placeholder="https://..." (input)="resetAvatarError()" />
+							@if (controlError(clienteForm, 'imagenPerfil'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+					</div>
+
+					<fieldset class="customer-type">
+						<legend>Tipo de cliente</legend>
+						<label><input type="radio" formControlName="tipoCliente" value="normal" /><span>Normal</span></label>
+						<label><input type="radio" formControlName="tipoCliente" value="premium" /><span>Premium</span></label>
+					</fieldset>
+
+					<div class="form-grid password-grid">
+						<label class="field">
+							<span>Contraseña</span>
+							<input type="password" formControlName="contrasena" autocomplete="new-password" />
+							@if (controlError(clienteForm, 'contrasena'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Repetir contraseña</span>
+							<input type="password" formControlName="repetirContrasena" autocomplete="new-password" />
+							@if (controlError(clienteForm, 'repetirContrasena'); as error) { <small class="field-error">{{ error }}</small> }
+							@if (passwordMismatch(clienteForm)) { <small class="field-error">Las contraseñas no coinciden.</small> }
+						</label>
+					</div>
+
+					<button class="submit-button" type="submit" [disabled]="isSubmitting">
+						{{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta de cliente' }}
+					</button>
+				</form>
+			} @else {
+				<form [formGroup]="vendedorForm" (ngSubmit)="register()" novalidate>
+					<div class="form-grid">
+						<label class="field">
+							<span>Nombre</span>
+							<input type="text" formControlName="nombre" autocomplete="given-name" />
+							@if (controlError(vendedorForm, 'nombre'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Apellidos</span>
+							<input type="text" formControlName="apellidos" autocomplete="family-name" />
+							@if (controlError(vendedorForm, 'apellidos'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Categoría</span>
+							<select formControlName="categoria" [disabled]="sellerCategories.length === 0">
+								<option value="" disabled>Selecciona una categoría</option>
+								@for (category of sellerCategories; track category) {
+									<option [value]="category">{{ category }}</option>
+								}
+							</select>
+							@if (sellerCategories.length === 0) {
+								<small class="field-hint">Las categorías están pendientes de definición.</small>
+							}
+							@if (controlError(vendedorForm, 'categoria'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Nombre comercial</span>
+							<input type="text" formControlName="nombreComercial" autocomplete="organization" />
+							@if (controlError(vendedorForm, 'nombreComercial'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>DNI/NIF</span>
+							<input type="text" formControlName="dniNif" maxlength="9" autocomplete="off" />
+							@if (controlError(vendedorForm, 'dniNif'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Correo electrónico</span>
+							<input type="email" formControlName="email" autocomplete="email" />
+							@if (controlError(vendedorForm, 'email'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Teléfono <em>Opcional</em></span>
+							<input type="tel" formControlName="telefono" autocomplete="tel" />
+							@if (controlError(vendedorForm, 'telefono'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Imagen de perfil <em>Opcional</em></span>
+							<input type="url" formControlName="imagenPerfil" placeholder="https://..." (input)="resetAvatarError()" />
+							@if (controlError(vendedorForm, 'imagenPerfil'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Contraseña</span>
+							<input type="password" formControlName="contrasena" autocomplete="new-password" />
+							@if (controlError(vendedorForm, 'contrasena'); as error) { <small class="field-error">{{ error }}</small> }
+						</label>
+						<label class="field">
+							<span>Repetir contraseña</span>
+							<input type="password" formControlName="repetirContrasena" autocomplete="new-password" />
+							@if (controlError(vendedorForm, 'repetirContrasena'); as error) { <small class="field-error">{{ error }}</small> }
+							@if (passwordMismatch(vendedorForm)) { <small class="field-error">Las contraseñas no coinciden.</small> }
+						</label>
+					</div>
+
+					<button class="submit-button" type="submit" [disabled]="isSubmitting || sellerCategories.length === 0">
+						{{ isSubmitting ? 'Creando cuenta...' : 'Crear cuenta de vendedor' }}
+					</button>
+				</form>
+			}
+
+			<p class="login-prompt">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+		</section>
+	</section>
+</main>

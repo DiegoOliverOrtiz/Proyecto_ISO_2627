@@ -1,0 +1,71 @@
+Â¬Ó∫è42026-g01-frontend(:R
+
+kubernetesD
+$e4e60fdf-ce66-414e-9090-d9e80757ac53	Sonar way
+kubernetes †øºÈ¢2:K
+cssD
+$7a205a7b-6fa6-40e0-a6f7-064b6481d51acalsoft-2026-g01css à«ﬁﬁé4:H
+scala?
+$3a778926-c3c2-4ee2-b0b7-37658aa6e035	Sonar wayscala †øºÈ¢2:D
+jsp=
+$a10029af-ff3b-4812-b5ce-6bc06e69fc5a	Sonar wayjsp †øºÈ¢2:B
+js<
+$b4883c0d-445e-4422-8312-0fdb4a26b80c	Sonar wayjs †øºÈ¢2:B
+py<
+$2671bd3e-9aeb-490a-95b3-78dba776ee1a	Sonar waypy à«ºÈ¢2:J
+docker@
+$4a102881-98c8-48f1-abff-28e18ce272f9	Sonar waydocker à«ºÈ¢2:F
+java>
+$f66cb896-e1a6-4be8-be55-2cbb0d4b7f2c	Sonar wayjava à«ºÈ¢2:K
+webD
+$2c20314b-2bfe-4392-8508-3ed1cc7a33e5calsoft-2026-g01web »ë€ﬁé4:F
+flex>
+$c67d4bc1-82d1-4a47-ab0e-90f8e7042bd4	Sonar wayflex à«ºÈ¢2:D
+xml=
+$2e82235e-24a9-4c12-8a13-a7291cb6ede8	Sonar wayxml à«ºÈ¢2:F
+json>
+$525e6585-6f97-40c2-a96f-262efa0da249	Sonar wayjson ŒºÈ¢2:F
+text>
+$cb3af64b-b7cf-499d-be76-b7ed76a763d3	Sonar waytext ŒºÈ¢2:H
+vbnet?
+$6b3d7bbb-36e2-45d6-b203-bc3dbb136ea2	Sonar wayvbnet ŒºÈ¢2:Z
+cloudformationH
+$4920e4c7-cfe7-4003-8202-cd162a9b585c	Sonar waycloudformation ŒºÈ¢2:F
+yaml>
+$c1ee819b-918a-4c71-8e38-b0c196a790be	Sonar wayyaml ŒºÈ¢2:B
+go<
+$a889e05b-35fc-41da-a38c-3fda0ecd7a32	Sonar waygo ŒºÈ¢2:J
+kotlin@
+$5f35a019-f8cc-4dee-ad9d-f70c6eed644c	Sonar waykotlin ŒºÈ¢2:L
+secretsA
+$9892b349-ddc7-4a06-9427-c9c8419c1e1f	Sonar waysecrets ŒºÈ¢2:F
+ruby>
+$497dbd1a-b767-4154-a95b-ebb02ef39a71	Sonar wayruby ŒºÈ¢2:B
+cs<
+$f85da15b-abc9-4fb8-aee1-1b1ab8d27ba3	Sonar waycs ŒºÈ¢2:D
+php=
+$e88d33dd-8b58-4dbf-9ef4-cc558db3d6e2	Sonar wayphp ŒºÈ¢2:P
+	terraformC
+$8dad0141-5627-4dfe-b18d-32073f45a86d	Sonar way	terraform ÿ÷ºÈ¢2:f
+azureresourcemanagerN
+$fd5f7e9c-4b3f-4064-9640-a6f482b70675	Sonar wayazureresourcemanager ÿ÷ºÈ¢2:B
+ts<
+$92bd9ae1-9c09-4257-bd24-b4c7c9bd9a5f	Sonar wayts ÿ÷ºÈ¢2B
+python
+python∆€ºÈ¢2B
+web
+web–€ºÈ¢2B
+cayc
+cayc«€ºÈ¢2B
+xml
+xml–€ºÈ¢2B
+jacoco
+jacoco«€ºÈ¢2B
+iac
+iacŒ€ºÈ¢2B
+text
+text—€ºÈ¢2B!
+
+javascript
+
+javascriptœ€ºÈ¢2bfrontendj(2f2ef913f1bddeb16792c6ce497d022c9f686f81
