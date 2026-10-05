@@ -9,4 +9,6 @@ import es.uclm.esibuy.backend.model.Usuario;
 public interface UsuarioDAO extends Repository<Usuario, String> {
 	boolean existsByEmail(String email);
 	Optional<Usuario> findByEmail(String email);
+	Optional<Usuario> findById(String id);
+	<S extends Usuario> S save(S usuario);
 }

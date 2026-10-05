@@ -1,1 +1,80 @@
-<p>login works!</p>
+<header class="header">
+	<a class="logo" routerLink="/" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
+</header>
+
+<main class="split-layout">
+  <!-- Columna Izquierda: Texto promocional -->
+  <section class="text-section">
+    <span class="eyebrow">BIENVENIDO DE NUEVO</span>
+    <h1>Inicia sesión para continuar.</h1>
+    <p>Accede a tu perfil, revisa tus pedidos y sigue disfrutando de una comunidad de compra segura.</p>
+  </section>
+
+  <!-- Columna Derecha: Formulario -->
+  <section class="form-section">
+    <div class="login-card">
+      <div class="card-header">
+        <span class="eyebrow">ACCESO</span>
+        <h2>Iniciar sesión</h2>
+      </div>
+      
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        @if (mensajeError()) {
+          <p class="error-text" role="alert">{{ mensajeError() }}</p>
+        }
+        @if (mensajeExito()) {
+          <p class="success-text" role="status">{{ mensajeExito() }}</p>
+        }
+        
+        <div class="form-group">
+          <label for="email">Correo electrónico</label>
+          <input id="email" type="email" formControlName="email"
+                 [class.input-error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          
+          @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+            <div class="error-text">
+              @if (loginForm.get('email')?.hasError('required')) {
+                <span>El correo es obligatorio.</span>
+              }
+              @if (loginForm.get('email')?.hasError('email')) {
+                <span>Introduce un formato de correo válido.</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <div class="password-container">
+            <input id="password" [type]="hidePassword ? 'password' : 'text'" formControlName="password"
+                   [class.input-error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            
+            <button type="button" (click)="togglePassword()" class="eye-button">
+              {{ hidePassword ? '👁️' : '🙈' }}
+            </button>
+          </div>
+          
+          @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+            <div class="error-text">
+              @if (loginForm.get('password')?.hasError('required')) {
+                <span>La contraseña es obligatoria.</span>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-actions">
+          <a routerLink="/recuperar-contrasena" class="forgot-password">He olvidado mi contraseña</a>
+        </div>
+
+        <button type="submit" class="primary-button" [disabled]="isLoading()">
+          {{ isLoading() ? 'Comprobando datos...' : 'Iniciar sesión' }}
+        </button>
+
+        <div class="register-prompt">
+          ¿No tienes cuenta? <a routerLink="/registro">Regístrate</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>

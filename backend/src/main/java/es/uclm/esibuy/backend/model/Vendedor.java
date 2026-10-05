@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 public class Vendedor extends Usuario {
 
 	@NotBlank
-	private String categoria;
+	private String categoriaId;
 
 	@NotBlank
 	@Size(max = 9)
@@ -22,12 +22,12 @@ public class Vendedor extends Usuario {
 	@Indexed(name = "uq_vendedor_nombre_comercial", unique = true, sparse = true)
 	private String nombreComercial;
 
-	public String getCategoria() {
-		return categoria;
+	public String getCategoriaId() {
+		return categoriaId;
 	}
 
-	public void setCategoria(String categoria) {
-		this.categoria = categoria;
+	public void setCategoriaId(String categoriaId) {
+		this.categoriaId = categoriaId;
 	}
 
 	public String getDniNif() {

@@ -1,0 +1,217 @@
+:host {
+  display: block;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #333333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabecera minimalista */
+.header {
+  padding: 20px 60px;
+}
+
+/* Estilos para el logo (funciona tanto si usas <div> como <a>) */
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #222;
+  text-decoration: none; 
+}
+
+.logo span {
+  color: #D36B54; /* Naranja terracota de ESIBuy */
+}
+
+/* Layout de dos columnas */
+.split-layout {
+  display: flex;
+  flex: 1;
+  padding: 40px 10%;
+  gap: 60px;
+  align-items: center;
+}
+
+.text-section {
+  flex: 1;
+  max-width: 500px;
+}
+
+.form-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* Tipografía de la columna izquierda */
+.eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #255B4D; /* Verde oscuro */
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.text-section h1 {
+  font-family: 'Georgia', serif;
+  font-size: 48px;
+  font-weight: normal;
+  color: #255B4D;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  margin-top: 0;
+}
+
+.text-section p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Tarjeta del formulario */
+.login-card {
+  background: #F7F9F8; /* Gris muy claro */
+  border-top: 4px solid #255B4D; /* Borde superior verde */
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+.card-header {
+  margin-bottom: 30px;
+}
+
+.card-header h2 {
+  font-family: 'Georgia', serif;
+  font-size: 28px;
+  font-weight: normal;
+  color: #255B4D;
+  margin: 0;
+}
+
+/* Campos del formulario */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background: white;
+}
+
+input:focus {
+  outline: none;
+  border-color: #255B4D;
+}
+
+/* Contenedor de la contraseña con el ojo */
+.password-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.password-container input {
+  padding-right: 40px;
+}
+
+.eye-button {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Ocultar el icono de contraseña nativo de Edge y otros navegadores */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+
+/* Errores */
+.input-error {
+  border-color: #d93025 !important;
+}
+
+.error-text {
+  color: #d93025;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.success-text {
+  color: #255B4D;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+
+/* Botones y enlaces */
+.form-actions {
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.forgot-password {
+  font-size: 13px;
+  color: #666;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.primary-button {
+  width: 100%;
+  background: #D36B54;
+  color: white;
+  border: none;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primary-button:hover {
+  background: #bc5943;
+}
+
+.primary-button:disabled {
+  background: #e0a396;
+  cursor: not-allowed;
+}
+
+.register-prompt {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 13px;
+  color: #666;
+}
+
+.register-prompt a {
+  color: #255B4D;
+  font-weight: 600;
+  text-decoration: underline;
+}

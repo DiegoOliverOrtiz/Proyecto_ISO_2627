@@ -12,7 +12,9 @@ import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
+import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
+import es.uclm.esibuy.backend.model.Usuario;
 import jakarta.validation.Validator;
 
 @Service
@@ -64,6 +66,14 @@ public class AdministradorService {
 			return new RegistroUsuarioResponse(guardado.getId(), "administrador");
 		} catch (DuplicateKeyException exception) {
 			throw new DuplicateRegistrationException();
+		}
+	}
+
+	public void activarUsuario(String id) {
+		Usuario usuario = usuarioDAO.findById(id).orElseThrow(UsuarioNoEncontradoException::new);
+		if (!usuario.isActivada()) {
+			usuario.setActivada(true);
+			usuarioDAO.save(usuario);
 		}
 	}
 }

@@ -46,6 +46,23 @@
               "outputHashing": "all"
             },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ],
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            },
+            "development-https": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.https.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
@@ -61,6 +78,10 @@
             },
             "development": {
               "buildTarget": "frontend:build:development"
+            },
+            "development-https": {
+              "buildTarget": "frontend:build:development-https",
+              "ssl": true
             }
           },
           "defaultConfiguration": "development"
