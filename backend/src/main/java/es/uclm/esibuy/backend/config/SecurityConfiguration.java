@@ -46,8 +46,8 @@ public class SecurityConfiguration {
 			@Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(List.of(allowedOrigin));
-		configuration.setAllowedMethods(List.of("POST", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Content-Type", "Accept"));
+		configuration.setAllowedMethods(List.of("POST", "PATCH", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "Authorization", "X-XSRF-TOKEN"));
 		configuration.setAllowCredentials(false);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
