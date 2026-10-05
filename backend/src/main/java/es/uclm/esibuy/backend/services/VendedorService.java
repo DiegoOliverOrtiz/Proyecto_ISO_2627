@@ -16,21 +16,21 @@ public class VendedorService {
 
     private final VendedorDAO vendedorDAO;
     private final CategoriaDAO categoriaDAO;
-    private final RegistrationSupport registrationSupport;
+    private final SoporteRegistro soporteRegistro;
 
     public VendedorService(
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
-            RegistrationSupport registrationSupport) {
+            SoporteRegistro soporteRegistro) {
 
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
-        this.registrationSupport = registrationSupport;
+        this.soporteRegistro = soporteRegistro;
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
-		registrationSupport.validate(request, request == null ? null : request.contrasena());
-		String email = registrationSupport.normalizeEmail(request.email());
+		soporteRegistro.validarSolicitud(request, request == null ? null : request.contrasena());
+		String email = soporteRegistro.normalizarCorreo(request.email());
         String nombreComercial = request.nombreComercial().trim();
         String categoriaId = request.categoriaId().trim();
 
@@ -42,7 +42,7 @@ public class VendedorService {
         if (vendedorDAO.existsByNombreComercial(nombreComercial)) {
             throw new DuplicateRegistrationException();
         }
-        registrationSupport.ensureEmailIsAvailable(email);
+        soporteRegistro.comprobarCorreoDisponible(email);
 
         Vendedor vendedor = new Vendedor();
 
@@ -56,9 +56,9 @@ public class VendedorService {
         vendedor.setImagenPerfil(request.imagenPerfil());
         vendedor.setBloqueada(false);
         vendedor.setActivada(false);
-        vendedor.registrarContrasenaHash(registrationSupport.encodePassword(request.contrasena()));
+        vendedor.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
-        Vendedor guardado = registrationSupport.save(() -> vendedorDAO.save(vendedor));
+        Vendedor guardado = soporteRegistro.guardarRegistro(() -> vendedorDAO.save(vendedor));
         return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
     }
 }
