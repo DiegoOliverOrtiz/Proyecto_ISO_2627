@@ -39,12 +39,16 @@ public class PasswordPolicy {
 				|| !contains(password, Character::isLowerCase)
 				|| !contains(password, Character::isDigit)
 				|| !containsSpecial(password)) {
-			throw new InvalidRegistrationException();
+			throw new InvalidRegistrationException(
+					"contrasena",
+					"La contraseña debe tener al menos 8 caracteres e incluir mayúsculas, minúsculas, números y símbolos.");
 		}
 
 		String normalizedPassword = normalize(password);
 		if (commonPasswords.stream().anyMatch(normalizedPassword::contains)) {
-			throw new InvalidRegistrationException();
+			throw new InvalidRegistrationException(
+					"contrasena",
+					"La contraseña no puede contener términos de la lista de contraseñas comunes.");
 		}
 	}
 

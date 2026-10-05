@@ -49,6 +49,7 @@
 .feedback { display: block; margin: 0 0 16px; padding: 12px 14px; border-left: 3px solid; font-size: 13px; line-height: 1.5; }
 .feedback.success { border-color: var(--leaf); color: var(--leaf); background: var(--leaf-light); }
 .feedback.error { border-color: var(--coral); color: #923e31; background: #fff0ea; }
+.feedback ul { margin: 8px 0 0; padding-left: 20px; }
 .login-prompt { margin: 18px 0 0; color: var(--muted); text-align: center; font-size: 13px; }
 .login-prompt a { color: var(--leaf); font-weight: 700; }
 

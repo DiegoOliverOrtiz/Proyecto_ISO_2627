@@ -59,6 +59,13 @@
                     [class.error]="result.kind === 'error'"
                     aria-live="polite">
                     {{ result.text }}
+                    @if (result.details?.length) {
+                        <ul>
+                            @for (detail of result.details; track $index) {
+                                <li>{{ detail }}</li>
+                            }
+                        </ul>
+                    }
                 </output>
             }
 
@@ -98,7 +105,7 @@
                             <span>Fecha de nacimiento</span>
                             <input
                                 type="date"
-                                [max]="today"
+                                [max]="latestBirthDate"
                                 formControlName="fechaNacimiento"
                                 autocomplete="bday"
                             />
