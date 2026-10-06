@@ -13,27 +13,78 @@ import { AuthService } from '../login/auth.service';
       <section class="admin-content">
         <header class="topbar">
           <a class="topbar-brand" routerLink="/admin">EsiBuy</a>
-          <span class="breadcrumb">Gestión <span aria-hidden="true">/</span> Panel de administración</span>
-          <span class="account"><span class="account-dot" aria-hidden="true"></span> Administrador</span>
+          <span class="breadcrumb">
+            Gestión
+            <span aria-hidden="true">/</span>
+            Panel de administración
+          </span>
+          <span class="account">
+            <span class="account-dot" aria-hidden="true"></span>
+            Administrador
+          </span>
         </header>
 
         <div class="welcome-block">
           <p class="eyebrow">Espacio de gestión</p>
           <h1>Bienvenido, administrador</h1>
-          <p>Consulta y gestiona las cuentas registradas en EsiBuy.</p>
-          <a class="primary-action" routerLink="/admin/usuarios">Consultar usuarios</a>
+          <p>
+            Consulta y gestiona la información administrativa de EsiBuy.
+          </p>
+
+          <a class="primary-action" routerLink="/admin/usuarios">
+            Consultar usuarios
+          </a>
         </div>
 
         <div class="overview-grid">
-          <article><span class="card-label">Área activa</span><strong>Usuarios</strong><small>Consulta administrativa</small><a routerLink="/admin/usuarios">Abrir listado <span aria-hidden="true">→</span></a></article>
-          <article><span class="card-label">Acceso</span><strong>Administrador</strong><small>Sesión protegida</small><span class="secure-label">● Conectado</span></article>
+          <article>
+            <span class="card-label">Área activa</span>
+            <strong>Usuarios</strong>
+            <small>Consulta administrativa</small>
+
+            <a routerLink="/admin/usuarios">
+              Abrir listado
+              <span aria-hidden="true">→</span>
+            </a>
+          </article>
+
+          <article>
+            <span class="card-label">Área activa</span>
+            <strong>Categorías</strong>
+            <small>Consulta administrativa</small>
+
+            <a routerLink="/admin/categorias">
+              Abrir categorías
+              <span aria-hidden="true">→</span>
+            </a>
+          </article>
+
+          <article>
+            <span class="card-label">Acceso</span>
+            <strong>Administrador</strong>
+            <small>Sesión protegida</small>
+
+            <span class="secure-label">
+              ● Conectado
+            </span>
+          </article>
         </div>
 
-        <button class="logout-button" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
-          {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+        <button
+          class="logout-button"
+          type="button"
+          [disabled]="cerrandoSesion()"
+          (click)="cerrarSesion()">
+          {{ cerrandoSesion()
+            ? 'Cerrando sesión...'
+            : 'Cerrar sesión'
+          }}
         </button>
+
         @if (mensajeError()) {
-          <p class="error-message" role="alert">{{ mensajeError() }}</p>
+          <p class="error-message" role="alert">
+            {{ mensajeError() }}
+          </p>
         }
       </section>
     </main>
@@ -42,6 +93,7 @@ import { AuthService } from '../login/auth.service';
 export class PanelAdministrador {
   private readonly servicioAutenticacion = inject(AuthService);
   private readonly enrutador = inject(Router);
+
   readonly cerrandoSesion = signal(false);
   readonly mensajeError = signal('');
 
@@ -56,6 +108,7 @@ export class PanelAdministrador {
       },
       error: (error: HttpErrorResponse) => {
         this.cerrandoSesion.set(false);
+
         this.mensajeError.set(
           error.status === 0
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'

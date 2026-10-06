@@ -1,4 +1,3 @@
-
 package es.uclm.esibuy.backend.config;
 
 import java.util.List;
@@ -7,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,8 +35,13 @@ public class SecurityConfiguration {
     @Bean
     CookieCsrfTokenRepository csrfTokenRepository(
             @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(cookie -> cookie.secure(cookieSeguro).sameSite("Lax"));
+
+        CookieCsrfTokenRepository repository =
+                CookieCsrfTokenRepository.withHttpOnlyFalse();
+
+        repository.setCookieCustomizer(cookie ->
+                cookie.secure(cookieSeguro).sameSite("Lax"));
+
         return repository;
     }
 
@@ -49,31 +53,60 @@ public class SecurityConfiguration {
             CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource))
+
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .ignoringRequestMatchers(
                                 "/cliente/register",
                                 "/vendedor/register"))
-                .securityContext(context -> context.securityContextRepository(securityContextRepository))
+
+                .securityContext(context ->
+                        context.securityContextRepository(
+                                securityContextRepository))
+
                 .logout(logout -> logout
                         .logoutUrl("/usuarios/logout")
-                        .logoutSuccessHandler((request, response, authentication) ->
-                                response.setStatus(204)))
+                        .logoutSuccessHandler(
+                                (request, response, authentication) ->
+                                        response.setStatus(204)))
+
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**").permitAll()
+
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/usuarios/login",
                                 "/cliente/register",
                                 "/vendedor/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/usuarios/csrf").permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/usuarios/csrf").permitAll()
+
+                        // Necesario para el registro público de vendedores.
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/categorias/registro").permitAll()
-                        .requestMatchers("/cliente/**").hasRole("CLIENTE")
-                        .requestMatchers("/vendedor/**").hasRole("VENDEDOR")
-                        .requestMatchers("/administrador/**").hasRole("ADMIN")
+
+                        // HU11: consulta administrativa de categorías.
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/categorias",
+                                "/categorias/**").hasRole("ADMIN")
+
+                        .requestMatchers(
+                                "/cliente/**").hasRole("CLIENTE")
+
+                        .requestMatchers(
+                                "/vendedor/**").hasRole("VENDEDOR")
+
+                        .requestMatchers(
+                                "/administrador/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated());
 
         return http.build();
@@ -81,16 +114,21 @@ public class SecurityConfiguration {
 
     @Bean
     CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
+            @Value("${app.cors.allowed-origin:http://localhost:4200}")
+            String allowedOrigin) {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(List.of(allowedOrigin));
-        configuration.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "OPTIONS"));
+        configuration.setAllowedHeaders(
+                List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
         configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", configuration);
 
         return source;

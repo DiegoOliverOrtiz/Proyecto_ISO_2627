@@ -2,6 +2,7 @@
 .env
 *.p12
 *.pfx
+.scannerwork/
 
 # Configuración local del backend
 backend/src/main/resources/application.properties
