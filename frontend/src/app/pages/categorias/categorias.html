@@ -1,0 +1,20 @@
+<section class="categorias-page">
+  <h1>Categorías</h1>
+
+  @if (cargando()) {
+    <p>Cargando categorías...</p>
+  } @else if (error()) {
+    <p>No se pudieron cargar las categorías.</p>
+  } @else if (categorias().length === 0) {
+    <p>No hay categorías registradas actualmente.</p>
+  } @else {
+    <div class="categorias-list">
+      @for (categoria of categorias(); track categoria.id) {
+        <article class="categoria-card">
+          <h2>{{ categoria.nombre }}</h2>
+          <p>{{ categoria.descripcion }}</p>
+        </article>
+      }
+    </div>
+  }
+</section>

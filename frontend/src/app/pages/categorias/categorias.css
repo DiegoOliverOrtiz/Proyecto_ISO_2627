@@ -1,0 +1,37 @@
+.categorias-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.categorias-page h1 {
+  margin-bottom: 1.5rem;
+}
+
+.categorias-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.categoria-card {
+  padding: 1.25rem;
+  border: 1px solid #dcdcdc;
+  border-radius: 12px;
+  background: white;
+}
+
+.categoria-card h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.categoria-card p {
+  margin-bottom: 1rem;
+}
+
+.categoria-card button {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}

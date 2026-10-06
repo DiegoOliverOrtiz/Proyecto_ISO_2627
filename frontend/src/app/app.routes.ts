@@ -9,6 +9,7 @@ import { PanelVendedor } from './pages/paneles/vendedor';
 import { rolGuard } from './pages/login/rol.guard';
 import { UsuarioDetalle } from './pages/usuarios/usuario-detalle';
 import { Usuarios } from './pages/usuarios/usuarios';
+import { Categorias } from './pages/categorias/categorias';
 
 export const routes: Routes = [
   {
@@ -42,6 +43,12 @@ export const routes: Routes = [
   {
     path: 'admin/usuarios/:id',
     component: UsuarioDetalle,
+    canActivate: [rolGuard],
+    data: { rol: 'ADMIN' }
+  },
+  {
+    path: 'admin/categorias',
+    component: Categorias,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
