@@ -2,3 +2,6 @@
 .env
 *.p12
 *.pfx
+
+# Configuración local del backend
+backend/src/main/resources/application.properties
