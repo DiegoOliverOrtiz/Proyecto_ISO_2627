@@ -1,0 +1,66 @@
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 20px 60px;
+  border-bottom: 1px solid #dddddd;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.titulo {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.cerrarSesion{
+  justify-self: end;
+  width: auto;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid #222222;
+  background: #000000;
+  color: #fefefe;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cerrarSesion:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.acciones-header {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.vendedor {
+  margin: 0;
+  font-size: 16px;
+}
+
+.añadirProductos{
+  width: auto;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid #222222;
+  background: #000000;
+  color: #fefefe;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.acciones-catalogo {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}

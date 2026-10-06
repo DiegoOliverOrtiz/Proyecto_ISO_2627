@@ -38,6 +38,7 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+sonar-project.properties
 
 # System files
 .DS_Store

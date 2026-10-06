@@ -1,26 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../login/auth.service';
-
+import { ProductoPropio, ProductoService } from './producto.service';
+import { VendedorService } from './vendedor.service';
 @Component({
   selector: 'app-panel-vendedor',
   standalone: true,
-  template: `
-    <p>Bienvenido vendedor</p>
-    <button type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
-      {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
-    </button>
-    @if (mensajeError()) {
-      <p role="alert">{{ mensajeError() }}</p>
-    }
-  `
+  styleUrl: './vendedor.css',
+  templateUrl: './vendedor.html',
 })
-export class PanelVendedor {
+export class PanelVendedor implements OnInit{
+
   private readonly servicioAutenticacion = inject(AuthService);
   private readonly enrutador = inject(Router);
   readonly cerrandoSesion = signal(false);
   readonly mensajeError = signal('');
+
+  private readonly servicioProductos = inject(ProductoService);
+  readonly productos = signal<ProductoPropio[]>([]);
+  readonly cargandoProductos = signal(true);
+  readonly errorCatalogo = signal('');
+
+  private readonly servicioVendedor = inject(VendedorService);
+  readonly nombreComercial = signal('');
 
   cerrarSesion(): void {
     this.cerrandoSesion.set(true);
@@ -40,5 +43,29 @@ export class PanelVendedor {
         );
       }
     });
+  }
+  ngOnInit(): void {
+    this.servicioProductos.consultarProductosPropios().subscribe({
+      next: (productos) => {
+        this.productos.set(productos);
+        this.cargandoProductos.set(false);
+      },
+
+      error: (error: HttpErrorResponse) => {
+        this.cargandoProductos.set(false);
+        this.errorCatalogo.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
+            : 'No se pudieron cargar los productos.'
+        );
+      }
+    });
+
+    this.servicioVendedor.obtenerPerfil().subscribe({
+      next: (perfil) => this.nombreComercial.set(perfil.nombreComercial),
+      error: () => {
+
+      }
+    })
   }
 }

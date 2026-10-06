@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
+import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
 import es.uclm.esibuy.backend.model.Administrador;
@@ -35,8 +36,14 @@ import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.ProductoService;
+import es.uclm.esibuy.backend.services.VendedorService;
 
-@WebMvcTest(controllers = { AuthController.class, AdministradorController.class })
+@WebMvcTest(controllers = {
+        AuthController.class,
+        AdministradorController.class,
+        VendedorController.class
+})
 @Import(SecurityConfiguration.class)
 class AuthControllerSecurityTests {
 
@@ -48,6 +55,12 @@ class AuthControllerSecurityTests {
 
     @MockitoBean
     private AdministradorService administradorService;
+
+    @MockitoBean
+    private VendedorService vendedorService;
+
+    @MockitoBean
+    private ProductoService productoService;
 
     @Test
     void loginGuardaLaSesionYPermiteRecuperarla() throws Exception {
@@ -249,6 +262,74 @@ class AuthControllerSecurityTests {
         mockMvc.perform(get("/vendedor/recurso-inexistente")
                         .with(user("cliente").roles("CLIENTE")))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void consultaProductosUsandoElEmailDeLaSesion() throws Exception {
+        when(productoService.consultarProductosPropios("vendedor@example.com"))
+                .thenReturn(List.of(new ConsultarProductosResponse(
+                        "Teclado",
+                        "Informática",
+                        4,
+                        "Teclado mecánico",
+                        49.99,
+                        0,
+                        0,
+                        true)));
+
+        mockMvc.perform(get("/vendedor/productos")
+                        .with(user("vendedor@example.com").roles("VENDEDOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Teclado"))
+                .andExpect(jsonPath("$[0].categoria").value("Informática"))
+                .andExpect(jsonPath("$[0].esVisible").value(true));
+
+        verify(productoService).consultarProductosPropios("vendedor@example.com");
+    }
+
+    @Test
+    void deniegaLaConsultaDeProductosAOtrosRolesYSesionesAnonimas() throws Exception {
+        mockMvc.perform(get("/vendedor/productos")
+                        .with(user("cliente@example.com").roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/vendedor/productos")
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/vendedor/productos"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(productoService);
+    }
+
+    @Test
+    void devuelveNombreComercialDelVendedorAutenticado() throws Exception {
+        when(vendedorService.obtenerNombreComercial("vendedor@example.com"))
+                .thenReturn("Tienda Ejemplo");
+
+        mockMvc.perform(get("/vendedor/perfil")
+                        .with(user("vendedor@example.com").roles("VENDEDOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreComercial").value("Tienda Ejemplo"));
+
+        verify(vendedorService).obtenerNombreComercial("vendedor@example.com");
+    }
+
+    @Test
+    void deniegaElPerfilDelVendedorAOtrosRolesYSesionesAnonimas() throws Exception {
+        mockMvc.perform(get("/vendedor/perfil")
+                        .with(user("cliente@example.com").roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/vendedor/perfil")
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/vendedor/perfil"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(vendedorService);
     }
 
     private Cliente crearCliente(boolean activado) {
