@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import {
   Categoria,
@@ -7,7 +8,7 @@ import {
 
 @Component({
   selector: 'app-categorias',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './categorias.html',
   styleUrl: './categorias.css',
 })
