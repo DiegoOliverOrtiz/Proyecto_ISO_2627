@@ -1,0 +1,56 @@
+<header class="header">
+    <div class="logo">ESIBuy</div>
+
+    <h1 class="titulo">Catálogo de productos</h1>
+
+    <div class="acciones-header">
+        <h2 class="vendedor">{{ nombreComercial() }}</h2>
+
+        <button class="cerrarSesion" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
+            {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+        </button>
+    </div>
+</header>
+
+<div class="acciones-catalogo">
+    <button class="añadirProductos" type="button">Añadir Producto</button>
+</div>
+
+@if (mensajeError()) {
+<p role="alert">{{ mensajeError() }}</p>
+}
+
+<main>
+    @if (cargandoProductos()) {
+    <p role="status">Cargando productos...</p>
+    } @else if (errorCatalogo()) {
+    <p role="alert">{{ errorCatalogo() }}</p>
+    } @else if (productos().length === 0) {
+    <p>Aún no tienes productos registrados.</p>
+    } @else {
+    <ul aria-label="Mis productos">
+        @for (producto of productos(); track $index) {
+        <li>
+            <h2>{{ producto.nombre }}</h2>
+            <p>Categoría: {{ producto.categoria }}</p>
+
+            @if (producto.precio !== null) {
+            <p>Precio: {{ producto.precio }} €</p>
+            }
+
+            <p>Stock: {{ producto.stock }}</p>
+
+            @if (producto.descripcion) {
+            <p>{{ producto.descripcion }}</p>
+            }
+
+            <p>Descuento: {{ producto.descuento }} %</p>
+            <p>Descuento Premium: {{ producto.descuentoPremium }} %</p>
+            <p>
+                Visibilidad: {{ producto.esVisible ? 'Visible' : 'No visible' }}
+            </p>
+        </li>
+        }
+    </ul>
+    }
+</main>
