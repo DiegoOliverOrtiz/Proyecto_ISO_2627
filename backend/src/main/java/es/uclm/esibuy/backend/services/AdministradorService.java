@@ -71,23 +71,31 @@ public class AdministradorService {
 		Boolean esPremium = null;
 		String nombreComercial = null;
 
-		if (usuario instanceof Administrador administrador) {
-			rol = "ADMIN";
-			sede = administrador.getSede();
-			fechaIncorporacion = administrador.getFechaIncorporacion();
-		} else if (usuario instanceof Cliente cliente) {
-			rol = "CLIENTE";
-			esPremium = cliente.isEsPremium();
-		} else if (usuario instanceof Vendedor vendedor) {
-			rol = "VENDEDOR";
-			nombreComercial = vendedor.getNombreComercial();
-		} else {
-			throw new IllegalStateException("Tipo de usuario no soportado.");
-		}
+		switch (usuario) {
+    case Administrador administrador -> {
+  			rol = "ADMIN";
+  			sede = administrador.getSede();
+  			fechaIncorporacion = administrador.getFechaIncorporacion();
+  		}
+    case Cliente cliente -> {
+  			rol = "CLIENTE";
+  			esPremium = cliente.isEsPremium();
+  		}
+    case Vendedor vendedor -> {
+  			rol = "VENDEDOR";
+  			nombreComercial = vendedor.getNombreComercial();
+  		}
+			default -> throw new IllegalStateException("Tipo de usuario no soportado.");
+  }
 
-		String estado = usuario.isBloqueada()
-				? "BLOQUEADO"
-				: usuario.isActivada() ? "ACTIVO" : "PENDIENTE";
+		String estado;
+		if (usuario.isBloqueada()) {
+			estado = "BLOQUEADO";
+		} else if (usuario.isActivada()) {
+			estado = "ACTIVO";
+		} else {
+			estado = "PENDIENTE";
+		}
 		return new UsuarioAdministracionResponse(
 				usuario.getId(),
 				usuario.getNombre(),

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
+import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,5 +40,17 @@ public class RegistrationExceptionHandler {
 		}
 		return ResponseEntity.badRequest()
 				.body(new ApiErrorResponse("Revisa los campos del formulario.", errors));
+	}
+
+	@ExceptionHandler(UsuarioNoEncontradoException.class)
+	public ResponseEntity<ApiErrorResponse> handleUserNotFound(UsuarioNoEncontradoException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidQuery(IllegalArgumentException exception) {
+		return ResponseEntity.badRequest()
+				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 }

@@ -26,6 +26,9 @@ import es.uclm.esibuy.backend.dto.EstadisticasUsuariosResponse;
 @Repository
 public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 
+	private static final String CAMPO_ACTIVADA = "activada";
+	private static final String CAMPO_BLOQUEADA = "bloqueada";
+
 	private final MongoTemplate mongoTemplate;
 	private final MongoConverter mongoConverter;
 
@@ -81,9 +84,9 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 	@Override
 	public EstadisticasUsuariosResponse obtenerEstadisticas() {
 		long total = mongoTemplate.count(new Query(), Usuario.class);
-		long activos = contarEstado(Criteria.where("activada").is(true).and("bloqueada").is(false));
-		long pendientes = contarEstado(Criteria.where("activada").is(false).and("bloqueada").is(false));
-		long desactivados = contarEstado(Criteria.where("bloqueada").is(true));
+		long activos = contarEstado(Criteria.where(CAMPO_ACTIVADA).is(true).and(CAMPO_BLOQUEADA).is(false));
+		long pendientes = contarEstado(Criteria.where(CAMPO_ACTIVADA).is(false).and(CAMPO_BLOQUEADA).is(false));
+		long desactivados = contarEstado(Criteria.where(CAMPO_BLOQUEADA).is(true));
 		return new EstadisticasUsuariosResponse(total, activos, pendientes, desactivados);
 	}
 
@@ -112,10 +115,10 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 	private Criteria criterioEstado(String estado) {
 		return switch (estado.trim().toUpperCase(Locale.ROOT)) {
 		case "ACTIVO" -> new Criteria().andOperator(
-				Criteria.where("activada").is(true),
-				Criteria.where("bloqueada").is(false));
-		case "BLOQUEADO" -> Criteria.where("bloqueada").is(true);
-		case "PENDIENTE" -> Criteria.where("activada").is(false);
+				Criteria.where(CAMPO_ACTIVADA).is(true),
+				Criteria.where(CAMPO_BLOQUEADA).is(false));
+		case "BLOQUEADO" -> Criteria.where(CAMPO_BLOQUEADA).is(true);
+		case "PENDIENTE" -> Criteria.where(CAMPO_ACTIVADA).is(false);
 		default -> throw new IllegalArgumentException("Estado de usuario no válido: " + estado);
 		};
 	}
