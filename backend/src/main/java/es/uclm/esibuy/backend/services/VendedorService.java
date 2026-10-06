@@ -1,6 +1,7 @@
 
 package es.uclm.esibuy.backend.services;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
@@ -60,5 +61,13 @@ public class VendedorService {
 
         Vendedor guardado = soporteRegistro.guardarRegistro(() -> vendedorDAO.save(vendedor));
         return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
+    }
+
+    public String obtenerNombreComercial(String email) {
+        return vendedorDAO.findByEmail(email)
+                .filter(vendedor -> vendedor.isActivada() && !vendedor.isBloqueada())
+                .map(Vendedor::getNombreComercial)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un vendedor activo puede consultar su perfil."));
     }
 }
