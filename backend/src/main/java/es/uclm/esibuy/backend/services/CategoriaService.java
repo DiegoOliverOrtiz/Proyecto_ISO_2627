@@ -24,4 +24,8 @@ public class CategoriaService {
     public Optional<Categoria> obtenerPorId(String id) {
         return categoriaDAO.findById(id);
     }
+
+    public Categoria crearCategoria(Categoria categoria) {
+        return categoriaDAO.save(categoria);
+    }
 }
