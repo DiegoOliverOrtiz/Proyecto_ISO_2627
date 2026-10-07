@@ -13,12 +13,108 @@
       </a>
 
       <header class="page-header">
-        <p class="eyebrow">Administración</p>
-        <h1>Categorías</h1>
-        <p class="subtitle">
-          Consulta las categorías disponibles en EsiBuy.
-        </p>
+        <div>
+          <p class="eyebrow">Administración</p>
+          <h1>Categorías</h1>
+          <p class="subtitle">
+            Consulta y gestiona las categorías disponibles en EsiBuy.
+          </p>
+        </div>
+
+        <button
+          class="primary-button"
+          type="button"
+          (click)="abrirFormulario()"
+          [disabled]="mostrandoFormulario()"
+        >
+          Nueva categoría
+        </button>
       </header>
+
+      @if (mensajeCreacion()) {
+        <p class="success-message" role="status">
+          {{ mensajeCreacion() }}
+        </p>
+      }
+
+      @if (mostrandoFormulario()) {
+        <section class="form-panel" aria-labelledby="titulo-formulario">
+          <header class="form-header">
+            <div>
+              <p class="eyebrow">Nueva categoría</p>
+              <h2 id="titulo-formulario">Crear categoría</h2>
+            </div>
+          </header>
+
+          <form
+            [formGroup]="formularioCategoria"
+            (ngSubmit)="crearCategoria()"
+          >
+            <div class="form-grid">
+              <label>
+                Nombre
+                <input
+                  type="text"
+                  formControlName="nombre"
+                  placeholder="Ej. Hogar"
+                  maxlength="100"
+                />
+
+                @if (nombreInvalido()) {
+                  <span class="field-error">
+                    El nombre es obligatorio y no puede contener solo espacios.
+                  </span>
+                }
+              </label>
+
+              <label>
+                Descripción
+                <textarea
+                  formControlName="descripcion"
+                  placeholder="Describe brevemente la categoría"
+                  rows="4"
+                  maxlength="500"
+                ></textarea>
+
+                @if (descripcionInvalida()) {
+                  <span class="field-error">
+                    La descripción es obligatoria y no puede contener solo espacios.
+                  </span>
+                }
+              </label>
+            </div>
+
+            @if (errorCreacion()) {
+              <p class="form-error" role="alert">
+                {{ errorCreacion() }}
+              </p>
+            }
+
+            <div class="form-actions">
+              <button
+                class="secondary-button"
+                type="button"
+                (click)="cancelarCreacion()"
+                [disabled]="creando()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                class="primary-button"
+                type="submit"
+                [disabled]="creando()"
+              >
+                @if (creando()) {
+                  Creando...
+                } @else {
+                  Crear categoría
+                }
+              </button>
+            </div>
+          </form>
+        </section>
+      }
 
       @if (!cargando() && !error()) {
         <section
@@ -53,6 +149,7 @@
             <article class="categoria-card">
               <p class="categoria-label">Categoría</p>
               <h2>{{ categoria.nombre }}</h2>
+
               <p class="categoria-descripcion">
                 {{ categoria.descripcion }}
               </p>
@@ -62,6 +159,5 @@
       }
 
     </div>
-
   </section>
 </main>
