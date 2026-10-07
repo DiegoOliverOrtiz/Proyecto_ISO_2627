@@ -62,4 +62,15 @@ class CategoriaServiceHU12Tests {
 
                 verifyNoInteractions(categoriaDAO);
         }
+
+        @Test
+        void rechazaCategoriaConDescripcionVacia() {
+                Categoria categoria = new Categoria("Hogar", "");
+
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> categoriaService.crearCategoria(categoria));
+
+                verifyNoInteractions(categoriaDAO);
+        }
 }
