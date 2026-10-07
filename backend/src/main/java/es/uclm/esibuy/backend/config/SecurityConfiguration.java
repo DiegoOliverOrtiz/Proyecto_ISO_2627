@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +20,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 @EnableMethodSecurity
@@ -49,16 +53,22 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource,
-            SecurityContextRepository securityContextRepository,
-            CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
-
-        http
-                .cors(cors ->
-                        cors.configurationSource(corsConfigurationSource))
-
-                .csrf(csrf -> csrf
+		HttpSecurity http,
+		CorsConfigurationSource corsConfigurationSource,
+		SecurityContextRepository securityContextRepository,
+		CookieCsrfTokenRepository csrfTokenRepository,
+		SessionRegistry sessionRegistry) throws Exception {
+	http
+			.cors(cors -> cors.configurationSource(corsConfigurationSource))
+			.securityContext(context -> context.securityContextRepository(securityContextRepository))
+			.sessionManagement(session -> session
+					.sessionCreationPolicy(
+							org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED)
+					.maximumSessions(-1)
+					.sessionRegistry(sessionRegistry)
+					.expiredSessionStrategy(event ->
+							event.getResponse().setStatus(HttpStatus.UNAUTHORIZED.value())))
+			.csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .ignoringRequestMatchers(
                                 "/cliente/register",
@@ -139,5 +149,10 @@ public class SecurityConfiguration {
     @Bean
     SessionRegistry sessionRegistry() {
 	return new SessionRegistryImpl();
+    }
+
+    @Bean
+        HttpSessionEventPublisher httpSessionEventPublisher() {
+                return new HttpSessionEventPublisher();
     }
 }
