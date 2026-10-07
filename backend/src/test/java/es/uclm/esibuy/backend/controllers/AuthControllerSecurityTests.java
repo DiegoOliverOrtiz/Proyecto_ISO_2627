@@ -38,6 +38,7 @@ import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.VendedorService;
+import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = {
         AuthController.class,
@@ -61,6 +62,9 @@ class AuthControllerSecurityTests {
 
     @MockitoBean
     private ProductoService productoService;
+
+    @MockitoBean
+    private SesionService sesionService;
 
     @Test
     void loginGuardaLaSesionYPermiteRecuperarla() throws Exception {
@@ -231,7 +235,8 @@ class AuthControllerSecurityTests {
     void sesionActualDevuelve401SiLaAutenticacionEsNulaOVacia() {
         AuthController controller = new AuthController(
                 authService,
-                mock(SecurityContextRepository.class));
+                mock(SecurityContextRepository.class),
+                mock(SesionService.class));
         Authentication autenticacionSinAutoridades = mock(Authentication.class);
         when(autenticacionSinAutoridades.getAuthorities()).thenReturn(List.of());
 

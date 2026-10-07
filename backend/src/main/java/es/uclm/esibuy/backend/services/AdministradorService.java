@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
@@ -14,12 +15,14 @@ import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
+import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
+import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
-import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
+import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
 
@@ -31,24 +34,32 @@ public class AdministradorService {
 	private final PasswordEncoder passwordEncoder;
 	private final PasswordPolicy passwordPolicy;
 	private final Validator validator;
+	private final SesionService sesionService;
 
 	public AdministradorService(
 			AdministradorDAO administradorDAO,
 			UsuarioDAO usuarioDAO,
 			PasswordEncoder passwordEncoder,
 			PasswordPolicy passwordPolicy,
-			Validator validator) {
+			Validator validator,
+			SesionService sesionService) {
 		this.administradorDAO = administradorDAO;
 		this.usuarioDAO = usuarioDAO;
 		this.passwordEncoder = passwordEncoder;
 		this.passwordPolicy = passwordPolicy;
 		this.validator = validator;
+		this.sesionService = sesionService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
 			String texto, String estado, String rol, Pageable pageable) {
-		Page<UsuarioAdministracionResponse> pagina = usuarioDAO.buscar(texto, estado, rol, pageable)
+		
+		// Si no se indica rol, filtramos para que NO devuelva administradores
+		String rolFiltro = (rol == null || rol.trim().isEmpty()) ? "NO_ADMIN" : rol;
+		
+		Page<UsuarioAdministracionResponse> pagina = usuarioDAO.buscar(texto, estado, rolFiltro, pageable)
 				.map(this::convertirRespuesta);
+		
 		return new ListadoUsuariosResponse(
 				pagina.getContent(),
 				pagina.getNumber(),
@@ -130,7 +141,7 @@ public class AdministradorService {
 		administrador.setFechaIncorporacion(request.fechaIncorporacion());
 		administrador.setImagenPerfil(request.imagenPerfil());
 		administrador.setBloqueada(false);
-		administrador.setActivada(false);
+		administrador.setActivada(true);
 		administrador.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
 
 		try {
@@ -139,5 +150,36 @@ public class AdministradorService {
 		} catch (DuplicateKeyException exception) {
 			throw new DuplicateRegistrationException();
 		}
+	}
+
+	public void activarUsuario(String id) {
+		Usuario usuario = usuarioDAO.findById(id).orElseThrow(UsuarioNoEncontradoException::new);
+		if (!usuario.isActivada()) {
+			usuario.setActivada(true);
+			usuarioDAO.save(usuario);
+		}
+	}
+
+	public void eliminarAdministrador(String id, String emailSolicitante) {
+		if (emailSolicitante == null || emailSolicitante.isBlank()) {
+			throw new AccessDeniedException("No se ha podido identificar al solicitante.");
+		}
+		if (id == null || id.isBlank()) {
+			throw new UsuarioNoEncontradoException();
+		}
+
+		Administrador objetivo = administradorDAO.findById(id)
+				.orElseThrow(UsuarioNoEncontradoException::new);
+
+		String emailNormalizado = emailSolicitante.trim().toLowerCase(Locale.ROOT);
+		if (emailNormalizado.equals(objetivo.getEmail())) {
+			throw new AutoEliminacionAdministradorException();
+		}
+		if (administradorDAO.contarAdministradores() <= 1) {
+			throw new UltimoAdministradorException();
+		}
+
+		administradorDAO.delete(objetivo);
+		sesionService.cerrarSesiones(objetivo.getEmail());
 	}
 }

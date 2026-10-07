@@ -11,6 +11,10 @@ import { UsuarioDetalle } from './pages/usuarios/usuario-detalle';
 import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 
+// 1. Importamos los nuevos componentes desde su carpeta
+import { Administradores } from './pages/admin/administradores';
+import { CrearAdministrador } from './pages/admin/crear-administrador';
+
 export const routes: Routes = [
   {
     path: '',
@@ -52,6 +56,21 @@ export const routes: Routes = [
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
+  
+  // 2. Registramos las nuevas rutas de administradores
+  {
+    path: 'admin/administradores',
+    component: Administradores,
+    canActivate: [rolGuard],
+    data: { rol: 'ADMIN' }
+  },
+  {
+    path: 'admin/administradores/nuevo',
+    component: CrearAdministrador,
+    canActivate: [rolGuard],
+    data: { rol: 'ADMIN' }
+  },
+  
   {
     path: 'cliente',
     component: PanelCliente,

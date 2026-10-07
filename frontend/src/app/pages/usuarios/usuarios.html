@@ -40,8 +40,7 @@
     <label>
       Rol
       <select name="rol" [ngModel]="rol()" (ngModelChange)="cambiarRol($event)">
-        <option value="">Todos</option>
-        <option value="ADMIN">Administradores</option>
+        <option value="">Todos (Clientes y Vendedores)</option>
         <option value="CLIENTE">Clientes</option>
         <option value="VENDEDOR">Vendedores</option>
       </select>
