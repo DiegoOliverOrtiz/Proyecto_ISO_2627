@@ -44,7 +44,14 @@ public class RegistrationExceptionHandler {
 	}
 
 	@ExceptionHandler(UsuarioNoEncontradoException.class)
-	public ResponseEntity<ApiErrorResponse> handleUsuarioNoEncontrado(UsuarioNoEncontradoException exception) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiErrorResponse(exception.getMessage()));
+	public ResponseEntity<ApiErrorResponse> handleUserNotFound(UsuarioNoEncontradoException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidQuery(IllegalArgumentException exception) {
+		return ResponseEntity.badRequest()
+				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 }

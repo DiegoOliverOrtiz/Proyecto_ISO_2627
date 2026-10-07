@@ -1,4 +1,3 @@
-
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -101,8 +100,14 @@ describe('Register', () => {
 
     component.register();
 
-    expect(component.clienteForm.controls.fechaNacimiento.hasError('underage')).toBe(true);
-    expect(component.controlError(component.clienteForm, 'fechaNacimiento')).toContain('18 años');
+    expect(
+      component.clienteForm.controls.fechaNacimiento.hasError('underage')
+    ).toBe(true);
+
+    expect(
+      component.controlError(component.clienteForm, 'fechaNacimiento')
+    ).toContain('18 años');
+
     httpMock.expectNone('http://localhost:8080/cliente/register');
   });
 
@@ -200,7 +205,10 @@ describe('Register', () => {
     });
 
     component.register();
-    httpMock.expectOne('http://localhost:8080/cliente/register').flush(
+
+    httpMock.expectOne(
+      'http://localhost:8080/cliente/register'
+    ).flush(
       {
         error: 'Revisa los campos del formulario.',
         errores: {
@@ -208,14 +216,19 @@ describe('Register', () => {
           email: ['Introduce un correo electrónico válido.'],
         },
       },
-      { status: 400, statusText: 'Bad Request' },
+      {
+        status: 400,
+        statusText: 'Bad Request'
+      }
     );
+
     fixture.detectChanges();
 
     const errorItems = Array.from(
       fixture.nativeElement.querySelectorAll('.feedback li'),
       (item: Element) => item.textContent,
     );
+
     expect(errorItems).toEqual([
       'Fecha de nacimiento: El cliente debe tener al menos 18 años.',
       'Correo electrónico: Introduce un correo electrónico válido.',
@@ -241,11 +254,9 @@ describe('Register', () => {
       },
     ]);
 
-    // Esperamos a que Angular actualice la plantilla.
     await fixture.whenStable();
     fixture.detectChanges();
 
-    // Comprobamos que el componente ha recibido los datos correctamente.
     expect(component.sellerCategories).toEqual([
       {
         id: '6abe34098deff53da8a2c052',
@@ -253,10 +264,8 @@ describe('Register', () => {
       },
     ]);
 
-    // Comprobamos que se muestra Deportes en el formulario.
     expect(fixture.nativeElement.textContent).toContain('Deportes');
 
-    // El formulario conserva el identificador como valor de la categoría.
     expect(
       component.vendedorForm.controls.categoriaId
     ).toBeTruthy();
@@ -290,4 +299,3 @@ describe('Register', () => {
     });
   });
 });
-

@@ -3,6 +3,8 @@ package es.uclm.esibuy.backend.services;
 import java.util.Locale;
 
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,11 +12,15 @@ import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
+import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
+import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Usuario;
+import es.uclm.esibuy.backend.model.Cliente;
+import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
 
 @Service
@@ -37,6 +43,72 @@ public class AdministradorService {
 		this.passwordEncoder = passwordEncoder;
 		this.passwordPolicy = passwordPolicy;
 		this.validator = validator;
+	}
+
+	public ListadoUsuariosResponse consultarUsuarios(
+			String texto, String estado, String rol, Pageable pageable) {
+		Page<UsuarioAdministracionResponse> pagina = usuarioDAO.buscar(texto, estado, rol, pageable)
+				.map(this::convertirRespuesta);
+		return new ListadoUsuariosResponse(
+				pagina.getContent(),
+				pagina.getNumber(),
+				pagina.getSize(),
+				pagina.getTotalElements(),
+				pagina.getTotalPages(),
+				usuarioDAO.obtenerEstadisticas());
+	}
+
+	public UsuarioAdministracionResponse consultarUsuario(String id) {
+		return usuarioDAO.buscarPorId(id)
+				.map(this::convertirRespuesta)
+				.orElseThrow(() -> new UsuarioNoEncontradoException(id));
+	}
+
+	private UsuarioAdministracionResponse convertirRespuesta(Usuario usuario) {
+		String rol;
+		String sede = null;
+		java.time.LocalDate fechaIncorporacion = null;
+		Boolean esPremium = null;
+		String nombreComercial = null;
+
+		switch (usuario) {
+    case Administrador administrador -> {
+  			rol = "ADMIN";
+  			sede = administrador.getSede();
+  			fechaIncorporacion = administrador.getFechaIncorporacion();
+  		}
+    case Cliente cliente -> {
+  			rol = "CLIENTE";
+  			esPremium = cliente.isEsPremium();
+  		}
+    case Vendedor vendedor -> {
+  			rol = "VENDEDOR";
+  			nombreComercial = vendedor.getNombreComercial();
+  		}
+			default -> throw new IllegalStateException("Tipo de usuario no soportado.");
+  }
+
+		String estado;
+		if (usuario.isBloqueada()) {
+			estado = "BLOQUEADO";
+		} else if (usuario.isActivada()) {
+			estado = "ACTIVO";
+		} else {
+			estado = "PENDIENTE";
+		}
+		return new UsuarioAdministracionResponse(
+				usuario.getId(),
+				usuario.getNombre(),
+				usuario.getApellidos(),
+				usuario.getEmail(),
+				usuario.getTelefono(),
+				estado,
+				rol,
+				usuario.getImagenPerfil(),
+				sede,
+				fechaIncorporacion,
+				esPremium,
+				nombreComercial);
 	}
 
 	public RegistroUsuarioResponse registrar(RegistroAdministradorRequest request) {

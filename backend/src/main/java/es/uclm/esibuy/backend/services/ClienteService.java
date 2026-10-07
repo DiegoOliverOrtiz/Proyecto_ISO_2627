@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
-import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.model.Cliente;
 
 @Service

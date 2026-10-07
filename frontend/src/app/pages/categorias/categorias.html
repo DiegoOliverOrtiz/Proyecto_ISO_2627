@@ -1,0 +1,67 @@
+<main class="admin-shell">
+  <section class="admin-content">
+
+    <header class="topbar">
+      <span>Gestión / Categorías</span>
+      <a routerLink="/admin">Panel administrador</a>
+    </header>
+
+    <div class="categorias-page">
+
+      <a class="back-link" routerLink="/admin">
+        Volver al panel
+      </a>
+
+      <header class="page-header">
+        <p class="eyebrow">Administración</p>
+        <h1>Categorías</h1>
+        <p class="subtitle">
+          Consulta las categorías disponibles en EsiBuy.
+        </p>
+      </header>
+
+      @if (!cargando() && !error()) {
+        <section
+          class="statistics"
+          aria-label="Resumen de categorías"
+        >
+          <article>
+            <span>Total de categorías</span>
+            <strong>{{ categorias().length }}</strong>
+          </article>
+        </section>
+      }
+
+      @if (cargando()) {
+        <p class="status" aria-live="polite">
+          Cargando categorías...
+        </p>
+      } @else if (error()) {
+        <p class="status error" role="alert">
+          No se pudieron cargar las categorías.
+        </p>
+      } @else if (categorias().length === 0) {
+        <p class="status">
+          No hay categorías registradas actualmente.
+        </p>
+      } @else {
+        <section
+          class="categorias-list"
+          aria-label="Listado de categorías"
+        >
+          @for (categoria of categorias(); track categoria.id) {
+            <article class="categoria-card">
+              <p class="categoria-label">Categoría</p>
+              <h2>{{ categoria.nombre }}</h2>
+              <p class="categoria-descripcion">
+                {{ categoria.descripcion }}
+              </p>
+            </article>
+          }
+        </section>
+      }
+
+    </div>
+
+  </section>
+</main>
