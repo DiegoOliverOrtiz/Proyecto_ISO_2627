@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,83 +20,67 @@ import es.uclm.esibuy.backend.model.Categoria;
 @ExtendWith(MockitoExtension.class)
 class CategoriaServiceHU12Tests {
 
-        @Mock
-        private CategoriaDAO categoriaDAO;
+    @Mock
+    private CategoriaDAO categoriaDAO;
 
-        @InjectMocks
-        private CategoriaService categoriaService;
+    @InjectMocks
+    private CategoriaService categoriaService;
 
-        @Test
-        void creaUnaCategoriaValida() {
-                Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
+    @Test
+    void creaUnaCategoriaValida() {
+        Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
 
-                Categoria guardada = new Categoria("Hogar", "Productos para el hogar");
-                guardada.setId("categoria-1");
+        Categoria guardada = new Categoria("Hogar", "Productos para el hogar");
+        guardada.setId("categoria-1");
 
-                when(categoriaDAO.save(categoria)).thenReturn(guardada);
+        when(categoriaDAO.save(categoria)).thenReturn(guardada);
 
-                Categoria resultado = categoriaService.crearCategoria(categoria);
+        Categoria resultado = categoriaService.crearCategoria(categoria);
 
-                assertEquals("categoria-1", resultado.getId());
-                assertEquals("Hogar", resultado.getNombre());
-                assertEquals("Productos para el hogar", resultado.getDescripcion());
+        assertEquals("categoria-1", resultado.getId());
+        assertEquals("Hogar", resultado.getNombre());
+        assertEquals("Productos para el hogar", resultado.getDescripcion());
 
-                verify(categoriaDAO).save(categoria);
-        }
+        verify(categoriaDAO).save(categoria);
+    }
 
-        @Test
-        void rechazaCategoriaConNombreVacio() {
-                Categoria categoria = new Categoria("", "Productos para el hogar");
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   "})
+    void rechazaCategoriaConNombreInvalido(String nombre) {
+        Categoria categoria = new Categoria(nombre, "Productos para el hogar");
 
-                assertThrows(IllegalArgumentException.class,
-                                () -> categoriaService.crearCategoria(categoria));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.crearCategoria(categoria)
+        );
 
-                verifyNoInteractions(categoriaDAO);
-        }
+        verifyNoInteractions(categoriaDAO);
+    }
 
-        @Test
-        void rechazaCategoriaConNombreSoloEspacios() {
-                Categoria categoria = new Categoria("   ", "Productos para el hogar");
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   "})
+    void rechazaCategoriaConDescripcionInvalida(String descripcion) {
+        Categoria categoria = new Categoria("Hogar", descripcion);
 
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> categoriaService.crearCategoria(categoria));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.crearCategoria(categoria)
+        );
 
-                verifyNoInteractions(categoriaDAO);
-        }
+        verifyNoInteractions(categoriaDAO);
+    }
 
-        @Test
-        void rechazaCategoriaConDescripcionVacia() {
-                Categoria categoria = new Categoria("Hogar", "");
+    @Test
+    void rechazaCategoriaConNombreDuplicado() {
+        Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
 
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> categoriaService.crearCategoria(categoria));
+        when(categoriaDAO.existsByNombreIgnoreCase("Hogar")).thenReturn(true);
 
-                verifyNoInteractions(categoriaDAO);
-        }
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> categoriaService.crearCategoria(categoria)
+        );
 
-        @Test
-        void rechazaCategoriaConDescripcionSoloEspacios() {
-                Categoria categoria = new Categoria("Hogar", "   ");
-
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> categoriaService.crearCategoria(categoria));
-
-                verifyNoInteractions(categoriaDAO);
-        }
-
-        @Test
-        void rechazaCategoriaConNombreDuplicado() {
-                Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
-
-                when(categoriaDAO.existsByNombreIgnoreCase("Hogar")).thenReturn(true);
-
-                assertThrows(
-                                IllegalArgumentException.class,
-                                () -> categoriaService.crearCategoria(categoria));
-
-                verify(categoriaDAO).existsByNombreIgnoreCase("Hogar");
-        }
+        verify(categoriaDAO).existsByNombreIgnoreCase("Hogar");
+    }
 }
