@@ -131,4 +131,143 @@ describe('Categorias', () => {
 
     request.flush([]);
   });
+
+  it('modifica una categoria y actualiza el listado sin recargarlo', () => {
+    fixture.detectChanges();
+
+    const listado = httpMock.expectOne(
+      `${environment.apiUrl}/categorias`
+    );
+    listado.flush([
+      {
+        id: 'categoria-1',
+        nombre: 'Deportes',
+        descripcion: 'Productos deportivos',
+      },
+    ]);
+    fixture.detectChanges();
+
+    const botonEditar = fixture.nativeElement.querySelector(
+      '[aria-label="Editar categoría Deportes"]'
+    ) as HTMLButtonElement;
+    botonEditar.click();
+    fixture.detectChanges();
+
+    const campoNombre = fixture.nativeElement.querySelector(
+      '[formControlName="nombre"]'
+    ) as HTMLInputElement;
+    const campoDescripcion = fixture.nativeElement.querySelector(
+      '[formControlName="descripcion"]'
+    ) as HTMLTextAreaElement;
+
+    expect(campoNombre.value).toBe('Deportes');
+    expect(campoDescripcion.value).toBe('Productos deportivos');
+
+    campoNombre.value = '  Deportes outdoor  ';
+    campoNombre.dispatchEvent(new Event('input'));
+    campoDescripcion.value = '  Ropa y material para exterior  ';
+    campoDescripcion.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const botonGuardar = fixture.nativeElement.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement;
+    botonGuardar.click();
+
+    const solicitudCsrf = httpMock.expectOne(
+      `${environment.apiUrl}/usuarios/csrf`
+    );
+    expect(solicitudCsrf.request.method).toBe('GET');
+    expect(solicitudCsrf.request.withCredentials).toBe(true);
+    solicitudCsrf.flush({ token: 'token-csrf' });
+
+    const solicitudPut = httpMock.expectOne(
+      `${environment.apiUrl}/categorias/categoria-1`
+    );
+    expect(solicitudPut.request.method).toBe('PUT');
+    expect(solicitudPut.request.withCredentials).toBe(true);
+    expect(solicitudPut.request.headers.get('X-XSRF-TOKEN'))
+      .toBe('token-csrf');
+    expect(solicitudPut.request.body).toEqual({
+      nombre: 'Deportes outdoor',
+      descripcion: 'Ropa y material para exterior',
+    });
+
+    solicitudPut.flush({
+      id: 'categoria-1',
+      nombre: 'Deportes outdoor',
+      descripcion: 'Ropa y material para exterior',
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Deportes outdoor');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Ropa y material para exterior'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'Categoría modificada correctamente.'
+    );
+    const nombreEnTarjeta = fixture.nativeElement.querySelector(
+      '.categoria-card h2'
+    ) as HTMLHeadingElement;
+    expect(nombreEnTarjeta.textContent).toBe('Deportes outdoor');
+  });
+
+  it('muestra el error del backend y conserva el formulario si falla la edición', () => {
+    fixture.detectChanges();
+
+    const listado = httpMock.expectOne(
+      `${environment.apiUrl}/categorias`
+    );
+    listado.flush([
+      {
+        id: 'categoria-1',
+        nombre: 'Deportes',
+        descripcion: 'Productos deportivos',
+      },
+    ]);
+    fixture.detectChanges();
+
+    const botonEditar = fixture.nativeElement.querySelector(
+      '[aria-label="Editar categoría Deportes"]'
+    ) as HTMLButtonElement;
+    botonEditar.click();
+    fixture.detectChanges();
+
+    const campoNombre = fixture.nativeElement.querySelector(
+      '[formControlName="nombre"]'
+    ) as HTMLInputElement;
+    campoNombre.value = 'Deportes duplicados';
+    campoNombre.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const botonGuardar = fixture.nativeElement.querySelector(
+      'button[type="submit"]'
+    ) as HTMLButtonElement;
+    botonGuardar.click();
+
+    const solicitudCsrf = httpMock.expectOne(
+      `${environment.apiUrl}/usuarios/csrf`
+    );
+    solicitudCsrf.flush({ token: 'token-csrf' });
+
+    const solicitudPut = httpMock.expectOne(
+      `${environment.apiUrl}/categorias/categoria-1`
+    );
+    solicitudPut.flush(
+      { error: 'Ya existe una categoría con ese nombre.' },
+      { status: 409, statusText: 'Conflict' }
+    );
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Ya existe una categoría con ese nombre.'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Modificar categoría');
+    expect(campoNombre.value).toBe('Deportes duplicados');
+    const nombreEnTarjeta = fixture.nativeElement.querySelector(
+      '.categoria-card h2'
+    ) as HTMLHeadingElement;
+    expect(nombreEnTarjeta.textContent).toBe('Deportes');
+  });
 });

@@ -6,14 +6,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import es.uclm.esibuy.backend.dto.CategoriaRegistroResponse;
 import es.uclm.esibuy.backend.dto.CrearCategoriaRequest;
+import es.uclm.esibuy.backend.dto.ModificarCategoriaRequest;
 import es.uclm.esibuy.backend.model.Categoria;
 import es.uclm.esibuy.backend.services.CategoriaService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/categorias")
@@ -54,5 +57,12 @@ public class CategoriaController {
                 request.descripcion());
 
         return categoriaService.crearCategoria(categoria);
+    }
+
+    @PutMapping("/{id}")
+    public Categoria modificarCategoria(
+            @PathVariable String id,
+            @Valid @RequestBody ModificarCategoriaRequest request) {
+        return categoriaService.modificarCategoria(id, request);
     }
 }

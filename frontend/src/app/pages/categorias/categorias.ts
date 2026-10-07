@@ -10,7 +10,8 @@ import { RouterLink } from '@angular/router';
 import {
   Categoria,
   CategoriasService,
-  CrearCategoriaRequest
+  CrearCategoriaRequest,
+  ModificarCategoriaRequest
 } from './categorias.service';
 
 @Component({
@@ -32,6 +33,8 @@ export class Categorias implements OnInit {
 
   readonly mostrandoFormulario = signal(false);
   readonly creando = signal(false);
+  readonly modificando = signal(false);
+  readonly categoriaEnEdicion = signal<string | null>(null);
   readonly mensajeCreacion = signal('');
   readonly errorCreacion = signal('');
 
@@ -62,13 +65,27 @@ export class Categorias implements OnInit {
   }
 
   abrirFormulario(): void {
+    this.categoriaEnEdicion.set(null);
+    this.formularioCategoria.reset();
     this.mostrandoFormulario.set(true);
     this.mensajeCreacion.set('');
     this.errorCreacion.set('');
   }
 
-  cancelarCreacion(): void {
+  iniciarEdicion(categoria: Categoria): void {
+    this.categoriaEnEdicion.set(categoria.id);
+    this.formularioCategoria.setValue({
+      nombre: categoria.nombre,
+      descripcion: categoria.descripcion
+    });
+    this.mostrandoFormulario.set(true);
+    this.mensajeCreacion.set('');
+    this.errorCreacion.set('');
+  }
+
+  cancelarFormulario(): void {
     this.mostrandoFormulario.set(false);
+    this.categoriaEnEdicion.set(null);
     this.formularioCategoria.reset();
     this.errorCreacion.set('');
   }
@@ -79,7 +96,7 @@ export class Categorias implements OnInit {
 
     this.formularioCategoria.markAllAsTouched();
 
-    if (this.formularioCategoria.invalid || this.creando()) {
+    if (this.formularioCategoria.invalid || this.creando() || this.modificando()) {
       return;
     }
 
@@ -97,12 +114,23 @@ export class Categorias implements OnInit {
       return;
     }
 
+    const idEnEdicion = this.categoriaEnEdicion();
+    if (idEnEdicion) {
+      this.guardarModificacion(idEnEdicion, request);
+      return;
+    }
+
+    this.guardarCreacion(request);
+  }
+
+  private guardarCreacion(request: CrearCategoriaRequest): void {
     this.creando.set(true);
 
     this.categoriasService.crearCategoria(request).subscribe({
       next: () => {
         this.creando.set(false);
         this.mostrandoFormulario.set(false);
+        this.categoriaEnEdicion.set(null);
         this.formularioCategoria.reset();
 
         this.mensajeCreacion.set(
@@ -114,7 +142,37 @@ export class Categorias implements OnInit {
       error: (error: HttpErrorResponse) => {
         this.creando.set(false);
         this.errorCreacion.set(
-          this.mensajeParaErrorCreacion(error)
+          this.mensajeParaError(error, 'crear')
+        );
+      },
+    });
+  }
+
+  private guardarModificacion(
+    id: string,
+    request: ModificarCategoriaRequest
+  ): void {
+    this.modificando.set(true);
+
+    this.categoriasService.modificarCategoria(id, request).subscribe({
+      next: (categoriaActualizada) => {
+        this.categorias.update((categorias) =>
+          categorias.map((categoria) =>
+            categoria.id === categoriaActualizada.id
+              ? categoriaActualizada
+              : categoria
+          )
+        );
+        this.modificando.set(false);
+        this.mostrandoFormulario.set(false);
+        this.categoriaEnEdicion.set(null);
+        this.formularioCategoria.reset();
+        this.mensajeCreacion.set('Categoría modificada correctamente.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.modificando.set(false);
+        this.errorCreacion.set(
+          this.mensajeParaError(error, 'modificar')
         );
       },
     });
@@ -134,21 +192,26 @@ export class Categorias implements OnInit {
       (!control.value.trim() || control.invalid);
   }
 
-  private mensajeParaErrorCreacion(
-    error: HttpErrorResponse
+  private mensajeParaError(
+    error: HttpErrorResponse,
+    accion: 'crear' | 'modificar'
   ): string {
-    if (error.status === 400 && error.error?.error) {
+    if ((error.status === 400 || error.status === 409) && error.error?.error) {
       return error.error.error;
     }
 
+    if (error.status === 404 && accion === 'modificar') {
+      return 'La categoría que intentas modificar ya no existe.';
+    }
+
     if (error.status === 401 || error.status === 403) {
-      return 'No tienes permisos para crear categorías.';
+      return `No tienes permisos para ${accion} categorías.`;
     }
 
     if (error.status === 0) {
       return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
     }
 
-    return 'No se pudo crear la categoría. Inténtalo de nuevo.';
+    return `No se pudo ${accion} la categoría. Inténtalo de nuevo.`;
   }
 }

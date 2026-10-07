@@ -15,6 +15,11 @@ export interface CrearCategoriaRequest {
   descripcion: string;
 }
 
+export interface ModificarCategoriaRequest {
+  nombre: string;
+  descripcion: string;
+}
+
 interface RespuestaTokenCsrf {
   token: string;
 }
@@ -51,6 +56,30 @@ export class CategoriasService {
         switchMap((respuestaCsrf) =>
           this.http.post<Categoria>(
             `${environment.apiUrl}/categorias`,
+            datos,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders()
+                .set('X-XSRF-TOKEN', respuestaCsrf.token)
+            }
+          )
+        )
+      );
+  }
+
+  modificarCategoria(
+    id: string,
+    datos: ModificarCategoriaRequest
+  ): Observable<Categoria> {
+    return this.http
+      .get<RespuestaTokenCsrf>(
+        `${environment.apiUrl}/usuarios/csrf`,
+        { withCredentials: true }
+      )
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.put<Categoria>(
+            `${environment.apiUrl}/categorias/${encodeURIComponent(id)}`,
             datos,
             {
               withCredentials: true,

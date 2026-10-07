@@ -105,6 +105,11 @@ public class SecurityConfiguration {
                                                 .hasRole("ADMIN")
 
                                                 .requestMatchers(
+                                                                HttpMethod.PUT,
+                                                                "/categorias/**")
+                                                .hasRole("ADMIN")
+
+                                                .requestMatchers(
                                                                 "/cliente/**")
                                                 .hasRole("CLIENTE")
 
@@ -129,7 +134,7 @@ public class SecurityConfiguration {
 
                 configuration.setAllowedOrigins(List.of(allowedOrigin));
                 configuration.setAllowedMethods(
-                                List.of("GET", "POST", "OPTIONS"));
+                                List.of("GET", "POST", "PUT", "OPTIONS"));
                 configuration.setAllowedHeaders(
                                 List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
                 configuration.setAllowCredentials(true);

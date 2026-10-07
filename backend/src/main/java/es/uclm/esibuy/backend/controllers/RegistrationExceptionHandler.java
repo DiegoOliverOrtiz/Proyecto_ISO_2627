@@ -8,8 +8,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
+import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,6 +25,13 @@ public class RegistrationExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleDuplicateRegistration() {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ApiErrorResponse("Ya existe un usuario con los datos únicos indicados."));
+	}
+
+	@ExceptionHandler(NombreCategoriaDuplicadoException.class)
+	public ResponseEntity<ApiErrorResponse> handleDuplicateCategoryName(
+			NombreCategoriaDuplicadoException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 
 	@ExceptionHandler(InvalidRegistrationException.class)
@@ -44,6 +53,12 @@ public class RegistrationExceptionHandler {
 
 	@ExceptionHandler(UsuarioNoEncontradoException.class)
 	public ResponseEntity<ApiErrorResponse> handleUserNotFound(UsuarioNoEncontradoException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(CategoriaNoEncontradaException.class)
+	public ResponseEntity<ApiErrorResponse> handleCategoryNotFound(CategoriaNoEncontradaException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}

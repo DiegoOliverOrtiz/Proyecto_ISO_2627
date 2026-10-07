@@ -41,8 +41,13 @@
         <section class="form-panel" aria-labelledby="titulo-formulario">
           <header class="form-header">
             <div>
-              <p class="eyebrow">Nueva categoría</p>
-              <h2 id="titulo-formulario">Crear categoría</h2>
+              @if (categoriaEnEdicion()) {
+                <p class="eyebrow">Editar categoría</p>
+                <h2 id="titulo-formulario">Modificar categoría</h2>
+              } @else {
+                <p class="eyebrow">Nueva categoría</p>
+                <h2 id="titulo-formulario">Crear categoría</h2>
+              }
             </div>
           </header>
 
@@ -94,8 +99,8 @@
               <button
                 class="secondary-button"
                 type="button"
-                (click)="cancelarCreacion()"
-                [disabled]="creando()"
+                (click)="cancelarFormulario()"
+                [disabled]="creando() || modificando()"
               >
                 Cancelar
               </button>
@@ -103,10 +108,12 @@
               <button
                 class="primary-button"
                 type="submit"
-                [disabled]="creando()"
+                [disabled]="creando() || modificando()"
               >
-                @if (creando()) {
-                  Creando...
+                @if (creando() || modificando()) {
+                  Guardando...
+                } @else if (categoriaEnEdicion()) {
+                  Guardar cambios
                 } @else {
                   Crear categoría
                 }
@@ -153,6 +160,16 @@
               <p class="categoria-descripcion">
                 {{ categoria.descripcion }}
               </p>
+
+              <button
+                class="secondary-button"
+                type="button"
+                (click)="iniciarEdicion(categoria)"
+                [disabled]="mostrandoFormulario()"
+                [attr.aria-label]="'Editar categoría ' + categoria.nombre"
+              >
+                Editar
+              </button>
             </article>
           }
         </section>
