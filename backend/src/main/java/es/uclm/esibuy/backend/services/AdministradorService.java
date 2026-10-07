@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
@@ -157,8 +158,16 @@ public class AdministradorService {
 	}
 
 	public void eliminarAdministrador(String id, String emailSolicitante) {
+		if (emailSolicitante == null || emailSolicitante.isBlank()) {
+			throw new AccessDeniedException("No se ha podido identificar al solicitante.");
+		}
+		if (id == null || id.isBlank()) {
+			throw new UsuarioNoEncontradoException();
+		}
+
 		Administrador objetivo = administradorDAO.findById(id)
 				.orElseThrow(UsuarioNoEncontradoException::new);
+
 		String emailNormalizado = emailSolicitante.trim().toLowerCase(Locale.ROOT);
 		if (emailNormalizado.equals(objetivo.getEmail())) {
 			throw new AutoEliminacionAdministradorException();
@@ -166,6 +175,7 @@ public class AdministradorService {
 		if (administradorDAO.contarAdministradores() <= 1) {
 			throw new UltimoAdministradorException();
 		}
+
 		administradorDAO.delete(objetivo);
 	}
 }

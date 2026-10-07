@@ -15,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import static org.mockito.Mockito.verifyNoInteractions;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
@@ -110,5 +113,25 @@ class AdministradorServiceEliminacionTests {
                 () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
         verify(administradorDAO, never()).delete(any(Administrador.class));
+    }
+
+    @Test
+    void eliminarAdministrador_conIdNuloOEnBlanco_lanzaUsuarioNoEncontradoSinConsultarLaBaseDeDatos() {
+        assertThrows(UsuarioNoEncontradoException.class,
+                () -> administradorService.eliminarAdministrador(null, EMAIL_SOLICITANTE));
+        assertThrows(UsuarioNoEncontradoException.class,
+                () -> administradorService.eliminarAdministrador("   ", EMAIL_SOLICITANTE));
+
+        verifyNoInteractions(administradorDAO);
+    }
+
+    @Test
+    void eliminarAdministrador_sinSolicitanteIdentificado_deniegaElAccesoSinConsultarLaBaseDeDatos() {
+        assertThrows(AccessDeniedException.class,
+                () -> administradorService.eliminarAdministrador(ID_OBJETIVO, null));
+        assertThrows(AccessDeniedException.class,
+                () -> administradorService.eliminarAdministrador(ID_OBJETIVO, " "));
+
+        verifyNoInteractions(administradorDAO);
     }
 }
