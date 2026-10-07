@@ -24,50 +24,65 @@ import es.uclm.esibuy.backend.services.CategoriaService;
 @Import(SecurityConfiguration.class)
 class CategoriaControllerHU12Tests {
 
-        @Autowired
-        private MockMvc mockMvc;
+  @Autowired
+  private MockMvc mockMvc;
 
-        @MockitoBean
-        private CategoriaService categoriaService;
+  @MockitoBean
+  private CategoriaService categoriaService;
 
-        @Test
-        void administradorPuedeCrearCategoria() throws Exception {
-                Categoria guardada = new Categoria("Hogar", "Productos para el hogar");
-                guardada.setId("categoria-1");
+  @Test
+  void administradorPuedeCrearCategoria() throws Exception {
+    Categoria guardada = new Categoria("Hogar", "Productos para el hogar");
+    guardada.setId("categoria-1");
 
-                when(categoriaService.crearCategoria(any(Categoria.class)))
-                                .thenReturn(guardada);
+    when(categoriaService.crearCategoria(any(Categoria.class)))
+        .thenReturn(guardada);
 
-                mockMvc.perform(post("/categorias")
-                                .with(user("admin").roles("ADMIN"))
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                                {
-                                                  "nombre": "Hogar",
-                                                  "descripcion": "Productos para el hogar"
-                                                }
-                                                """))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value("categoria-1"))
-                                .andExpect(jsonPath("$.nombre").value("Hogar"))
-                                .andExpect(jsonPath("$.descripcion")
-                                                .value("Productos para el hogar"));
-        }
+    mockMvc.perform(post("/categorias")
+        .with(user("admin").roles("ADMIN"))
+        .with(csrf())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "nombre": "Hogar",
+              "descripcion": "Productos para el hogar"
+            }
+            """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value("categoria-1"))
+        .andExpect(jsonPath("$.nombre").value("Hogar"))
+        .andExpect(jsonPath("$.descripcion")
+            .value("Productos para el hogar"));
+  }
 
-        @Test
-        void clienteNoPuedeCrearCategoria() throws Exception {
-                mockMvc.perform(post("/categorias")
-                                .with(user("cliente").roles("CLIENTE"))
-                                .with(csrf())
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                                {
-                                                  "nombre": "Hogar",
-                                                  "descripcion": "Productos para el hogar"
-                                                }
-                                                """))
-                                .andExpect(status().isForbidden());
-        }
+  @Test
+  void clienteNoPuedeCrearCategoria() throws Exception {
+    mockMvc.perform(post("/categorias")
+        .with(user("cliente").roles("CLIENTE"))
+        .with(csrf())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "nombre": "Hogar",
+              "descripcion": "Productos para el hogar"
+            }
+            """))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void vendedorNoPuedeCrearCategoria() throws Exception {
+    mockMvc.perform(post("/categorias")
+        .with(user("vendedor").roles("VENDEDOR"))
+        .with(csrf())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "nombre": "Hogar",
+              "descripcion": "Productos para el hogar"
+            }
+            """))
+        .andExpect(status().isForbidden());
+  }
 
 }
