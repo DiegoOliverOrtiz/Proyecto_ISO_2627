@@ -42,6 +42,12 @@ class AdministradorServiceTests {
 	@Mock
 	private PasswordEncoder passwordEncoder;
 
+	@Mock
+    private Validator validator;
+
+	@Mock
+	private SesionService sesionService;
+
 	@Test
 	void registersAdministratorWithEncodedPasswordAndOptionalAdministrativeData() {
 		when(usuarioDAO.existsByEmail("admin@example.com")).thenReturn(false);
@@ -57,7 +63,8 @@ class AdministradorServiceTests {
 				usuarioDAO,
 				passwordEncoder,
 				new PasswordPolicy(),
-				VALIDATOR);
+				VALIDATOR,
+				sesionService);
 		RegistroAdministradorRequest request = new RegistroAdministradorRequest(
 				"Primero",
 				"Administrador",
@@ -86,7 +93,8 @@ class AdministradorServiceTests {
 				usuarioDAO,
 				passwordEncoder,
 				new PasswordPolicy(),
-				VALIDATOR);
+				VALIDATOR,
+				sesionService);
 		RegistroAdministradorRequest request = new RegistroAdministradorRequest(
 				"Primero", "Administrador", "admin@example.com", "GestorX9!Clave", null, null, null);
 

@@ -45,6 +45,9 @@ class AdministradorServiceHU04Tests {
     @Mock
     private Validator validator;
 
+    @Mock
+    private SesionService sesionService;
+
     private AdministradorService servicio;
 
     @BeforeEach
@@ -54,7 +57,8 @@ class AdministradorServiceHU04Tests {
                 usuarioDAO,
                 passwordEncoder,
                 passwordPolicy,
-                validator);
+                validator,
+                sesionService);
     }
 
     @Test

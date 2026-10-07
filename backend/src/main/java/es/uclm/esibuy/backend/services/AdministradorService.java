@@ -34,18 +34,21 @@ public class AdministradorService {
 	private final PasswordEncoder passwordEncoder;
 	private final PasswordPolicy passwordPolicy;
 	private final Validator validator;
+	private final SesionService sesionService;
 
 	public AdministradorService(
 			AdministradorDAO administradorDAO,
 			UsuarioDAO usuarioDAO,
 			PasswordEncoder passwordEncoder,
 			PasswordPolicy passwordPolicy,
-			Validator validator) {
+			Validator validator,
+			SesionService sesionService) {
 		this.administradorDAO = administradorDAO;
 		this.usuarioDAO = usuarioDAO;
 		this.passwordEncoder = passwordEncoder;
 		this.passwordPolicy = passwordPolicy;
 		this.validator = validator;
+		this.sesionService = sesionService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
@@ -177,5 +180,6 @@ public class AdministradorService {
 		}
 
 		administradorDAO.delete(objetivo);
+		sesionService.cerrarSesiones(objetivo.getEmail());
 	}
 }
