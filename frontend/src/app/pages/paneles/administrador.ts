@@ -60,13 +60,14 @@ import { AuthService } from '../login/auth.service';
           </article>
 
           <article>
-            <span class="card-label">Acceso</span>
-            <strong>Administrador</strong>
-            <small>Sesión protegida</small>
+            <span class="card-label">Área activa</span>
+            <strong>Administradores</strong>
+            <small>Gestión interna</small>
 
-            <span class="secure-label">
-              ● Conectado
-            </span>
+            <a routerLink="/admin/administradores">
+              Abrir administradores
+              <span aria-hidden="true">→</span>
+            </a>
           </article>
         </div>
 

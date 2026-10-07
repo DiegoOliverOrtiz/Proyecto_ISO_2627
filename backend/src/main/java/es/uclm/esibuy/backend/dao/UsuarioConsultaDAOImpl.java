@@ -124,7 +124,17 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 	}
 
 	private Criteria criterioRol(String rol) {
-		String alias = switch (rol.trim().toUpperCase(Locale.ROOT)) {
+		String rolUpperCase = rol.trim().toUpperCase(Locale.ROOT);
+		
+		if (rolUpperCase.equals("NO_ADMIN")) {
+			// Excluye a los administradores buscando solo clientes y vendedores
+			return new Criteria().orOperator(
+				Criteria.where("_class").is("cliente"),
+				Criteria.where("_class").is("vendedor")
+			);
+		}
+
+		String alias = switch (rolUpperCase) {
 		case "ADMIN" -> "administrador";
 		case "CLIENTE" -> "cliente";
 		case "VENDEDOR" -> "vendedor";

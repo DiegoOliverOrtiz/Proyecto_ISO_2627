@@ -47,8 +47,13 @@ public class AdministradorService {
 
 	public ListadoUsuariosResponse consultarUsuarios(
 			String texto, String estado, String rol, Pageable pageable) {
-		Page<UsuarioAdministracionResponse> pagina = usuarioDAO.buscar(texto, estado, rol, pageable)
+		
+		// Si no se indica rol, filtramos para que NO devuelva administradores
+		String rolFiltro = (rol == null || rol.trim().isEmpty()) ? "NO_ADMIN" : rol;
+		
+		Page<UsuarioAdministracionResponse> pagina = usuarioDAO.buscar(texto, estado, rolFiltro, pageable)
 				.map(this::convertirRespuesta);
+		
 		return new ListadoUsuariosResponse(
 				pagina.getContent(),
 				pagina.getNumber(),

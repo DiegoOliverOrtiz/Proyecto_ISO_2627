@@ -1,0 +1,81 @@
+<main class="admin-shell">
+  <section class="admin-content">
+    <header class="topbar">
+      <span>Gestión / Administradores</span>
+      <a routerLink="/admin">Panel administrador</a>
+    </header>
+
+    <div class="usuarios-page">
+      <a class="back-link" routerLink="/admin">Volver al panel</a>
+      
+      <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <p class="eyebrow">Administración Interna</p>
+          <h1>Administradores</h1>
+          <p class="subtitle">Gestiona al equipo con acceso al panel de EsiBuy.</p>
+        </div>
+        <a routerLink="/admin/administradores/nuevo" class="primary-button" style="padding: .78rem 1.05rem; background: #D36B54; color: white; text-decoration: none; border-radius: 4px; font-weight: 700;">
+          + Añadir administrador
+        </a>
+      </header>
+
+      <form class="filters" (ngSubmit)="buscar()">
+        <label>
+          Buscar
+          <input name="busqueda" type="search" placeholder="Nombre o email"
+            [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
+        </label>
+        <label>
+          Estado
+          <select name="estado" [ngModel]="estado()" (ngModelChange)="cambiarEstado($event)">
+            <option value="">Todos</option>
+            <option value="ACTIVO">Activos</option>
+            <option value="BLOQUEADO">Bloqueados</option>
+          </select>
+        </label>
+        <button type="submit">Buscar</button>
+        @if (hayFiltros()) {
+          <button class="clear-button" type="button" (click)="limpiarFiltros()">Limpiar</button>
+        }
+      </form>
+
+      @if (cargando()) {
+        <p class="status" aria-live="polite">Cargando administradores...</p>
+      } @else if (mensajeError()) {
+        <p class="status error" role="alert">{{ mensajeError() }}</p>
+      } @else if (!listado()?.contenido?.length) {
+        <p class="status">No se han encontrado administradores.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr>
+            </thead>
+            <tbody>
+              @for (admin of listado()!.contenido; track admin.id) {
+                <tr>
+                  <td>{{ admin.nombre }} {{ admin.apellidos }}</td>
+                  <td>{{ admin.email }}</td>
+                  <td>
+                    <span class="status-tag"
+                      [class.status-active]="admin.estado === 'ACTIVO'"
+                      [class.status-blocked]="admin.estado === 'BLOQUEADO'"
+                      [attr.title]="admin.estado">
+                      @if (admin.estado === 'ACTIVO') { <span aria-hidden="true">&#10003;</span> }
+                      @else { <span aria-hidden="true">&#9940;</span> }
+                    </span>
+                  </td>
+                  <td class="actions-cell">
+                    <a class="view-action" [routerLink]="['/admin/usuarios', admin.id]" title="Ver detalle">
+                      <span aria-hidden="true">&#128065;</span>
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </section>
+</main>

@@ -1,0 +1,81 @@
+<main class="admin-shell">
+  <section class="admin-content">
+    <header class="topbar">
+      <span>Gestión / Administradores / Añadir</span>
+      <a routerLink="/admin">Panel administrador</a>
+    </header>
+
+    <div class="form-page">
+      <a class="back-link" routerLink="/admin/administradores">← Volver al listado</a>
+      
+      <header class="page-header">
+        <p class="eyebrow">Nuevo acceso</p>
+        <h1>Añadir administrador</h1>
+        <p class="subtitle">Registra a un nuevo responsable de la plataforma.</p>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="admin-form">
+        @if (mensajeError()) {
+          <div class="feedback error" role="alert">{{ mensajeError() }}</div>
+        }
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Nombre</span>
+            <input type="text" formControlName="nombre" />
+          </label>
+
+          <label class="field">
+            <span>Apellidos</span>
+            <input type="text" formControlName="apellidos" />
+          </label>
+
+          <label class="field field-wide">
+            <span>Correo electrónico (Será su acceso)</span>
+            <input type="email" formControlName="email" />
+          </label>
+
+          <label class="field">
+            <span>Sede <em>Opcional</em></span>
+            <input type="text" formControlName="sede" />
+          </label>
+
+          <label class="field">
+            <span>URL Imagen de perfil <em>Opcional</em></span>
+            <input type="url" formControlName="imagenPerfil" placeholder="https://..." />
+          </label>
+
+          <!-- Separador visual para las contraseñas -->
+          <div class="field-wide" style="margin-top: 1rem;"></div>
+
+          <label class="field">
+            <span>Contraseña (Mínimo 8 caracteres)</span>
+            <div class="password-container">
+              <input [type]="hidePassword ? 'password' : 'text'" formControlName="contrasena" />
+              <button type="button" (click)="togglePassword()" class="eye-button">
+                {{ hidePassword ? '👁️' : '🙈' }}
+              </button>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Repetir contraseña</span>
+            <div class="password-container">
+              <input [type]="hideRepeatPassword ? 'password' : 'text'" formControlName="repetirContrasena" />
+              <button type="button" (click)="toggleRepeatPassword()" class="eye-button">
+                {{ hideRepeatPassword ? '👁️' : '🙈' }}
+              </button>
+            </div>
+            @if (passwordMismatch()) {
+              <small class="field-error">Las contraseñas no coinciden.</small>
+            }
+          </label>
+        </div>
+
+        <button type="submit" class="submit-button" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Creando cuenta...' : 'Crear administrador' }}
+        </button>
+      </form>
+    </div>
+  </section>
+</main>
