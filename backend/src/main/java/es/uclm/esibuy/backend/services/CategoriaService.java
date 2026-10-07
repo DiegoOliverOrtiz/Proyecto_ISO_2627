@@ -34,6 +34,10 @@ public class CategoriaService {
             throw new IllegalArgumentException("La descripcion es obligatoria");
         }
 
+        if (categoriaDAO.existsByNombreIgnoreCase(categoria.getNombre())) {
+            throw new IllegalArgumentException("Ya existe una categoria con ese nombre");
+        }
+
         return categoriaDAO.save(categoria);
     }
 }
