@@ -153,4 +153,8 @@ public class AdministradorService {
 			usuarioDAO.save(usuario);
 		}
 	}
+
+	public void eliminarAdministrador(String id, String emailSolicitante) {
+		throw new UnsupportedOperationException("HU-10 pendiente");
+	}
 }
