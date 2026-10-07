@@ -30,6 +30,10 @@ public class CategoriaService {
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
 
+        if (categoria.getDescripcion() == null || categoria.getDescripcion().isEmpty()) {
+            throw new IllegalArgumentException("La descripcion es obligatoria");
+        }
+
         return categoriaDAO.save(categoria);
     }
 }
