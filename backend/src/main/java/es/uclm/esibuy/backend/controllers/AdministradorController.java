@@ -13,13 +13,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
 
 import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
+import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import jakarta.validation.Valid;
+import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 
 @RestController
 @RequestMapping("/administrador")
@@ -59,5 +62,13 @@ public class AdministradorController {
 	public ResponseEntity<Void> activarUsuario(@PathVariable String id) {
 		administradorService.activarUsuario(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	public ResponseEntity<Void> eliminarAdministrador(String id, Authentication authentication) {
+		return null;
+	}
+
+	public ResponseEntity<ApiErrorResponse> manejarReglaEliminacion(RuntimeException excepcion) {
+		return null;
 	}
 }
