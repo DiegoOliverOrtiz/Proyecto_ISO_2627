@@ -101,7 +101,7 @@ class AdministradorServiceHU04Tests {
     @Test
     void consultaUsuariosSinResultadosDevuelvePaginaVacia() {
         PageRequest pageable = PageRequest.of(0, 20);
-        when(usuarioDAO.buscar(null, "PENDIENTE", null, pageable))
+        when(usuarioDAO.buscar(null, "PENDIENTE", "NO_ADMIN", pageable))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
         when(usuarioDAO.obtenerEstadisticas())
                 .thenReturn(new EstadisticasUsuariosResponse(0, 0, 0, 0));
