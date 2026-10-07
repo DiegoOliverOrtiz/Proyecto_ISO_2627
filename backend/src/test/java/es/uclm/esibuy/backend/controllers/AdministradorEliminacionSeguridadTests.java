@@ -17,6 +17,9 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import org.hamcrest.Matchers;
 
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.model.Administrador;
@@ -99,5 +102,17 @@ class AdministradorEliminacionSeguridadTests {
 
 		mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void preflightDeDelete_desdeElOrigenDelFrontend_estaPermitido() throws Exception {
+		mockMvc.perform(options("/administrador/{id}", "id-1")
+						.header("Origin", "http://localhost:4200")
+						.header("Access-Control-Request-Method", "DELETE")
+						.header("Access-Control-Request-Headers", "x-xsrf-token"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+				.andExpect(header().string("Access-Control-Allow-Methods",
+						Matchers.containsString("DELETE")));
 	}
 }
