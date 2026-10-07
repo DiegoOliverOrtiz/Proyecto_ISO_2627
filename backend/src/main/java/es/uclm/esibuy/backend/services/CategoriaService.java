@@ -26,7 +26,7 @@ public class CategoriaService {
     }
 
     public Categoria crearCategoria(Categoria categoria) {
-        if (categoria.getNombre() == null || categoria.getNombre().isEmpty()) {
+        if (categoria.getNombre() == null || categoria.getNombre().isBlank()) {
             throw new IllegalArgumentException("El nombre es obligatorio");
         }
 
