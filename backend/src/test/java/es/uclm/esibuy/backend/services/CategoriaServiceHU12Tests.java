@@ -84,4 +84,17 @@ class CategoriaServiceHU12Tests {
 
                 verifyNoInteractions(categoriaDAO);
         }
+
+        @Test
+        void rechazaCategoriaConNombreDuplicado() {
+                Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
+
+                when(categoriaDAO.existsByNombreIgnoreCase("Hogar")).thenReturn(true);
+
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> categoriaService.crearCategoria(categoria));
+
+                verify(categoriaDAO).existsByNombreIgnoreCase("Hogar");
+        }
 }
