@@ -18,6 +18,8 @@ import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
 
+import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
+
 @ExtendWith(MockitoExtension.class)
 class AdministradorServiceEliminacionTests {
 
@@ -57,4 +59,27 @@ class AdministradorServiceEliminacionTests {
 
 		verify(administradorDAO, never()).delete(any(Administrador.class));
 	}
+
+    @Test
+    void eliminarAdministrador_siEsSuPropiaCuenta_lanzaAutoEliminacionYNoElimina() {
+        Administrador propio = crearAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(propio));
+
+        assertThrows(AutoEliminacionAdministradorException.class,
+                () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
+
+        verify(administradorDAO, never()).delete(any(Administrador.class));
+    }
+
+    @Test
+    void eliminarAdministrador_siEsSuPropiaCuentaConOtroFormatoDeEmail_tambienLoRechaza() {
+        Administrador propio = crearAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(propio));
+
+        assertThrows(AutoEliminacionAdministradorException.class,
+                () -> administradorService.eliminarAdministrador(
+                        ID_OBJETIVO, "  " + EMAIL_SOLICITANTE.toUpperCase() + " "));
+
+        verify(administradorDAO, never()).delete(any(Administrador.class));
+    }
 }
