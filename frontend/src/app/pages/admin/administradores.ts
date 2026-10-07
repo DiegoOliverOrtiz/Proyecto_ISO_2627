@@ -3,26 +3,26 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-// Ruta corregida: subimos un nivel y entramos en usuarios
 import { ListadoUsuarios, UsuariosService } from '../usuarios/usuarios.service';
+import { AdministradorService } from './administrador.service';
 
 @Component({
   selector: 'app-administradores',
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './administradores.html',
-  // Ruta corregida para reutilizar el CSS
   styleUrl: '../usuarios/usuarios.css' 
 })
 export class Administradores implements OnInit {
   private readonly usuariosService = inject(UsuariosService);
+  private readonly administradorService = inject(AdministradorService);
+
   readonly listado = signal<ListadoUsuarios | null>(null);
   readonly cargando = signal(false);
   readonly mensajeError = signal('');
   readonly busqueda = signal('');
   readonly estado = signal('');
   
-  // El rol siempre será ADMIN para esta vista
   readonly rol = 'ADMIN'; 
   readonly pagina = signal(0);
   readonly tamano = 20;
@@ -67,6 +67,27 @@ export class Administradores implements OnInit {
   esUltimaPagina(): boolean {
     const total = this.listado()?.totalPaginas ?? 0;
     return total === 0 || this.pagina() >= total - 1;
+  }
+
+  eliminar(id: string, nombre: string): void {
+    const seguro = window.confirm(`¿Estás seguro de que deseas eliminar al administrador ${nombre}?\n\nEsta es una acción destructiva y no se puede deshacer.`);
+    
+    if (seguro) {
+      this.administradorService.eliminarAdministrador(id).subscribe({
+        next: () => {
+          // Si es la última página y solo queda 1, retrocedemos una página si es posible
+          const actuales = this.listado()?.contenido?.length ?? 0;
+          if (actuales === 1 && this.pagina() > 0) {
+            this.pagina.update(p => p - 1);
+          }
+          this.cargarAdministradores();
+        },
+        error: (error: HttpErrorResponse) => {
+          const mensajeBackend = error.error?.error;
+          alert(mensajeBackend || 'No se pudo eliminar el administrador. Inténtalo de nuevo.');
+        }
+      });
+    }
   }
 
   private cargarAdministradores(): void {

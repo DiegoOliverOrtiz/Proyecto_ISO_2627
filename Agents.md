@@ -5,7 +5,7 @@ desde cualquier navegador web. El sistema debe permitir las opciones básicas de
 de este tipo: administración de productos, gestión de pedidos, gestión del carrito de compra, 
 configuración de productos favoritos, valoraciones de productos y seguimiento de envíos.
 ## Stack - Lenguaje: java para backend, angular para frontend - Framework / runtime: java spring boot - Base de datos: MongoDB - Tests: Junit5 
-## Comandos - ./mvnw spring-boot:run para arrancar el proyecto
+## Comandos - ./mvnw spring-boot:run para arrancar el proyecto - .\mvnw.cmd test para ejecutar todos los tests
 ## Estructura del proyecto - `/documents` — [contiene toda la documentación del proyecto] - `/backend` — [contiene el código del backend] - `/frontend` — [contiene el código del frontend] 
 ## Convenciones - Revisar el estilo de código existente, para que el nuevo código implementado tenga las mismas convenciones y estilo.
 ## No hagas - Implementar código sin preguntar, especialmente si hay ambiguedades o dudas.

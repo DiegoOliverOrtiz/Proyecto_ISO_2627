@@ -27,7 +27,6 @@ export class AdministradorService {
   private readonly http = inject(HttpClient);
 
   crearAdministrador(request: RegistroAdministradorRequest): Observable<RegistroUsuarioResponse> {
-    // Obtenemos primero el token CSRF, igual que en el AuthService, para evitar el error 403 Forbidden
     return this.http
       .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
         withCredentials: true
@@ -44,6 +43,23 @@ export class AdministradorService {
               })
             }
           )
+        )
+      );
+  }
+
+  eliminarAdministrador(id: string): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.delete<void>(`${environment.apiUrl}/administrador/${id}`, {
+            withCredentials: true,
+            headers: new HttpHeaders({
+              'X-XSRF-TOKEN': respuestaCsrf.token
+            })
+          })
         )
       );
   }

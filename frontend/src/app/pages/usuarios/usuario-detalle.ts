@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { UsuarioAdministracion, UsuariosService } from './usuarios.service';
+import { AdministradorService } from '../admin/administrador.service';
 
 @Component({
   selector: 'app-usuario-detalle',
@@ -12,20 +13,39 @@ import { UsuarioAdministracion, UsuariosService } from './usuarios.service';
       <header class="topbar"><a class="brand" routerLink="/admin">EsiBuy</a><span>Gestión / Detalle</span><a [routerLink]="volverUrl()">Volver al listado</a></header>
       <div class="content">
       <a class="back-link" [routerLink]="volverUrl()">← Volver al listado</a>
+      
       @if (cargando()) { <p class="status">Cargando información...</p> }
       @else if (mensajeError()) { <p class="status error" role="alert">{{ mensajeError() }}</p> }
       @else if (usuario(); as datos) {
-        <header class="page-header"><p class="eyebrow">Ficha administrativa</p><h1>{{ datos.nombre }} {{ datos.apellidos }}</h1><p>Información útil para la gestión de la cuenta.</p></header>
-        <section class="detail-card"><div class="status-row"><span>Estado de la cuenta</span><strong>{{ datos.estado }}</strong></div><dl>
-          <div><dt>Email</dt><dd>{{ datos.email }}</dd></div>
-          <div><dt>Teléfono</dt><dd>{{ datos.telefono || 'No indicado' }}</dd></div>
-          <div><dt>Estado</dt><dd>{{ datos.estado }}</dd></div>
-          <div><dt>Rol</dt><dd>{{ datos.rol }}</dd></div>
-          @if (datos.sede) { <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div> }
-          @if (datos.fechaIncorporacion) { <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion }}</dd></div> }
-          @if (datos.esPremium !== null) { <div><dt>Cuenta premium</dt><dd>{{ datos.esPremium ? 'Sí' : 'No' }}</dd></div> }
-          @if (datos.nombreComercial) { <div><dt>Nombre comercial</dt><dd>{{ datos.nombreComercial }}</dd></div> }
-        </dl></section>
+        
+        <header class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <p class="eyebrow">Ficha administrativa</p>
+            <h1>{{ datos.nombre }} {{ datos.apellidos }}</h1>
+            <p>Información útil para la gestión de la cuenta.</p>
+          </div>
+          
+          <!-- Botón de eliminar solo visible si es ADMIN -->
+          @if (datos.rol === 'ADMIN') {
+            <button type="button" (click)="eliminarAdministrador(datos.id, datos.nombre)" style="padding: .65rem 1rem; background: #FFF1F0; color: #A63C28; border: 1px solid #F0B3A9; font-weight: 700; border-radius: 4px; cursor: pointer;">
+              Eliminar administrador
+            </button>
+          }
+        </header>
+
+        <section class="detail-card">
+          <div class="status-row"><span>Estado de la cuenta</span><strong>{{ datos.estado }}</strong></div>
+          <dl>
+            <div><dt>Email</dt><dd>{{ datos.email }}</dd></div>
+            <div><dt>Teléfono</dt><dd>{{ datos.telefono || 'No indicado' }}</dd></div>
+            <div><dt>Estado</dt><dd>{{ datos.estado }}</dd></div>
+            <div><dt>Rol</dt><dd>{{ datos.rol }}</dd></div>
+            @if (datos.sede) { <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div> }
+            @if (datos.fechaIncorporacion) { <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion }}</dd></div> }
+            @if (datos.esPremium !== null) { <div><dt>Cuenta premium</dt><dd>{{ datos.esPremium ? 'Sí' : 'No' }}</dd></div> }
+            @if (datos.nombreComercial) { <div><dt>Nombre comercial</dt><dd>{{ datos.nombreComercial }}</dd></div> }
+          </dl>
+        </section>
       }
       </div>
     </main>
@@ -56,12 +76,14 @@ import { UsuarioAdministracion, UsuariosService } from './usuarios.service';
 })
 export class UsuarioDetalle implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly usuariosService = inject(UsuariosService);
+  private readonly administradorService = inject(AdministradorService);
+
   readonly usuario = signal<UsuarioAdministracion | null>(null);
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
   
-  // Por defecto vuelve al listado general de usuarios, pero cambiará si el usuario es ADMIN
   readonly volverUrl = signal('/admin/usuarios');
 
   ngOnInit(): void {
@@ -75,7 +97,6 @@ export class UsuarioDetalle implements OnInit {
       next: (respuesta) => { 
         this.usuario.set(respuesta); 
         this.cargando.set(false);
-        // Si el usuario consultado es administrador, el botón de retorno redirige al listado de administradores
         if (respuesta.rol === 'ADMIN') {
           this.volverUrl.set('/admin/administradores');
         }
@@ -85,6 +106,23 @@ export class UsuarioDetalle implements OnInit {
         this.mensajeError.set(this.mensajeParaError(error));
       }
     });
+  }
+
+  eliminarAdministrador(id: string, nombre: string): void {
+    const seguro = window.confirm(`¿Estás seguro de que deseas eliminar al administrador ${nombre}?\n\nEsta es una acción destructiva y no se puede deshacer.`);
+    
+    if (seguro) {
+      this.administradorService.eliminarAdministrador(id).subscribe({
+        next: () => {
+          // Redirigir al listado de administradores si se elimina con éxito
+          void this.router.navigate(['/admin/administradores']);
+        },
+        error: (error: HttpErrorResponse) => {
+          const mensajeBackend = error.error?.error;
+          alert(mensajeBackend || 'No se pudo eliminar el administrador. Inténtalo de nuevo.');
+        }
+      });
+    }
   }
 
   private mensajeParaError(error: HttpErrorResponse): string {

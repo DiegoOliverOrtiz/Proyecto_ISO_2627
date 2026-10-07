@@ -69,6 +69,10 @@
                     <a class="view-action" [routerLink]="['/admin/usuarios', admin.id]" title="Ver detalle">
                       <span aria-hidden="true">&#128065;</span>
                     </a>
+                    <!-- Nuevo botón de eliminación -->
+                    <button type="button" class="view-action delete-btn" (click)="eliminar(admin.id, admin.nombre)" title="Eliminar administrador" style="background: none; border: none; cursor: pointer; color: #D36B54; margin-left: 10px;">
+                      <span aria-hidden="true">&#10006;</span>
+                    </button>
                   </td>
                 </tr>
               }
