@@ -155,6 +155,8 @@ public class AdministradorService {
 	}
 
 	public void eliminarAdministrador(String id, String emailSolicitante) {
-		throw new UnsupportedOperationException("HU-10 pendiente");
+		Administrador objetivo = administradorDAO.findById(id)
+				.orElseThrow(UsuarioNoEncontradoException::new);
+		administradorDAO.delete(objetivo);
 	}
 }
