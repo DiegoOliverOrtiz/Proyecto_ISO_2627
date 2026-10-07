@@ -2,6 +2,8 @@ package es.uclm.esibuy.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,13 +12,13 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.mockito.Mockito.verifyNoInteractions;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
@@ -35,6 +37,9 @@ class AdministradorServiceEliminacionTests {
 
 	@Mock
 	private AdministradorDAO administradorDAO;
+
+    @Mock
+    private SesionService sesionService;
 
 	@InjectMocks
 	private AdministradorService administradorService;
@@ -66,6 +71,7 @@ class AdministradorServiceEliminacionTests {
 				() -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
 		verify(administradorDAO, never()).delete(any(Administrador.class));
+        verifyNoInteractions(sesionService);
 	}
 
     @Test
@@ -77,6 +83,7 @@ class AdministradorServiceEliminacionTests {
                 () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
         verify(administradorDAO, never()).delete(any(Administrador.class));
+        verifyNoInteractions(sesionService); 
     }
 
     @Test
@@ -89,6 +96,7 @@ class AdministradorServiceEliminacionTests {
                         ID_OBJETIVO, "  " + EMAIL_SOLICITANTE.toUpperCase() + " "));
 
         verify(administradorDAO, never()).delete(any(Administrador.class));
+        verifyNoInteractions(sesionService);
     }
 
     @Test
@@ -113,6 +121,7 @@ class AdministradorServiceEliminacionTests {
                 () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
         verify(administradorDAO, never()).delete(any(Administrador.class));
+        verifyNoInteractions(sesionService);
     }
 
     @Test
@@ -133,5 +142,32 @@ class AdministradorServiceEliminacionTests {
                 () -> administradorService.eliminarAdministrador(ID_OBJETIVO, " "));
 
         verifyNoInteractions(administradorDAO);
+    }
+
+    @Test
+    void eliminarAdministrador_alEliminarlo_cierraSusSesionesDespuesDeBorrarlo() {
+        Administrador objetivo = crearAdministrador(ID_OBJETIVO, EMAIL_OBJETIVO);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(objetivo));
+        when(administradorDAO.contarAdministradores()).thenReturn(2L);
+
+        administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
+
+        InOrder orden = inOrder(administradorDAO, sesionService);
+        orden.verify(administradorDAO).delete(objetivo);
+        orden.verify(sesionService).cerrarSesiones(EMAIL_OBJETIVO);
+    }
+
+    @Test
+    void eliminarAdministrador_siFallaElBorrado_noCierraSesiones() {
+        Administrador objetivo = crearAdministrador(ID_OBJETIVO, EMAIL_OBJETIVO);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(objetivo));
+        when(administradorDAO.contarAdministradores()).thenReturn(2L);
+        doThrow(new IllegalStateException("fallo de base de datos"))
+                .when(administradorDAO).delete(objetivo);
+
+        assertThrows(IllegalStateException.class,
+                () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
+
+        verifyNoInteractions(sesionService);
     }
 }
