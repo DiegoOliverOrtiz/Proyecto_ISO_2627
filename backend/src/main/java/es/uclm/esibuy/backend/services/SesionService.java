@@ -1,5 +1,8 @@
 package es.uclm.esibuy.backend.services;
 
+import java.util.Locale;
+
+import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 
@@ -13,10 +16,18 @@ public class SesionService {
 	}
 
 	public void registrarSesion(String idSesion, String email) {
-		throw new UnsupportedOperationException("pendiente");
+		sessionRegistry.registerNewSession(idSesion, normalizar(email));
 	}
 
 	public void cerrarSesiones(String email) {
-		throw new UnsupportedOperationException("pendiente");
+		if (email == null || email.isBlank()) {
+			return;
+		}
+		sessionRegistry.getAllSessions(normalizar(email), false)
+				.forEach(SessionInformation::expireNow);
+	}
+
+	private String normalizar(String email) {
+		return email.trim().toLowerCase(Locale.ROOT);
 	}
 }
