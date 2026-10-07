@@ -14,7 +14,7 @@
         <p class="subtitle">Registra a un nuevo responsable de la plataforma.</p>
       </header>
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="admin-form">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="admin-form" autocomplete="off">
         @if (mensajeError()) {
           <div class="feedback error" role="alert">{{ mensajeError() }}</div>
         }
@@ -22,36 +22,35 @@
         <div class="form-grid">
           <label class="field">
             <span>Nombre</span>
-            <input type="text" formControlName="nombre" />
+            <input type="text" formControlName="nombre" autocomplete="off" />
           </label>
 
           <label class="field">
             <span>Apellidos</span>
-            <input type="text" formControlName="apellidos" />
+            <input type="text" formControlName="apellidos" autocomplete="off" />
           </label>
 
           <label class="field field-wide">
             <span>Correo electrónico (Será su acceso)</span>
-            <input type="email" formControlName="email" />
+            <input type="email" formControlName="email" autocomplete="off" />
           </label>
 
           <label class="field">
             <span>Sede <em>Opcional</em></span>
-            <input type="text" formControlName="sede" />
+            <input type="text" formControlName="sede" autocomplete="off" />
           </label>
 
           <label class="field">
             <span>URL Imagen de perfil <em>Opcional</em></span>
-            <input type="url" formControlName="imagenPerfil" placeholder="https://..." />
+            <input type="url" formControlName="imagenPerfil" placeholder="https://..." autocomplete="off" />
           </label>
 
-          <!-- Separador visual para las contraseñas -->
           <div class="field-wide" style="margin-top: 1rem;"></div>
 
           <label class="field">
             <span>Contraseña (Mínimo 8 caracteres)</span>
             <div class="password-container">
-              <input [type]="hidePassword ? 'password' : 'text'" formControlName="contrasena" />
+              <input [type]="hidePassword ? 'password' : 'text'" formControlName="contrasena" autocomplete="new-password" />
               <button type="button" (click)="togglePassword()" class="eye-button">
                 {{ hidePassword ? '👁️' : '🙈' }}
               </button>
@@ -61,7 +60,7 @@
           <label class="field">
             <span>Repetir contraseña</span>
             <div class="password-container">
-              <input [type]="hideRepeatPassword ? 'password' : 'text'" formControlName="repetirContrasena" />
+              <input [type]="hideRepeatPassword ? 'password' : 'text'" formControlName="repetirContrasena" autocomplete="new-password" />
               <button type="button" (click)="toggleRepeatPassword()" class="eye-button">
                 {{ hideRepeatPassword ? '👁️' : '🙈' }}
               </button>

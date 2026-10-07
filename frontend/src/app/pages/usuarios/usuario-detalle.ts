@@ -9,10 +9,10 @@ import { UsuarioAdministracion, UsuariosService } from './usuarios.service';
   imports: [RouterLink],
   template: `
     <main class="detalle-page">
-      <header class="topbar"><a class="brand" routerLink="/admin">EsiBuy</a><span>Gestión / Usuarios / Detalle</span><a routerLink="/admin/usuarios">Volver al listado</a></header>
+      <header class="topbar"><a class="brand" routerLink="/admin">EsiBuy</a><span>Gestión / Detalle</span><a [routerLink]="volverUrl()">Volver al listado</a></header>
       <div class="content">
-      <a class="back-link" routerLink="/admin/usuarios">← Volver al listado</a>
-      @if (cargando()) { <p class="status">Cargando información del usuario...</p> }
+      <a class="back-link" [routerLink]="volverUrl()">← Volver al listado</a>
+      @if (cargando()) { <p class="status">Cargando información...</p> }
       @else if (mensajeError()) { <p class="status error" role="alert">{{ mensajeError() }}</p> }
       @else if (usuario(); as datos) {
         <header class="page-header"><p class="eyebrow">Ficha administrativa</p><h1>{{ datos.nombre }} {{ datos.apellidos }}</h1><p>Información útil para la gestión de la cuenta.</p></header>
@@ -37,7 +37,7 @@ import { UsuarioAdministracion, UsuariosService } from './usuarios.service';
     .topbar a { color: #255B4D; font-weight: 700; text-decoration: none; }
     .brand { font-size: 1.2rem; }
     .content { width: min(820px, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 3rem; }
-    .back-link { color: #255B4D; font-weight: 700; text-decoration: none; }
+    .back-link { color: #255B4D; font-weight: 700; text-decoration: none; display: inline-block; margin-bottom: 1rem; }
     .page-header { margin: 1.75rem 0 1.5rem; }
     .eyebrow { margin: 0 0 .35rem; color: #D36B54; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
     h1 { margin: 0; color: #173042; font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.08; }
@@ -60,6 +60,9 @@ export class UsuarioDetalle implements OnInit {
   readonly usuario = signal<UsuarioAdministracion | null>(null);
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
+  
+  // Por defecto vuelve al listado general de usuarios, pero cambiará si el usuario es ADMIN
+  readonly volverUrl = signal('/admin/usuarios');
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -69,7 +72,14 @@ export class UsuarioDetalle implements OnInit {
       return;
     }
     this.usuariosService.consultarUsuario(id).subscribe({
-      next: (respuesta) => { this.usuario.set(respuesta); this.cargando.set(false); },
+      next: (respuesta) => { 
+        this.usuario.set(respuesta); 
+        this.cargando.set(false);
+        // Si el usuario consultado es administrador, el botón de retorno redirige al listado de administradores
+        if (respuesta.rol === 'ADMIN') {
+          this.volverUrl.set('/admin/administradores');
+        }
+      },
       error: (error: HttpErrorResponse) => {
         this.cargando.set(false);
         this.mensajeError.set(this.mensajeParaError(error));

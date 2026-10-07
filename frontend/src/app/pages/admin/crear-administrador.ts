@@ -4,7 +4,6 @@ import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AdministradorService, RegistroAdministradorRequest } from './administrador.service';
 
-// Validador personalizado para comprobar que las contraseñas coinciden
 const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const password = control.get('contrasena')?.value;
   const confirmation = control.get('repetirContrasena')?.value;
@@ -26,10 +25,10 @@ export class CrearAdministrador {
   readonly isSubmitting = signal(false);
   readonly mensajeError = signal('');
 
-  // Estados para ocultar/mostrar las contraseñas
   hidePassword = true;
   hideRepeatPassword = true;
 
+  // Inicializamos los campos vacíos explícitamente
   readonly form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
     apellidos: ['', Validators.required],
@@ -62,8 +61,6 @@ export class CrearAdministrador {
     this.mensajeError.set('');
 
     const values = this.form.getRawValue();
-    
-    // Generamos la fecha actual con formato YYYY-MM-DD
     const hoy = new Date();
     const fechaActual = hoy.toISOString().split('T')[0];
 
@@ -72,7 +69,7 @@ export class CrearAdministrador {
       apellidos: values.apellidos.trim(),
       email: values.email.trim(),
       contrasena: values.contrasena,
-      fechaIncorporacion: fechaActual, // Se envía automáticamente
+      fechaIncorporacion: fechaActual,
       ...(values.sede.trim() ? { sede: values.sede.trim() } : {}),
       ...(values.imagenPerfil.trim() ? { imagenPerfil: values.imagenPerfil.trim() } : {})
     };

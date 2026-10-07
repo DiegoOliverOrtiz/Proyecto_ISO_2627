@@ -135,7 +135,7 @@ public class AdministradorService {
 		administrador.setFechaIncorporacion(request.fechaIncorporacion());
 		administrador.setImagenPerfil(request.imagenPerfil());
 		administrador.setBloqueada(false);
-		administrador.setActivada(false);
+		administrador.setActivada(true);
 		administrador.registrarContrasenaHash(passwordEncoder.encode(request.contrasena()));
 
 		try {

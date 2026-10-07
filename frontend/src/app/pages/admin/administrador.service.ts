@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface RegistroAdministradorRequest {
@@ -18,15 +18,33 @@ export interface RegistroUsuarioResponse {
   tipoUsuario: string;
 }
 
+interface RespuestaTokenCsrf {
+  token: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdministradorService {
   private readonly http = inject(HttpClient);
 
   crearAdministrador(request: RegistroAdministradorRequest): Observable<RegistroUsuarioResponse> {
-    return this.http.post<RegistroUsuarioResponse>(
-      `${environment.apiUrl}/administrador/register`,
-      request,
-      { withCredentials: true }
-    );
+    // Obtenemos primero el token CSRF, igual que en el AuthService, para evitar el error 403 Forbidden
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.post<RegistroUsuarioResponse>(
+            `${environment.apiUrl}/administrador/register`,
+            request,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
   }
 }
