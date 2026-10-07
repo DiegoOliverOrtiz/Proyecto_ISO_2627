@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,8 @@ import org.springframework.security.core.Authentication;
 import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
+import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
+import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.services.AdministradorService;
@@ -64,11 +68,18 @@ public class AdministradorController {
 		return ResponseEntity.noContent().build();
 	}
 
-	public ResponseEntity<Void> eliminarAdministrador(String id, Authentication authentication) {
-		return null;
+	@PreAuthorize("hasRole('ADMIN')")
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> eliminarAdministrador(
+			@PathVariable String id,
+			Authentication authentication) {
+		administradorService.eliminarAdministrador(id, authentication.getName());
+		return ResponseEntity.noContent().build();
 	}
 
+	@ExceptionHandler({ AutoEliminacionAdministradorException.class, UltimoAdministradorException.class })
 	public ResponseEntity<ApiErrorResponse> manejarReglaEliminacion(RuntimeException excepcion) {
-		return null;
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ApiErrorResponse(excepcion.getMessage()));
 	}
 }
