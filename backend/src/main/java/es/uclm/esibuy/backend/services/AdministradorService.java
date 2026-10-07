@@ -14,6 +14,7 @@ import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
+import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
@@ -157,6 +158,9 @@ public class AdministradorService {
 	public void eliminarAdministrador(String id, String emailSolicitante) {
 		Administrador objetivo = administradorDAO.findById(id)
 				.orElseThrow(UsuarioNoEncontradoException::new);
+		if (emailSolicitante.equals(objetivo.getEmail())) {
+			throw new AutoEliminacionAdministradorException();
+		}
 		administradorDAO.delete(objetivo);
 	}
 }
