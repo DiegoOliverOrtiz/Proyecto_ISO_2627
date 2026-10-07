@@ -158,7 +158,8 @@ public class AdministradorService {
 	public void eliminarAdministrador(String id, String emailSolicitante) {
 		Administrador objetivo = administradorDAO.findById(id)
 				.orElseThrow(UsuarioNoEncontradoException::new);
-		if (emailSolicitante.equals(objetivo.getEmail())) {
+		String emailNormalizado = emailSolicitante.trim().toLowerCase(Locale.ROOT);
+		if (emailNormalizado.equals(objetivo.getEmail())) {
 			throw new AutoEliminacionAdministradorException();
 		}
 		administradorDAO.delete(objetivo);
