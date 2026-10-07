@@ -26,6 +26,10 @@ public class CategoriaService {
     }
 
     public Categoria crearCategoria(Categoria categoria) {
+        if (categoria.getNombre() == null || categoria.getNombre().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+
         return categoriaDAO.save(categoria);
     }
 }
