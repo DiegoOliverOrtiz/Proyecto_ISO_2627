@@ -85,4 +85,18 @@ class CategoriaControllerHU12Tests {
         .andExpect(status().isForbidden());
   }
 
+  @Test
+  void usuarioNoAutenticadoNoPuedeCrearCategoria() throws Exception {
+    mockMvc.perform(post("/categorias")
+        .with(csrf())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+            {
+              "nombre": "Hogar",
+              "descripcion": "Productos para el hogar"
+            }
+            """))
+        .andExpect(status().isForbidden());
+  }
+
 }
