@@ -37,7 +37,7 @@ class CategoriaServiceHU12Tests {
 
                 assertEquals("categoria-1", resultado.getId());
                 assertEquals("Hogar", resultado.getNombre());
-                assertEquals("Productos para el hogar",resultado.getDescripcion());
+                assertEquals("Productos para el hogar", resultado.getDescripcion());
 
                 verify(categoriaDAO).save(categoria);
         }
@@ -47,7 +47,18 @@ class CategoriaServiceHU12Tests {
                 Categoria categoria = new Categoria("", "Productos para el hogar");
 
                 assertThrows(IllegalArgumentException.class,
-                        () -> categoriaService.crearCategoria(categoria));
+                                () -> categoriaService.crearCategoria(categoria));
+
+                verifyNoInteractions(categoriaDAO);
+        }
+
+        @Test
+        void rechazaCategoriaConNombreSoloEspacios() {
+                Categoria categoria = new Categoria("   ", "Productos para el hogar");
+
+                assertThrows(
+                                IllegalArgumentException.class,
+                                () -> categoriaService.crearCategoria(categoria));
 
                 verifyNoInteractions(categoriaDAO);
         }
