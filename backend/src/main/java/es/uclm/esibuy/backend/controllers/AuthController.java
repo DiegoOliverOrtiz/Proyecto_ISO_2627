@@ -27,6 +27,7 @@ import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.SesionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -38,12 +39,15 @@ public class AuthController {
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
+    private final SesionService sesionService;
 
     public AuthController(
             AuthService authService,
-            SecurityContextRepository securityContextRepository) {
+            SecurityContextRepository securityContextRepository,
+            SesionService sesionService) {
         this.authService = authService;
         this.securityContextRepository = securityContextRepository;
+        this.sesionService = sesionService;
     }
 
     @GetMapping("/csrf")
@@ -66,6 +70,7 @@ public class AuthController {
         HttpSession sesion = request.getSession(true);
         request.changeSessionId();
         sesion.setMaxInactiveInterval(30 * 60);
+        sesionService.registrarSesion(sesion.getId(), usuarioValidado.getEmail());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
