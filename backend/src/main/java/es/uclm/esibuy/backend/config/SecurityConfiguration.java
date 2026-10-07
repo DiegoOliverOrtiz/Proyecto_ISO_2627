@@ -22,115 +22,122 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfiguration {
 
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
-    }
+        @Bean
+        SecurityContextRepository securityContextRepository() {
+                return new HttpSessionSecurityContextRepository();
+        }
 
-    @Bean
-    CookieCsrfTokenRepository csrfTokenRepository(
-            @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
+        @Bean
+        CookieCsrfTokenRepository csrfTokenRepository(
+                        @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
 
-        CookieCsrfTokenRepository repository =
-                CookieCsrfTokenRepository.withHttpOnlyFalse();
+                CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
 
-        repository.setCookieCustomizer(cookie ->
-                cookie.secure(cookieSeguro).sameSite("Lax"));
+                repository.setCookieCustomizer(cookie -> cookie.secure(cookieSeguro).sameSite("Lax"));
 
-        return repository;
-    }
+                return repository;
+        }
 
-    @Bean
-    SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            CorsConfigurationSource corsConfigurationSource,
-            SecurityContextRepository securityContextRepository,
-            CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
+        @Bean
+        SecurityFilterChain securityFilterChain(
+                        HttpSecurity http,
+                        CorsConfigurationSource corsConfigurationSource,
+                        SecurityContextRepository securityContextRepository,
+                        CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
 
-        http
-                .cors(cors ->
-                        cors.configurationSource(corsConfigurationSource))
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository)
-                        .ignoringRequestMatchers(
-                                "/cliente/register",
-                                "/vendedor/register"))
+                                .csrf(csrf -> csrf
+                                                .csrfTokenRepository(csrfTokenRepository)
+                                                .ignoringRequestMatchers(
+                                                                "/cliente/register",
+                                                                "/vendedor/register"))
 
-                .securityContext(context ->
-                        context.securityContextRepository(
-                                securityContextRepository))
+                                .securityContext(context -> context.securityContextRepository(
+                                                securityContextRepository))
 
-                .logout(logout -> logout
-                        .logoutUrl("/usuarios/logout")
-                        .logoutSuccessHandler(
-                                (request, response, authentication) ->
-                                        response.setStatus(204)))
+                                .logout(logout -> logout
+                                                .logoutUrl("/usuarios/logout")
+                                                .logoutSuccessHandler(
+                                                                (request, response, authentication) -> response
+                                                                                .setStatus(204)))
 
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                HttpMethod.OPTIONS,
-                                "/**").permitAll()
+                                .authorizeHttpRequests(authorize -> authorize
+                                                .requestMatchers(
+                                                                HttpMethod.OPTIONS,
+                                                                "/**")
+                                                .permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/usuarios/login",
-                                "/cliente/register",
-                                "/vendedor/register").permitAll()
+                                                .requestMatchers(
+                                                                HttpMethod.POST,
+                                                                "/usuarios/login",
+                                                                "/cliente/register",
+                                                                "/vendedor/register")
+                                                .permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/usuarios/csrf").permitAll()
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/usuarios/csrf")
+                                                .permitAll()
 
-                        // Necesario para el registro público de vendedores.
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/categorias/registro").permitAll()
+                                                // Necesario para el registro público de vendedores.
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/categorias/registro")
+                                                .permitAll()
 
-                        // HU11: consulta administrativa de categorías.
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/categorias",
-                                "/categorias/**").hasRole("ADMIN")
+                                                // HU11: consulta administrativa de categorías.
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/categorias",
+                                                                "/categorias/**")
+                                                .hasRole("ADMIN")
 
-                        .requestMatchers(
-                                "/cliente/**").hasRole("CLIENTE")
+                                                .requestMatchers(
+                                                                HttpMethod.POST,
+                                                                "/categorias")
+                                                .hasRole("ADMIN")
 
-                        .requestMatchers(
-                                "/vendedor/**").hasRole("VENDEDOR")
+                                                .requestMatchers(
+                                                                "/cliente/**")
+                                                .hasRole("CLIENTE")
 
-                        .requestMatchers(
-                                "/administrador/**").hasRole("ADMIN")
+                                                .requestMatchers(
+                                                                "/vendedor/**")
+                                                .hasRole("VENDEDOR")
 
-                        .anyRequest().authenticated());
+                                                .requestMatchers(
+                                                                "/administrador/**")
+                                                .hasRole("ADMIN")
 
-        return http.build();
-    }
+                                                .anyRequest().authenticated());
 
-    @Bean
-    CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origin:http://localhost:4200}")
-            String allowedOrigin) {
+                return http.build();
+        }
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        @Bean
+        CorsConfigurationSource corsConfigurationSource(
+                        @Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
 
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
-        configuration.setAllowedMethods(
-                List.of("GET", "POST", "OPTIONS"));
-        configuration.setAllowedHeaders(
-                List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
-        configuration.setAllowCredentials(true);
+                CorsConfiguration configuration = new CorsConfiguration();
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+                configuration.setAllowedOrigins(List.of(allowedOrigin));
+                configuration.setAllowedMethods(
+                                List.of("GET", "POST", "OPTIONS"));
+                configuration.setAllowedHeaders(
+                                List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
+                configuration.setAllowCredentials(true);
 
-        source.registerCorsConfiguration("/**", configuration);
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        return source;
-    }
+                source.registerCorsConfiguration("/**", configuration);
+
+                return source;
+        }
 }

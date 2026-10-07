@@ -1,6 +1,6 @@
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 
@@ -8,6 +8,15 @@ export interface Categoria {
   id: string;
   nombre: string;
   descripcion: string;
+}
+
+export interface CrearCategoriaRequest {
+  nombre: string;
+  descripcion: string;
+}
+
+interface RespuestaTokenCsrf {
+  token: string;
 }
 
 @Injectable({
@@ -28,5 +37,28 @@ export class CategoriasService {
       `${environment.apiUrl}/categorias/${id}`,
       { withCredentials: true }
     );
+  }
+
+  crearCategoria(
+    datos: CrearCategoriaRequest
+  ): Observable<Categoria> {
+    return this.http
+      .get<RespuestaTokenCsrf>(
+        `${environment.apiUrl}/usuarios/csrf`,
+        { withCredentials: true }
+      )
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.post<Categoria>(
+            `${environment.apiUrl}/categorias`,
+            datos,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders()
+                .set('X-XSRF-TOKEN', respuestaCsrf.token)
+            }
+          )
+        )
+      );
   }
 }
