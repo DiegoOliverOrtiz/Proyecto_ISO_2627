@@ -13,12 +13,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
-
 import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
+import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
+
 
 @ExtendWith(MockitoExtension.class)
 class AdministradorServiceEliminacionTests {
@@ -79,6 +82,30 @@ class AdministradorServiceEliminacionTests {
         assertThrows(AutoEliminacionAdministradorException.class,
                 () -> administradorService.eliminarAdministrador(
                         ID_OBJETIVO, "  " + EMAIL_SOLICITANTE.toUpperCase() + " "));
+
+        verify(administradorDAO, never()).delete(any(Administrador.class));
+    }
+
+    @Test
+    void eliminarAdministrador_conOtroAdministradorYQuedandoAlMenosUno_loElimina() {
+        Administrador objetivo = crearAdministrador(ID_OBJETIVO, EMAIL_OBJETIVO);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(objetivo));
+        when(administradorDAO.contarAdministradores()).thenReturn(2L);
+
+        administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
+
+        verify(administradorDAO).delete(objetivo);
+    }
+    
+    @ParameterizedTest
+    @ValueSource(longs = { 0L, 1L })
+    void eliminarAdministrador_siSoloQuedaUnoOMenos_lanzaUltimoAdministradorYNoElimina(long total) {
+        Administrador objetivo = crearAdministrador(ID_OBJETIVO, EMAIL_OBJETIVO);
+        when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(objetivo));
+        when(administradorDAO.contarAdministradores()).thenReturn(total);
+
+        assertThrows(UltimoAdministradorException.class,
+                () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
         verify(administradorDAO, never()).delete(any(Administrador.class));
     }
