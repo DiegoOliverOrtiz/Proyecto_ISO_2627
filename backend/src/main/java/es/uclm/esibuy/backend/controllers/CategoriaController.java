@@ -51,7 +51,7 @@ public class CategoriaController {
     }
 
     @PostMapping
-    public Categoria crearCategoria(@RequestBody CrearCategoriaRequest request) {
+    public Categoria crearCategoria(@Valid @RequestBody CrearCategoriaRequest request) {
         Categoria categoria = new Categoria(
                 request.nombre(),
                 request.descripcion());

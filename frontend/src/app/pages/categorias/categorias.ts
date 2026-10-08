@@ -35,8 +35,8 @@ export class Categorias implements OnInit {
   readonly creando = signal(false);
   readonly modificando = signal(false);
   readonly categoriaEnEdicion = signal<string | null>(null);
-  readonly mensajeCreacion = signal('');
-  readonly errorCreacion = signal('');
+  readonly mensajeResultado = signal('');
+  readonly errorFormulario = signal('');
 
   readonly formularioCategoria = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
@@ -68,8 +68,8 @@ export class Categorias implements OnInit {
     this.categoriaEnEdicion.set(null);
     this.formularioCategoria.reset();
     this.mostrandoFormulario.set(true);
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
   }
 
   iniciarEdicion(categoria: Categoria): void {
@@ -79,20 +79,20 @@ export class Categorias implements OnInit {
       descripcion: categoria.descripcion
     });
     this.mostrandoFormulario.set(true);
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
   }
 
   cancelarFormulario(): void {
     this.mostrandoFormulario.set(false);
     this.categoriaEnEdicion.set(null);
     this.formularioCategoria.reset();
-    this.errorCreacion.set('');
+    this.errorFormulario.set('');
   }
 
-  crearCategoria(): void {
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+  guardarCategoria(): void {
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
 
     this.formularioCategoria.markAllAsTouched();
 
@@ -108,7 +108,7 @@ export class Categorias implements OnInit {
     };
 
     if (!request.nombre || !request.descripcion) {
-      this.errorCreacion.set(
+      this.errorFormulario.set(
         'El nombre y la descripción no pueden estar vacíos.'
       );
       return;
@@ -133,7 +133,7 @@ export class Categorias implements OnInit {
         this.categoriaEnEdicion.set(null);
         this.formularioCategoria.reset();
 
-        this.mensajeCreacion.set(
+        this.mensajeResultado.set(
           'Categoría creada correctamente.'
         );
 
@@ -141,7 +141,7 @@ export class Categorias implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.creando.set(false);
-        this.errorCreacion.set(
+        this.errorFormulario.set(
           this.mensajeParaError(error, 'crear')
         );
       },
@@ -167,11 +167,11 @@ export class Categorias implements OnInit {
         this.mostrandoFormulario.set(false);
         this.categoriaEnEdicion.set(null);
         this.formularioCategoria.reset();
-        this.mensajeCreacion.set('Categoría modificada correctamente.');
+        this.mensajeResultado.set('Categoría modificada correctamente.');
       },
       error: (error: HttpErrorResponse) => {
         this.modificando.set(false);
-        this.errorCreacion.set(
+        this.errorFormulario.set(
           this.mensajeParaError(error, 'modificar')
         );
       },

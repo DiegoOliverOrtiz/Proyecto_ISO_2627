@@ -29,16 +29,12 @@ public class CategoriaService {
     }
 
     public Categoria crearCategoria(Categoria categoria) {
-        if (categoria.getNombre() == null || categoria.getNombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre es obligatorio");
-        }
-
-        if (categoria.getDescripcion() == null || categoria.getDescripcion().isBlank()) {
-            throw new IllegalArgumentException("La descripcion es obligatoria");
-        }
+        validarCampos(categoria.getNombre(), categoria.getDescripcion());
+        categoria.setNombre(categoria.getNombre().trim());
+        categoria.setDescripcion(categoria.getDescripcion().trim());
 
         if (categoriaDAO.existsByNombreIgnoreCase(categoria.getNombre())) {
-            throw new IllegalArgumentException("Ya existe una categoria con ese nombre");
+            throw new NombreCategoriaDuplicadoException();
         }
 
         return categoriaDAO.save(categoria);
@@ -48,21 +44,26 @@ public class CategoriaService {
         Categoria categoria = categoriaDAO.findById(id)
                 .orElseThrow(CategoriaNoEncontradaException::new);
 
-        if (request.nombre() == null || request.nombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre es obligatorio");
-        }
+        validarCampos(request.nombre(), request.descripcion());
+        String nombre = request.nombre().trim();
+        String descripcion = request.descripcion().trim();
 
-        if (request.descripcion() == null || request.descripcion().isBlank()) {
-            throw new IllegalArgumentException("La descripcion es obligatoria");
-        }
-
-        if (categoriaDAO.existsByNombreIgnoreCaseAndIdNot(request.nombre(), id)) {
+        if (categoriaDAO.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
             throw new NombreCategoriaDuplicadoException();
         }
 
-        categoria.setNombre(request.nombre());
-        categoria.setDescripcion(request.descripcion());
+        categoria.setNombre(nombre);
+        categoria.setDescripcion(descripcion);
 
         return categoriaDAO.save(categoria);
+    }
+
+    private void validarCampos(String nombre, String descripcion) {
+        if (nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("El nombre es obligatorio");
+        }
+        if (descripcion == null || descripcion.isBlank()) {
+            throw new IllegalArgumentException("La descripcion es obligatoria");
+        }
     }
 }

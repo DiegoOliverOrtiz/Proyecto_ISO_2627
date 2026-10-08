@@ -39,8 +39,8 @@ class CategoriaServiceHU13Tests {
         Categoria categoria = new Categoria("Hogar", "Productos para el hogar");
         categoria.setId(id);
         ModificarCategoriaRequest request = new ModificarCategoriaRequest(
-                "Casa",
-                "Artículos para el hogar");
+                "  Casa  ",
+                "  Artículos para el hogar  ");
 
         when(categoriaDAO.findById(id)).thenReturn(Optional.of(categoria));
         when(categoriaDAO.existsByNombreIgnoreCaseAndIdNot("Casa", id)).thenReturn(false);

@@ -31,9 +31,9 @@
         </button>
       </header>
 
-      @if (mensajeCreacion()) {
+      @if (mensajeResultado()) {
         <p class="success-message" role="status">
-          {{ mensajeCreacion() }}
+          {{ mensajeResultado() }}
         </p>
       }
 
@@ -53,7 +53,7 @@
 
           <form
             [formGroup]="formularioCategoria"
-            (ngSubmit)="crearCategoria()"
+            (ngSubmit)="guardarCategoria()"
           >
             <div class="form-grid">
               <label>
@@ -89,9 +89,9 @@
               </label>
             </div>
 
-            @if (errorCreacion()) {
+            @if (errorFormulario()) {
               <p class="form-error" role="alert">
-                {{ errorCreacion() }}
+                {{ errorFormulario() }}
               </p>
             }
 
