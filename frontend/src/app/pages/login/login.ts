@@ -1,8 +1,13 @@
 import { Component, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+
 import { AuthService } from './auth.service';
 import { rutaParaRol } from './rutas-por-rol';
 
@@ -23,33 +28,50 @@ export class Login {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
     });
+
+    const motivo = this.route.snapshot.queryParamMap.get('motivo');
+
+    if (motivo === 'sesion-expirada') {
+      this.mensajeError.set(
+        'Tu sesión ya no es válida. Es posible que tu cuenta haya sido bloqueada.'
+      );
+    }
   }
 
-  togglePassword() {
+  togglePassword(): void {
     this.hidePassword = !this.hidePassword;
   }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.loginForm.valid) {
       this.isLoading.set(true);
       this.mensajeError.set('');
       this.mensajeExito.set('');
+
       const { email, password } = this.loginForm.value;
 
-      this.authService.iniciarSesion(email ?? '', password ?? '').subscribe({
+      this.authService.iniciarSesion(
+        email ?? '',
+        password ?? ''
+      ).subscribe({
         next: (respuesta) => {
           this.isLoading.set(false);
-          this.router.navigateByUrl(rutaParaRol(respuesta.role));
+          this.router.navigateByUrl(
+            rutaParaRol(respuesta.role)
+          );
         },
         error: (error: HttpErrorResponse) => {
           this.isLoading.set(false);
+
           const cuerpo = error.error;
+
           this.mensajeError.set(
             typeof cuerpo === 'object' &&
             cuerpo !== null &&
@@ -60,7 +82,6 @@ export class Login {
           );
         }
       });
-      
     } else {
       this.loginForm.markAllAsTouched();
     }
