@@ -21,6 +21,7 @@ import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
 import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
+import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
@@ -77,8 +78,26 @@ public class AdministradorController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@ExceptionHandler({ AutoEliminacionAdministradorException.class, UltimoAdministradorException.class })
-	public ResponseEntity<ApiErrorResponse> manejarReglaEliminacion(RuntimeException excepcion) {
+	@PreAuthorize("hasRole('ADMIN')")
+	@PatchMapping("/usuarios/{id}/bloquear")
+	public ResponseEntity<Void> bloquearUsuario(@PathVariable String id, Authentication authentication) {
+		administradorService.bloquearUsuario(id, authentication.getName());
+		return ResponseEntity.noContent().build();
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PatchMapping("/usuarios/{id}/desbloquear")
+	public ResponseEntity<Void> desbloquearUsuario(@PathVariable String id, Authentication authentication) {
+		administradorService.desbloquearUsuario(id, authentication.getName());
+		return ResponseEntity.noContent().build();
+	}
+
+	@ExceptionHandler({
+        AutoEliminacionAdministradorException.class,
+        UltimoAdministradorException.class,
+        AutoBloqueoAdministradorException.class
+	})
+	public ResponseEntity<ApiErrorResponse> manejarReglaAdministrativa(RuntimeException excepcion) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ApiErrorResponse(excepcion.getMessage()));
 	}
