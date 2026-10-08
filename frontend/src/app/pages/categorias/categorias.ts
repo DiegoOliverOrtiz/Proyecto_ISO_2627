@@ -70,6 +70,7 @@ export class Categorias implements OnInit {
     this.mostrandoFormulario.set(true);
     this.mensajeResultado.set('');
     this.errorFormulario.set('');
+    this.desplazarAlFormulario();
   }
 
   iniciarEdicion(categoria: Categoria): void {
@@ -81,6 +82,7 @@ export class Categorias implements OnInit {
     this.mostrandoFormulario.set(true);
     this.mensajeResultado.set('');
     this.errorFormulario.set('');
+    this.desplazarAlFormulario();
   }
 
   cancelarFormulario(): void {
@@ -213,5 +215,16 @@ export class Categorias implements OnInit {
     }
 
     return `No se pudo ${accion} la categoría. Inténtalo de nuevo.`;
+  }
+
+  private desplazarAlFormulario(): void {
+    setTimeout(() => {
+      document
+        .getElementById('formulario-categoria')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+    });
   }
 }
