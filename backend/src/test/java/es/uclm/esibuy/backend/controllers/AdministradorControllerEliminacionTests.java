@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.services.AdministradorService;
@@ -25,53 +26,107 @@ import es.uclm.esibuy.backend.services.AdministradorService;
 @ExtendWith(MockitoExtension.class)
 class AdministradorControllerEliminacionTests {
 
-	private static final String ID = "admin-id";
-	private static final String EMAIL_AUTENTICADO = "admin.solicitante@esibuy.es";
+    private static final String ID = "admin-id";
+    private static final String EMAIL_AUTENTICADO = "admin.solicitante@esibuy.es";
 
-	@Mock
-	private AdministradorService administradorService;
-	@Mock
-	private Authentication authentication;
+    @Mock
+    private AdministradorService administradorService;
 
-	@InjectMocks
-	private AdministradorController controller;
+    @Mock
+    private Authentication authentication;
 
-	@Test
-	void eliminarAdministrador_siTodoVaBien_devuelve204YDelegaConElEmailAutenticado() {
-		when(authentication.getName()).thenReturn(EMAIL_AUTENTICADO);
+    @InjectMocks
+    private AdministradorController controller;
 
-		ResponseEntity<Void> respuesta = controller.eliminarAdministrador(ID, authentication);
+    @Test
+    void eliminarAdministrador_siTodoVaBien_devuelve204YDelegaConElEmailAutenticado() {
+        when(authentication.getName()).thenReturn(EMAIL_AUTENTICADO);
 
-		assertEquals(204, respuesta.getStatusCode().value());
-		verify(administradorService).eliminarAdministrador(ID, EMAIL_AUTENTICADO);
-	}
+        ResponseEntity<Void> respuesta =
+                controller.eliminarAdministrador(ID, authentication);
 
-	@Test
-	void eliminarAdministrador_estaRestringidoARolAdminYMetodoDelete() throws NoSuchMethodException {
-		Method metodo = AdministradorController.class
-				.getMethod("eliminarAdministrador", String.class, Authentication.class);
+        assertEquals(204, respuesta.getStatusCode().value());
 
-		PreAuthorize preAuthorize = metodo.getAnnotation(PreAuthorize.class);
-		assertNotNull(preAuthorize);
-		assertEquals("hasRole('ADMIN')", preAuthorize.value());
-		assertNotNull(metodo.getAnnotation(DeleteMapping.class));
-	}
+        verify(administradorService)
+                .eliminarAdministrador(ID, EMAIL_AUTENTICADO);
+    }
 
-	@Test
-	void manejarReglaEliminacion_autoEliminacion_devuelve409ConMensaje() {
-		ResponseEntity<ApiErrorResponse> respuesta = controller
-				.manejarReglaEliminacion(new AutoEliminacionAdministradorException());
+    @Test
+    void eliminarAdministrador_estaRestringidoARolAdminYMetodoDelete()
+            throws NoSuchMethodException {
 
-		assertEquals(409, respuesta.getStatusCode().value());
-		assertNotNull(respuesta.getBody());
-	}
+        Method metodo = AdministradorController.class
+                .getMethod(
+                        "eliminarAdministrador",
+                        String.class,
+                        Authentication.class
+                );
 
-	@Test
-	void manejarReglaEliminacion_ultimoAdministrador_devuelve409ConMensaje() {
-		ResponseEntity<ApiErrorResponse> respuesta = controller
-				.manejarReglaEliminacion(new UltimoAdministradorException());
+        PreAuthorize preAuthorize =
+                metodo.getAnnotation(PreAuthorize.class);
 
-		assertEquals(409, respuesta.getStatusCode().value());
-		assertNotNull(respuesta.getBody());
-	}
+        assertNotNull(preAuthorize);
+        assertEquals(
+                "hasRole('ADMIN')",
+                preAuthorize.value()
+        );
+
+        assertNotNull(
+                metodo.getAnnotation(DeleteMapping.class)
+        );
+    }
+
+    @Test
+    void manejarReglaAdministrativa_autoEliminacion_devuelve409ConMensaje() {
+
+        ResponseEntity<ApiErrorResponse> respuesta =
+                controller.manejarReglaAdministrativa(
+                        new AutoEliminacionAdministradorException()
+                );
+
+        assertEquals(
+                409,
+                respuesta.getStatusCode().value()
+        );
+
+        assertNotNull(
+                respuesta.getBody()
+        );
+    }
+
+    @Test
+    void manejarReglaAdministrativa_ultimoAdministrador_devuelve409ConMensaje() {
+
+        ResponseEntity<ApiErrorResponse> respuesta =
+                controller.manejarReglaAdministrativa(
+                        new UltimoAdministradorException()
+                );
+
+        assertEquals(
+                409,
+                respuesta.getStatusCode().value()
+        );
+
+        assertNotNull(
+                respuesta.getBody()
+        );
+    }
+
+    @Test
+    void manejarReglaAdministrativa_autoBloqueo_devuelve409ConMensaje() {
+
+        ResponseEntity<ApiErrorResponse> respuesta =
+                controller.manejarReglaAdministrativa(
+                        new AutoBloqueoAdministradorException()
+                );
+
+        assertEquals(
+                409,
+                respuesta.getStatusCode().value()
+        );
+
+        assertNotNull(
+                respuesta.getBody()
+        );
+    }
 }
