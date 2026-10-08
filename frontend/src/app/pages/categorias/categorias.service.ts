@@ -90,4 +90,24 @@ export class CategoriasService {
         )
       );
   }
+
+  eliminarCategoria(id: string): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(
+        `${environment.apiUrl}/usuarios/csrf`,
+        { withCredentials: true }
+      )
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.delete<void>(
+            `${environment.apiUrl}/categorias/${encodeURIComponent(id)}`,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders()
+                .set('X-XSRF-TOKEN', respuestaCsrf.token)
+            }
+          )
+        )
+      );
+  }
 }

@@ -5,6 +5,7 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 
 import { Categorias } from './categorias';
 import { environment } from '../../../environments/environment';
@@ -30,6 +31,7 @@ describe('Categorias', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     httpMock.verify();
   });
 
@@ -138,6 +140,7 @@ describe('Categorias', () => {
     const listado = httpMock.expectOne(
       `${environment.apiUrl}/categorias`
     );
+
     listado.flush([
       {
         id: 'categoria-1',
@@ -145,17 +148,20 @@ describe('Categorias', () => {
         descripcion: 'Productos deportivos',
       },
     ]);
+
     fixture.detectChanges();
 
     const botonEditar = fixture.nativeElement.querySelector(
       '[aria-label="Editar categoría Deportes"]'
     ) as HTMLButtonElement;
+
     botonEditar.click();
     fixture.detectChanges();
 
     const campoNombre = fixture.nativeElement.querySelector(
       '[formControlName="nombre"]'
     ) as HTMLInputElement;
+
     const campoDescripcion = fixture.nativeElement.querySelector(
       '[formControlName="descripcion"]'
     ) as HTMLTextAreaElement;
@@ -165,29 +171,37 @@ describe('Categorias', () => {
 
     campoNombre.value = '  Deportes outdoor  ';
     campoNombre.dispatchEvent(new Event('input'));
+
     campoDescripcion.value = '  Ropa y material para exterior  ';
     campoDescripcion.dispatchEvent(new Event('input'));
+
     fixture.detectChanges();
 
     const botonGuardar = fixture.nativeElement.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement;
+
     botonGuardar.click();
 
     const solicitudCsrf = httpMock.expectOne(
       `${environment.apiUrl}/usuarios/csrf`
     );
+
     expect(solicitudCsrf.request.method).toBe('GET');
     expect(solicitudCsrf.request.withCredentials).toBe(true);
+
     solicitudCsrf.flush({ token: 'token-csrf' });
 
     const solicitudPut = httpMock.expectOne(
       `${environment.apiUrl}/categorias/categoria-1`
     );
+
     expect(solicitudPut.request.method).toBe('PUT');
     expect(solicitudPut.request.withCredentials).toBe(true);
-    expect(solicitudPut.request.headers.get('X-XSRF-TOKEN'))
-      .toBe('token-csrf');
+    expect(
+      solicitudPut.request.headers.get('X-XSRF-TOKEN')
+    ).toBe('token-csrf');
+
     expect(solicitudPut.request.body).toEqual({
       nombre: 'Deportes outdoor',
       descripcion: 'Ropa y material para exterior',
@@ -198,18 +212,25 @@ describe('Categorias', () => {
       nombre: 'Deportes outdoor',
       descripcion: 'Ropa y material para exterior',
     });
+
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Deportes outdoor');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Deportes outdoor'
+    );
+
     expect(fixture.nativeElement.textContent).toContain(
       'Ropa y material para exterior'
     );
+
     expect(fixture.nativeElement.textContent).toContain(
       'Categoría modificada correctamente.'
     );
+
     const nombreEnTarjeta = fixture.nativeElement.querySelector(
       '.categoria-card h2'
     ) as HTMLHeadingElement;
+
     expect(nombreEnTarjeta.textContent).toBe('Deportes outdoor');
   });
 
@@ -219,6 +240,7 @@ describe('Categorias', () => {
     const listado = httpMock.expectOne(
       `${environment.apiUrl}/categorias`
     );
+
     listado.flush([
       {
         id: 'categoria-1',
@@ -226,48 +248,215 @@ describe('Categorias', () => {
         descripcion: 'Productos deportivos',
       },
     ]);
+
     fixture.detectChanges();
 
     const botonEditar = fixture.nativeElement.querySelector(
       '[aria-label="Editar categoría Deportes"]'
     ) as HTMLButtonElement;
+
     botonEditar.click();
     fixture.detectChanges();
 
     const campoNombre = fixture.nativeElement.querySelector(
       '[formControlName="nombre"]'
     ) as HTMLInputElement;
+
     campoNombre.value = 'Deportes duplicados';
     campoNombre.dispatchEvent(new Event('input'));
+
     fixture.detectChanges();
 
     const botonGuardar = fixture.nativeElement.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement;
+
     botonGuardar.click();
 
     const solicitudCsrf = httpMock.expectOne(
       `${environment.apiUrl}/usuarios/csrf`
     );
+
     solicitudCsrf.flush({ token: 'token-csrf' });
 
     const solicitudPut = httpMock.expectOne(
       `${environment.apiUrl}/categorias/categoria-1`
     );
+
     solicitudPut.flush(
-      { error: 'Ya existe una categoría con ese nombre.' },
-      { status: 409, statusText: 'Conflict' }
+      {
+        error: 'Ya existe una categoría con ese nombre.'
+      },
+      {
+        status: 409,
+        statusText: 'Conflict'
+      }
     );
+
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain(
       'Ya existe una categoría con ese nombre.'
     );
-    expect(fixture.nativeElement.textContent).toContain('Modificar categoría');
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Modificar categoría'
+    );
+
     expect(campoNombre.value).toBe('Deportes duplicados');
+
     const nombreEnTarjeta = fixture.nativeElement.querySelector(
       '.categoria-card h2'
     ) as HTMLHeadingElement;
+
     expect(nombreEnTarjeta.textContent).toBe('Deportes');
+  });
+
+  it('elimina una categoria y la quita del listado', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    fixture.detectChanges();
+
+    const listado = httpMock.expectOne(
+      `${environment.apiUrl}/categorias`
+    );
+
+    listado.flush([
+      {
+        id: 'categoria-1',
+        nombre: 'Deportes',
+        descripcion: 'Productos deportivos',
+      },
+    ]);
+
+    fixture.detectChanges();
+
+    const botonEliminar = fixture.nativeElement.querySelector(
+      '[aria-label="Eliminar categoría Deportes"]'
+    ) as HTMLButtonElement;
+
+    botonEliminar.click();
+
+    const solicitudCsrf = httpMock.expectOne(
+      `${environment.apiUrl}/usuarios/csrf`
+    );
+
+    expect(solicitudCsrf.request.method).toBe('GET');
+
+    solicitudCsrf.flush({
+      token: 'token-csrf'
+    });
+
+    const solicitudDelete = httpMock.expectOne(
+      `${environment.apiUrl}/categorias/categoria-1`
+    );
+
+    expect(solicitudDelete.request.method).toBe('DELETE');
+    expect(solicitudDelete.request.withCredentials).toBe(true);
+    expect(
+      solicitudDelete.request.headers.get('X-XSRF-TOKEN')
+    ).toBe('token-csrf');
+
+    solicitudDelete.flush(null);
+
+    fixture.detectChanges();
+
+    expect(component.categorias().length).toBe(0);
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Categoría eliminada correctamente.'
+    );
+  });
+
+  it('no elimina la categoria si se cancela la confirmacion', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    fixture.detectChanges();
+
+    const listado = httpMock.expectOne(
+      `${environment.apiUrl}/categorias`
+    );
+
+    listado.flush([
+      {
+        id: 'categoria-1',
+        nombre: 'Deportes',
+        descripcion: 'Productos deportivos',
+      },
+    ]);
+
+    fixture.detectChanges();
+
+    const botonEliminar = fixture.nativeElement.querySelector(
+      '[aria-label="Eliminar categoría Deportes"]'
+    ) as HTMLButtonElement;
+
+    botonEliminar.click();
+
+    expect(window.confirm).toHaveBeenCalled();
+
+    fixture.detectChanges();
+
+    expect(component.categorias().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Deportes');
+  });
+
+  it('muestra el error del backend si la categoria tiene productos asociados', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    fixture.detectChanges();
+
+    const listado = httpMock.expectOne(
+      `${environment.apiUrl}/categorias`
+    );
+
+    listado.flush([
+      {
+        id: 'categoria-1',
+        nombre: 'Deportes',
+        descripcion: 'Productos deportivos',
+      },
+    ]);
+
+    fixture.detectChanges();
+
+    const botonEliminar = fixture.nativeElement.querySelector(
+      '[aria-label="Eliminar categoría Deportes"]'
+    ) as HTMLButtonElement;
+
+    botonEliminar.click();
+
+    const solicitudCsrf = httpMock.expectOne(
+      `${environment.apiUrl}/usuarios/csrf`
+    );
+
+    solicitudCsrf.flush({
+      token: 'token-csrf'
+    });
+
+    const solicitudDelete = httpMock.expectOne(
+      `${environment.apiUrl}/categorias/categoria-1`
+    );
+
+    expect(solicitudDelete.request.method).toBe('DELETE');
+
+    solicitudDelete.flush(
+      {
+        error: 'No se puede eliminar una categoría con productos asociados.',
+      },
+      {
+        status: 409,
+        statusText: 'Conflict',
+      }
+    );
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'No se puede eliminar una categoría con productos asociados.'
+    );
+
+    expect(component.categorias().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Deportes');
   });
 });
