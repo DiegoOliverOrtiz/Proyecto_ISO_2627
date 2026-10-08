@@ -26,6 +26,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfiguration {
 
+        private static final String ROL_ADMIN = "ADMIN";
+        private static final String RUTA_CATEGORIAS = "/categorias/**";
+
         @Bean
         PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
@@ -119,18 +122,23 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias",
-                                                                "/categorias/**")
-                                                .hasRole("ADMIN")
+                                                                RUTA_CATEGORIAS)
+                                                .hasRole(ROL_ADMIN)
 
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/categorias")
-                                                .hasRole("ADMIN")
+                                                .hasRole(ROL_ADMIN)
 
                                                 .requestMatchers(
                                                                 HttpMethod.PUT,
-                                                                "/categorias/**")
-                                                .hasRole("ADMIN")
+                                                                RUTA_CATEGORIAS)
+                                                .hasRole(ROL_ADMIN)
+
+                                                .requestMatchers(
+                                                                HttpMethod.DELETE,
+                                                                RUTA_CATEGORIAS)
+                                                .hasRole(ROL_ADMIN)
 
                                                 .requestMatchers(
                                                                 "/cliente/**")
@@ -142,7 +150,7 @@ public class SecurityConfiguration {
 
                                                 .requestMatchers(
                                                                 "/administrador/**")
-                                                .hasRole("ADMIN")
+                                                .hasRole(ROL_ADMIN)
 
                                                 .anyRequest().authenticated());
 

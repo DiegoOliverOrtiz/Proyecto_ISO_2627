@@ -34,9 +34,10 @@ export class Categorias implements OnInit {
   readonly mostrandoFormulario = signal(false);
   readonly creando = signal(false);
   readonly modificando = signal(false);
+  readonly eliminando = signal<string | null>(null);
   readonly categoriaEnEdicion = signal<string | null>(null);
-  readonly mensajeCreacion = signal('');
-  readonly errorCreacion = signal('');
+  readonly mensajeResultado = signal('');
+  readonly errorFormulario = signal('');
 
   readonly formularioCategoria = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
@@ -68,8 +69,9 @@ export class Categorias implements OnInit {
     this.categoriaEnEdicion.set(null);
     this.formularioCategoria.reset();
     this.mostrandoFormulario.set(true);
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
+    this.desplazarAlFormulario();
   }
 
   iniciarEdicion(categoria: Categoria): void {
@@ -79,20 +81,21 @@ export class Categorias implements OnInit {
       descripcion: categoria.descripcion
     });
     this.mostrandoFormulario.set(true);
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
+    this.desplazarAlFormulario();
   }
 
   cancelarFormulario(): void {
     this.mostrandoFormulario.set(false);
     this.categoriaEnEdicion.set(null);
     this.formularioCategoria.reset();
-    this.errorCreacion.set('');
+    this.errorFormulario.set('');
   }
 
-  crearCategoria(): void {
-    this.mensajeCreacion.set('');
-    this.errorCreacion.set('');
+  guardarCategoria(): void {
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
 
     this.formularioCategoria.markAllAsTouched();
 
@@ -108,7 +111,7 @@ export class Categorias implements OnInit {
     };
 
     if (!request.nombre || !request.descripcion) {
-      this.errorCreacion.set(
+      this.errorFormulario.set(
         'El nombre y la descripción no pueden estar vacíos.'
       );
       return;
@@ -133,7 +136,7 @@ export class Categorias implements OnInit {
         this.categoriaEnEdicion.set(null);
         this.formularioCategoria.reset();
 
-        this.mensajeCreacion.set(
+        this.mensajeResultado.set(
           'Categoría creada correctamente.'
         );
 
@@ -141,7 +144,7 @@ export class Categorias implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.creando.set(false);
-        this.errorCreacion.set(
+        this.errorFormulario.set(
           this.mensajeParaError(error, 'crear')
         );
       },
@@ -167,12 +170,44 @@ export class Categorias implements OnInit {
         this.mostrandoFormulario.set(false);
         this.categoriaEnEdicion.set(null);
         this.formularioCategoria.reset();
-        this.mensajeCreacion.set('Categoría modificada correctamente.');
+        this.mensajeResultado.set('Categoría modificada correctamente.');
       },
       error: (error: HttpErrorResponse) => {
         this.modificando.set(false);
-        this.errorCreacion.set(
+        this.errorFormulario.set(
           this.mensajeParaError(error, 'modificar')
+        );
+      },
+    });
+  }
+
+  eliminarCategoria(categoria: Categoria): void {
+    const confirmar = window.confirm(
+      `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
+    this.eliminando.set(categoria.id);
+
+    this.categoriasService.eliminarCategoria(categoria.id).subscribe({
+      next: () => {
+        this.categorias.update((categorias) =>
+          categorias.filter((actual) => actual.id !== categoria.id)
+        );
+
+        this.eliminando.set(null);
+        this.mensajeResultado.set('Categoría eliminada correctamente.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.eliminando.set(null);
+
+        this.mensajeResultado.set(
+          this.mensajeParaError(error, 'eliminar')
         );
       },
     });
@@ -194,7 +229,7 @@ export class Categorias implements OnInit {
 
   private mensajeParaError(
     error: HttpErrorResponse,
-    accion: 'crear' | 'modificar'
+    accion: 'crear' | 'modificar' | 'eliminar'
   ): string {
     if ((error.status === 400 || error.status === 409) && error.error?.error) {
       return error.error.error;
@@ -202,6 +237,10 @@ export class Categorias implements OnInit {
 
     if (error.status === 404 && accion === 'modificar') {
       return 'La categoría que intentas modificar ya no existe.';
+    }
+
+    if (error.status === 404 && accion === 'eliminar') {
+      return 'La categoría que intentas eliminar ya no existe.';
     }
 
     if (error.status === 401 || error.status === 403) {
@@ -213,5 +252,16 @@ export class Categorias implements OnInit {
     }
 
     return `No se pudo ${accion} la categoría. Inténtalo de nuevo.`;
+  }
+
+  private desplazarAlFormulario(): void {
+    setTimeout(() => {
+      document
+        .getElementById('formulario-categoria')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+    });
   }
 }
