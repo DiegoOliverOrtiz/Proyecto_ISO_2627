@@ -6,7 +6,9 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
+import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dto.ModificarCategoriaRequest;
+import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
 import es.uclm.esibuy.backend.model.Categoria;
@@ -15,9 +17,13 @@ import es.uclm.esibuy.backend.model.Categoria;
 public class CategoriaService {
 
     private final CategoriaDAO categoriaDAO;
+    private final ProductoDAO productoDAO;
 
-    public CategoriaService(CategoriaDAO categoriaDAO) {
+    public CategoriaService(
+            CategoriaDAO categoriaDAO,
+            ProductoDAO productoDAO) {
         this.categoriaDAO = categoriaDAO;
+        this.productoDAO = productoDAO;
     }
 
     public List<Categoria> obtenerTodas() {
@@ -56,6 +62,17 @@ public class CategoriaService {
         categoria.setDescripcion(descripcion);
 
         return categoriaDAO.save(categoria);
+    }
+
+    public void eliminarCategoria(String id) {
+        Categoria categoria = categoriaDAO.findById(id)
+                .orElseThrow(CategoriaNoEncontradaException::new);
+
+        if (productoDAO.existsByCategoriaIgnoreCase(categoria.getNombre())) {
+            throw new CategoriaConProductosException();
+        }
+
+        categoriaDAO.delete(categoria);
     }
 
     private void validarCampos(String nombre, String descripcion) {

@@ -274,6 +274,39 @@ textarea:focus {
   line-height: 1.5;
 }
 
+.categoria-actions {
+  display: flex;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.danger-button {
+  min-height: 2.6rem;
+  padding: 0 1rem;
+  border: 1px solid #B84A3A;
+  border-radius: 4px;
+  background: transparent;
+  color: #B84A3A;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #B84A3A;
+  color: #fff;
+}
+
+.danger-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
 .status {
   padding: 2rem;
   border: 1px solid #D9E3DE;
@@ -319,6 +352,14 @@ textarea:focus {
   }
 
   .form-actions button {
+    width: 100%;
+  }
+
+  .categoria-actions {
+    flex-direction: column;
+  }
+
+  .categoria-actions button {
     width: 100%;
   }
 }

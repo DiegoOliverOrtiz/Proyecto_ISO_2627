@@ -130,10 +130,22 @@
             {{ categoria.descripcion }}
           </p>
 
-          <button class="secondary-button" type="button" (click)="iniciarEdicion(categoria)"
-            [disabled]="mostrandoFormulario()" [attr.aria-label]="'Editar categoría ' + categoria.nombre">
-            Editar
-          </button>
+          <div class="categoria-actions">
+            <button class="secondary-button" type="button" (click)="iniciarEdicion(categoria)"
+              [disabled]="mostrandoFormulario()" [attr.aria-label]="'Editar categoría ' + categoria.nombre">
+              Editar
+            </button>
+
+            <button class="danger-button" type="button" (click)="eliminarCategoria(categoria)"
+              [disabled]="mostrandoFormulario() || eliminando() !== null"
+              [attr.aria-label]="'Eliminar categoría ' + categoria.nombre">
+              @if (eliminando() === categoria.id) {
+              Eliminando...
+              } @else {
+              Eliminar
+              }
+            </button>
+          </div>
         </article>
         }
       </section>

@@ -34,6 +34,7 @@ export class Categorias implements OnInit {
   readonly mostrandoFormulario = signal(false);
   readonly creando = signal(false);
   readonly modificando = signal(false);
+  readonly eliminando = signal<string | null>(null);
   readonly categoriaEnEdicion = signal<string | null>(null);
   readonly mensajeResultado = signal('');
   readonly errorFormulario = signal('');
@@ -180,6 +181,38 @@ export class Categorias implements OnInit {
     });
   }
 
+  eliminarCategoria(categoria: Categoria): void {
+    const confirmar = window.confirm(
+      `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.mensajeResultado.set('');
+    this.errorFormulario.set('');
+    this.eliminando.set(categoria.id);
+
+    this.categoriasService.eliminarCategoria(categoria.id).subscribe({
+      next: () => {
+        this.categorias.update((categorias) =>
+          categorias.filter((actual) => actual.id !== categoria.id)
+        );
+
+        this.eliminando.set(null);
+        this.mensajeResultado.set('Categoría eliminada correctamente.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.eliminando.set(null);
+
+        this.mensajeResultado.set(
+          this.mensajeParaError(error, 'eliminar')
+        );
+      },
+    });
+  }
+
   nombreInvalido(): boolean {
     const control = this.formularioCategoria.controls.nombre;
 
@@ -196,7 +229,7 @@ export class Categorias implements OnInit {
 
   private mensajeParaError(
     error: HttpErrorResponse,
-    accion: 'crear' | 'modificar'
+    accion: 'crear' | 'modificar' | 'eliminar'
   ): string {
     if ((error.status === 400 || error.status === 409) && error.error?.error) {
       return error.error.error;
@@ -204,6 +237,10 @@ export class Categorias implements OnInit {
 
     if (error.status === 404 && accion === 'modificar') {
       return 'La categoría que intentas modificar ya no existe.';
+    }
+
+    if (error.status === 404 && accion === 'eliminar') {
+      return 'La categoría que intentas eliminar ya no existe.';
     }
 
     if (error.status === 401 || error.status === 403) {
