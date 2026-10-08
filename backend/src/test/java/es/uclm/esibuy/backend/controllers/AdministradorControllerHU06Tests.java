@@ -19,87 +19,113 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
+import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.services.AdministradorService;
 
 @WebMvcTest(controllers = AdministradorController.class)
 @Import(AdministradorControllerHU06Tests.MethodSecurityTestConfig.class)
 class AdministradorControllerHU06Tests {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private AdministradorService administradorService;
+        @MockitoBean
+        private AdministradorService administradorService;
 
-    @TestConfiguration
-    @EnableMethodSecurity
-    static class MethodSecurityTestConfig {
-    }
+        @TestConfiguration
+        @EnableMethodSecurity
+        static class MethodSecurityTestConfig {
+        }
 
-    @Test
-    void administradorPuedeBloquearUsuario() throws Exception {
-        mockMvc.perform(
-                patch("/administrador/usuarios/usuario-id/bloquear")
-                        .with(user("admin@esibuy.es").roles("ADMIN"))
-                        .with(csrf()))
-                .andExpect(status().isNoContent());
+        @Test
+        void administradorPuedeBloquearUsuario() throws Exception {
+                mockMvc.perform(
+                                patch("/administrador/usuarios/usuario-id/bloquear")
+                                                .with(user("admin@esibuy.es").roles("ADMIN"))
+                                                .with(csrf()))
+                                .andExpect(status().isNoContent());
 
-        verify(administradorService)
-                .bloquearUsuario(
-                        "usuario-id",
-                        "admin@esibuy.es");
-    }
+                verify(administradorService)
+                                .bloquearUsuario(
+                                                "usuario-id",
+                                                "admin@esibuy.es");
+        }
 
-    @Test
-    void administradorPuedeDesbloquearUsuario() throws Exception {
-        mockMvc.perform(
-                patch("/administrador/usuarios/usuario-id/desbloquear")
-                        .with(user("admin@esibuy.es").roles("ADMIN"))
-                        .with(csrf()))
-                .andExpect(status().isNoContent());
+        @Test
+        void administradorPuedeDesbloquearUsuario() throws Exception {
+                mockMvc.perform(
+                                patch("/administrador/usuarios/usuario-id/desbloquear")
+                                                .with(user("admin@esibuy.es").roles("ADMIN"))
+                                                .with(csrf()))
+                                .andExpect(status().isNoContent());
 
-        verify(administradorService)
-                .desbloquearUsuario(
-                        "usuario-id",
-                        "admin@esibuy.es");
-    }
+                verify(administradorService)
+                                .desbloquearUsuario(
+                                                "usuario-id",
+                                                "admin@esibuy.es");
+        }
 
-    @Test
-    void clienteNoPuedeBloquearUsuario() throws Exception {
-        mockMvc.perform(
-                patch("/administrador/usuarios/usuario-id/bloquear")
-                        .with(user("cliente@example.com").roles("CLIENTE"))
-                        .with(csrf()))
-                .andExpect(status().isForbidden());
+        @Test
+        void clienteNoPuedeBloquearUsuario() throws Exception {
+                mockMvc.perform(
+                                patch("/administrador/usuarios/usuario-id/bloquear")
+                                                .with(user("cliente@example.com").roles("CLIENTE"))
+                                                .with(csrf()))
+                                .andExpect(status().isForbidden());
 
-        verifyNoInteractions(administradorService);
-    }
+                verifyNoInteractions(administradorService);
+        }
 
-    @Test
-    void vendedorNoPuedeDesbloquearUsuario() throws Exception {
-        mockMvc.perform(
-                patch("/administrador/usuarios/usuario-id/desbloquear")
-                        .with(user("vendedor@example.com").roles("VENDEDOR"))
-                        .with(csrf()))
-                .andExpect(status().isForbidden());
+        @Test
+        void vendedorNoPuedeDesbloquearUsuario() throws Exception {
+                mockMvc.perform(
+                                patch("/administrador/usuarios/usuario-id/desbloquear")
+                                                .with(user("vendedor@example.com").roles("VENDEDOR"))
+                                                .with(csrf()))
+                                .andExpect(status().isForbidden());
 
-        verifyNoInteractions(administradorService);
-    }
+                verifyNoInteractions(administradorService);
+        }
 
-    @Test
-    void autobloqueoDevuelveConflicto() throws Exception {
-        doThrow(new AutoBloqueoAdministradorException())
-                .when(administradorService)
-                .bloquearUsuario(
-                        "admin-id",
-                        "admin@esibuy.es");
+        @Test
+        void autobloqueoDevuelveConflicto() throws Exception {
+                doThrow(new AutoBloqueoAdministradorException())
+                                .when(administradorService)
+                                .bloquearUsuario(
+                                                "admin-id",
+                                                "admin@esibuy.es");
 
-        mockMvc.perform(
-                patch("/administrador/usuarios/admin-id/bloquear")
-                        .with(user("admin@esibuy.es").roles("ADMIN"))
-                        .with(csrf()))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error")
-                        .value("Un administrador no puede bloquear ni desbloquear su propia cuenta."));
-    }
+                mockMvc.perform(
+                                patch("/administrador/usuarios/admin-id/bloquear")
+                                                .with(user("admin@esibuy.es").roles("ADMIN"))
+                                                .with(csrf()))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.error")
+                                                .value("Un administrador no puede bloquear ni desbloquear su propia cuenta."));
+        }
+
+        @Test
+        void usuarioNoAutenticadoNoPuedeBloquearUsuario() throws Exception {
+                mockMvc.perform(
+                                patch("/administrador/usuarios/usuario-id/bloquear")
+                                                .with(csrf()))
+                                .andExpect(status().isUnauthorized());
+
+                verifyNoInteractions(administradorService);
+        }
+
+        @Test
+        void bloquearUsuarioInexistenteDevuelveNotFound() throws Exception {
+                doThrow(new UsuarioNoEncontradoException())
+                                .when(administradorService)
+                                .bloquearUsuario(
+                                                "no-existe",
+                                                "admin@esibuy.es");
+
+                mockMvc.perform(
+                                patch("/administrador/usuarios/no-existe/bloquear")
+                                                .with(user("admin@esibuy.es").roles("ADMIN"))
+                                                .with(csrf()))
+                                .andExpect(status().isNotFound());
+        }
 }

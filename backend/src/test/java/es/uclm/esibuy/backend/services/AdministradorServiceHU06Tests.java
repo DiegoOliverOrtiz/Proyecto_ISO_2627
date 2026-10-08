@@ -30,179 +30,212 @@ import jakarta.validation.Validator;
 @ExtendWith(MockitoExtension.class)
 class AdministradorServiceHU06Tests {
 
-    @Mock
-    private AdministradorDAO administradorDAO;
+        @Mock
+        private AdministradorDAO administradorDAO;
 
-    @Mock
-    private UsuarioDAO usuarioDAO;
+        @Mock
+        private UsuarioDAO usuarioDAO;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
+        @Mock
+        private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private PasswordPolicy passwordPolicy;
+        @Mock
+        private PasswordPolicy passwordPolicy;
 
-    @Mock
-    private Validator validator;
+        @Mock
+        private Validator validator;
 
-    @Mock
-    private SesionService sesionService;
+        @Mock
+        private SesionService sesionService;
 
-    private AdministradorService servicio;
+        private AdministradorService servicio;
 
-    @BeforeEach
-    void setUp() {
-        servicio = new AdministradorService(
-                administradorDAO,
-                usuarioDAO,
-                passwordEncoder,
-                passwordPolicy,
-                validator,
-                sesionService);
-    }
+        @BeforeEach
+        void setUp() {
+                servicio = new AdministradorService(
+                                administradorDAO,
+                                usuarioDAO,
+                                passwordEncoder,
+                                passwordPolicy,
+                                validator,
+                                sesionService);
+        }
 
-    @Test
-    void bloquearUsuarioCambiaEstadoPersisteYCierraSesiones() {
-        Cliente usuario = new Cliente();
-        usuario.setId("usuario-id");
-        usuario.setEmail("cliente@example.com");
-        usuario.setActivada(true);
-        usuario.setBloqueada(false);
+        @Test
+        void bloquearUsuarioCambiaEstadoPersisteYCierraSesiones() {
+                Cliente usuario = new Cliente();
+                usuario.setId("usuario-id");
+                usuario.setEmail("cliente@example.com");
+                usuario.setActivada(true);
+                usuario.setBloqueada(false);
 
-        when(usuarioDAO.findById("usuario-id"))
-                .thenReturn(Optional.of(usuario));
+                when(usuarioDAO.findById("usuario-id"))
+                                .thenReturn(Optional.of(usuario));
 
-        servicio.bloquearUsuario(
-                "usuario-id",
-                "admin@esibuy.es");
+                servicio.bloquearUsuario(
+                                "usuario-id",
+                                "admin@esibuy.es");
 
-        assertTrue(usuario.isBloqueada());
-        assertTrue(usuario.isActivada());
+                assertTrue(usuario.isBloqueada());
+                assertTrue(usuario.isActivada());
 
-        verify(usuarioDAO).save(usuario);
-        verify(sesionService).cerrarSesiones("cliente@example.com");
-    }
+                verify(usuarioDAO).save(usuario);
+                verify(sesionService).cerrarSesiones("cliente@example.com");
+        }
 
-    @Test
-    void bloquearUsuarioPendienteNoLoActiva() {
-        Cliente usuario = new Cliente();
-        usuario.setId("usuario-id");
-        usuario.setEmail("pendiente@example.com");
-        usuario.setActivada(false);
-        usuario.setBloqueada(false);
+        @Test
+        void bloquearUsuarioPendienteNoLoActiva() {
+                Cliente usuario = new Cliente();
+                usuario.setId("usuario-id");
+                usuario.setEmail("pendiente@example.com");
+                usuario.setActivada(false);
+                usuario.setBloqueada(false);
 
-        when(usuarioDAO.findById("usuario-id"))
-                .thenReturn(Optional.of(usuario));
+                when(usuarioDAO.findById("usuario-id"))
+                                .thenReturn(Optional.of(usuario));
 
-        servicio.bloquearUsuario(
-                "usuario-id",
-                "admin@esibuy.es");
+                servicio.bloquearUsuario(
+                                "usuario-id",
+                                "admin@esibuy.es");
 
-        assertTrue(usuario.isBloqueada());
-        assertFalse(usuario.isActivada());
+                assertTrue(usuario.isBloqueada());
+                assertFalse(usuario.isActivada());
 
-        verify(usuarioDAO).save(usuario);
-        verify(sesionService).cerrarSesiones("pendiente@example.com");
-    }
+                verify(usuarioDAO).save(usuario);
+                verify(sesionService).cerrarSesiones("pendiente@example.com");
+        }
 
-    @Test
-    void desbloquearUsuarioPreservaEstadoDeActivacion() {
-        Cliente usuario = new Cliente();
-        usuario.setId("usuario-id");
-        usuario.setEmail("pendiente@example.com");
-        usuario.setActivada(false);
-        usuario.setBloqueada(true);
+        @Test
+        void desbloquearUsuarioPreservaEstadoDeActivacion() {
+                Cliente usuario = new Cliente();
+                usuario.setId("usuario-id");
+                usuario.setEmail("pendiente@example.com");
+                usuario.setActivada(false);
+                usuario.setBloqueada(true);
 
-        when(usuarioDAO.findById("usuario-id"))
-                .thenReturn(Optional.of(usuario));
+                when(usuarioDAO.findById("usuario-id"))
+                                .thenReturn(Optional.of(usuario));
 
-        servicio.desbloquearUsuario(
-                "usuario-id",
-                "admin@esibuy.es");
+                servicio.desbloquearUsuario(
+                                "usuario-id",
+                                "admin@esibuy.es");
 
-        assertFalse(usuario.isBloqueada());
-        assertFalse(usuario.isActivada());
+                assertFalse(usuario.isBloqueada());
+                assertFalse(usuario.isActivada());
 
-        verify(usuarioDAO).save(usuario);
-        verifyNoInteractions(sesionService);
-    }
+                verify(usuarioDAO).save(usuario);
+                verifyNoInteractions(sesionService);
+        }
 
-    @Test
-    void administradorNoPuedeBloquearseASiMismo() {
-        Administrador administrador = new Administrador();
-        administrador.setId("admin-id");
-        administrador.setEmail("admin@esibuy.es");
-        administrador.setActivada(true);
-        administrador.setBloqueada(false);
+        @Test
+        void administradorNoPuedeBloquearseASiMismo() {
+                Administrador administrador = new Administrador();
+                administrador.setId("admin-id");
+                administrador.setEmail("admin@esibuy.es");
+                administrador.setActivada(true);
+                administrador.setBloqueada(false);
 
-        when(usuarioDAO.findById("admin-id"))
-                .thenReturn(Optional.of(administrador));
+                when(usuarioDAO.findById("admin-id"))
+                                .thenReturn(Optional.of(administrador));
 
-        assertThrows(
-                AutoBloqueoAdministradorException.class,
-                () -> servicio.bloquearUsuario(
-                        "admin-id",
-                        "admin@esibuy.es"));
+                assertThrows(
+                                AutoBloqueoAdministradorException.class,
+                                () -> servicio.bloquearUsuario(
+                                                "admin-id",
+                                                "admin@esibuy.es"));
 
-        assertFalse(administrador.isBloqueada());
+                assertFalse(administrador.isBloqueada());
 
-        verify(usuarioDAO, never()).save(any(Usuario.class));
-        verifyNoInteractions(sesionService);
-    }
+                verify(usuarioDAO, never()).save(any(Usuario.class));
+                verifyNoInteractions(sesionService);
+        }
 
-    @Test
-    void administradorNoPuedeDesbloquearseASiMismo() {
-        Administrador administrador = new Administrador();
-        administrador.setId("admin-id");
-        administrador.setEmail("admin@esibuy.es");
-        administrador.setActivada(true);
-        administrador.setBloqueada(true);
+        @Test
+        void administradorNoPuedeDesbloquearseASiMismo() {
+                Administrador administrador = new Administrador();
+                administrador.setId("admin-id");
+                administrador.setEmail("admin@esibuy.es");
+                administrador.setActivada(true);
+                administrador.setBloqueada(true);
 
-        when(usuarioDAO.findById("admin-id"))
-                .thenReturn(Optional.of(administrador));
+                when(usuarioDAO.findById("admin-id"))
+                                .thenReturn(Optional.of(administrador));
 
-        assertThrows(
-                AutoBloqueoAdministradorException.class,
-                () -> servicio.desbloquearUsuario(
-                        "admin-id",
-                        "admin@esibuy.es"));
+                assertThrows(
+                                AutoBloqueoAdministradorException.class,
+                                () -> servicio.desbloquearUsuario(
+                                                "admin-id",
+                                                "admin@esibuy.es"));
 
-        assertTrue(administrador.isBloqueada());
+                assertTrue(administrador.isBloqueada());
 
-        verify(usuarioDAO, never()).save(any(Usuario.class));
-        verifyNoInteractions(sesionService);
-    }
+                verify(usuarioDAO, never()).save(any(Usuario.class));
+                verifyNoInteractions(sesionService);
+        }
 
-    @Test
-    void bloquearUsuarioInexistenteLanzaExcepcion() {
-        when(usuarioDAO.findById("no-existe"))
-                .thenReturn(Optional.empty());
+        @Test
+        void bloquearUsuarioInexistenteLanzaExcepcion() {
+                when(usuarioDAO.findById("no-existe"))
+                                .thenReturn(Optional.empty());
 
-        assertThrows(
-                UsuarioNoEncontradoException.class,
-                () -> servicio.bloquearUsuario(
-                        "no-existe",
-                        "admin@esibuy.es"));
+                assertThrows(
+                                UsuarioNoEncontradoException.class,
+                                () -> servicio.bloquearUsuario(
+                                                "no-existe",
+                                                "admin@esibuy.es"));
 
-        verifyNoInteractions(sesionService);
-    }
+                verifyNoInteractions(sesionService);
+        }
 
-    @Test
-    void usuarioYaBloqueadoNoSeGuardaNiSeCierranSesionesDeNuevo() {
-        Cliente usuario = new Cliente();
-        usuario.setId("usuario-id");
-        usuario.setEmail("cliente@example.com");
-        usuario.setActivada(true);
-        usuario.setBloqueada(true);
+        @Test
+        void usuarioYaBloqueadoNoSeGuardaNiSeCierranSesionesDeNuevo() {
+                Cliente usuario = new Cliente();
+                usuario.setId("usuario-id");
+                usuario.setEmail("cliente@example.com");
+                usuario.setActivada(true);
+                usuario.setBloqueada(true);
 
-        when(usuarioDAO.findById("usuario-id"))
-                .thenReturn(Optional.of(usuario));
+                when(usuarioDAO.findById("usuario-id"))
+                                .thenReturn(Optional.of(usuario));
 
-        servicio.bloquearUsuario(
-                "usuario-id",
-                "admin@esibuy.es");
+                servicio.bloquearUsuario(
+                                "usuario-id",
+                                "admin@esibuy.es");
 
-        verify(usuarioDAO, never()).save(any(Usuario.class));
-        verifyNoInteractions(sesionService);
-    }
+                verify(usuarioDAO, never()).save(any(Usuario.class));
+                verifyNoInteractions(sesionService);
+        }
+
+        @Test
+        void desbloquearUsuarioInexistenteLanzaExcepcion() {
+                when(usuarioDAO.findById("no-existe"))
+                                .thenReturn(Optional.empty());
+
+                assertThrows(
+                                UsuarioNoEncontradoException.class,
+                                () -> servicio.desbloquearUsuario(
+                                                "no-existe",
+                                                "admin@esibuy.es"));
+
+                verifyNoInteractions(sesionService);
+        }
+
+        @Test
+        void usuarioYaDesbloqueadoNoSeGuardaDeNuevo() {
+                Cliente usuario = new Cliente();
+                usuario.setId("usuario-id");
+                usuario.setEmail("cliente@example.com");
+                usuario.setActivada(true);
+                usuario.setBloqueada(false);
+
+                when(usuarioDAO.findById("usuario-id"))
+                                .thenReturn(Optional.of(usuario));
+
+                servicio.desbloquearUsuario(
+                                "usuario-id",
+                                "admin@esibuy.es");
+
+                verify(usuarioDAO, never()).save(any(Usuario.class));
+                verifyNoInteractions(sesionService);
+        }
 }

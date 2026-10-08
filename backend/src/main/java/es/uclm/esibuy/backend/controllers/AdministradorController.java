@@ -27,7 +27,6 @@ import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import jakarta.validation.Valid;
-import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 
 @RestController
 @RequestMapping("/administrador")
