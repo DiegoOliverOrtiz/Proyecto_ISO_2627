@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface UsuarioAdministracion {
@@ -34,10 +34,15 @@ export interface EstadisticasUsuarios {
   desactivados: number;
 }
 
+interface RespuestaTokenCsrf {
+  token: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UsuariosService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/administrador/usuarios`;
+  private readonly csrfUrl = `${environment.apiUrl}/usuarios/csrf`;
 
   consultarUsuarios(
     busqueda: string,
@@ -63,8 +68,43 @@ export class UsuariosService {
   }
 
   consultarUsuario(id: string): Observable<UsuarioAdministracion> {
-    return this.http.get<UsuarioAdministracion>(`${this.url}/${encodeURIComponent(id)}`, {
-      withCredentials: true
-    });
+    return this.http.get<UsuarioAdministracion>(
+      `${this.url}/${encodeURIComponent(id)}`,
+      {
+        withCredentials: true
+      }
+    );
+  }
+
+  bloquearUsuario(id: string): Observable<void> {
+    return this.cambiarBloqueo(id, 'bloquear');
+  }
+
+  desbloquearUsuario(id: string): Observable<void> {
+    return this.cambiarBloqueo(id, 'desbloquear');
+  }
+
+  private cambiarBloqueo(
+    id: string,
+    accion: 'bloquear' | 'desbloquear'
+  ): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(this.csrfUrl, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.patch<void>(
+            `${this.url}/${encodeURIComponent(id)}/${accion}`,
+            null,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
   }
 }
