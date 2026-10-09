@@ -138,12 +138,14 @@ public class ProductoService {
             String idProducto,
             ModificarProductoRequest request,
             MultipartFile imagen) {
+        String nombreCategoria = validarModificacion(request);
+
         Producto producto = productoDAO.findById(idProducto)
                 .orElseThrow(ProductoNoEncontradoException::new);
 
         // Solo se actualizan los campos permitidos; el vendedor y la visibilidad se conservan.
         producto.setNombre(request.nombre().trim());
-        producto.setCategoria(request.categoria().trim());
+        producto.setCategoria(nombreCategoria);
         producto.setDescripcion(request.descripcion() == null ? null : request.descripcion().trim());
         producto.setPrecio(request.precio());
         producto.setStock(request.stock());
@@ -162,6 +164,28 @@ public class ProductoService {
             productoImagenService.eliminar(imagenAnterior);
         }
         return aConsultarProductosResponse(productoModificado);
+    }
+
+    // Devuelve el nombre de la categoría normalizado si los datos son válidos.
+    private String validarModificacion(ModificarProductoRequest request) {
+        if (request == null || !validar.validate(request).isEmpty()
+                || request.nombre() == null || request.nombre().isBlank()
+                || request.precio() == null || request.precio() <= 0
+                || request.stock() < 0
+                || !esDescuentoValido(request.descuento())
+                || !esDescuentoValido(request.descuentoPremium())) {
+            throw new InvalidProductException();
+        }
+
+        String nombreCategoria = request.categoria() == null ? "" : request.categoria().trim();
+        if (nombreCategoria.isBlank() || !categoriaDAO.existsByNombreIgnoreCase(nombreCategoria)) {
+            throw new InvalidProductException();
+        }
+        return nombreCategoria;
+    }
+
+    private static boolean esDescuentoValido(int descuento) {
+        return descuento >= 0 && descuento <= 100;
     }
 
     private Producto guardarEliminandoImagenSiFalla(Producto producto, String rutaImagen) {

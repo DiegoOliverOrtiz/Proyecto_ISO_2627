@@ -47,8 +47,8 @@ export class PanelVendedor implements OnInit {
     esVisible: [true],
     precio: [0, [Validators.required, Validators.min(0.01)]],
     stock: [0, [Validators.required, Validators.min(0)]],
-    descuento: [0, [Validators.required, Validators.min(0)]],
-    descuentoPremium: [0, [Validators.required, Validators.min(0)]],
+    descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
+    descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
 
   cerrarSesion(): void {
