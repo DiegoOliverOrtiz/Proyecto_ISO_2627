@@ -47,17 +47,28 @@ public class ProductoService {
                         "Solo un vendedor activo puede consultar sus productos."));
 
         return productoDAO.findByVendedor(vendedor.getNombreComercial()).stream()
-                .map(producto -> new ConsultarProductosResponse(
-                        producto.getNombre(),
-                        producto.getCategoria(),
-                        producto.getStock(),
-                        producto.getDescripcion(),
-                        producto.getPrecio(),
-                        producto.getDescuento(),
-                        producto.getDescuentoPremium(),
-                        producto.isEsVisible(),
-                        producto.getImagen()))
+                .map(this::aConsultarProductosResponse)
                 .toList();
+    }
+
+    public List<ConsultarProductosResponse> consultarProductosParaClientes() {
+        // Los productos desactivados no se muestran a los clientes.
+        return productoDAO.findByEsVisibleTrue().stream()
+                .map(this::aConsultarProductosResponse)
+                .toList();
+    }
+
+    private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {
+        return new ConsultarProductosResponse(
+                producto.getNombre(),
+                producto.getCategoria(),
+                producto.getStock(),
+                producto.getDescripcion(),
+                producto.getPrecio(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                producto.isEsVisible(),
+                producto.getImagen());
     }
 
     public CrearProductoResponse crearProducto(

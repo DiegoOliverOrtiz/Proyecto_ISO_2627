@@ -7,6 +7,8 @@ import es.uclm.esibuy.backend.model.Producto;
 
 public interface ProductoDAO extends MongoRepository<Producto, String> {
     List<Producto> findByVendedor(String nombreComercial);
-    
+
+    List<Producto> findByEsVisibleTrue();
+
     boolean existsByCategoriaIgnoreCase(String categoria);
 }

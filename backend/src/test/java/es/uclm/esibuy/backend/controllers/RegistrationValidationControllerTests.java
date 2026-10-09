@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import es.uclm.esibuy.backend.services.ClienteService;
+import es.uclm.esibuy.backend.services.ProductoService;
 
 class RegistrationValidationControllerTests {
 	private final ClienteService clienteService = mock(ClienteService.class);
@@ -26,7 +27,7 @@ class RegistrationValidationControllerTests {
 	@BeforeEach
 	void setUp() {
 		validator.afterPropertiesSet();
-		mockMvc = MockMvcBuilders.standaloneSetup(new ClienteController(clienteService))
+		mockMvc = MockMvcBuilders.standaloneSetup(new ClienteController(clienteService, mock(ProductoService.class)))
 				.setControllerAdvice(new RegistrationExceptionHandler())
 				.setValidator(validator)
 				.build();
