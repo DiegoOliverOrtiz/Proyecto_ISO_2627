@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -46,6 +48,18 @@ public class VendedorController {
             @RequestPart(value = "imagen", required = false) MultipartFile imagen) {
         CrearProductoResponse response = productoService.crearProducto(authentication.getName(), request, imagen);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/productos/{id}/activar")
+    public ResponseEntity<Void> activarProducto(Authentication authentication, @PathVariable String id) {
+        productoService.activarProducto(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/productos/{id}/desactivar")
+    public ResponseEntity<Void> desactivarProducto(Authentication authentication, @PathVariable String id) {
+        productoService.desactivarProducto(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

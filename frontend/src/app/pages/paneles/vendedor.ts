@@ -26,6 +26,7 @@ export class PanelVendedor implements OnInit {
   readonly productos = signal<ProductoPropio[]>([]);
   readonly cargandoProductos = signal(true);
   readonly errorCatalogo = signal('');
+  readonly productoCambiandoEstado = signal<string | null>(null);
 
   private readonly servicioVendedor = inject(VendedorService);
   readonly nombreComercial = signal('');
@@ -199,6 +200,37 @@ export class PanelVendedor implements OnInit {
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
             : 'No se pudo crear el producto. Revisa los datos e inténtalo otra vez.'
         );
+      }
+    });
+  }
+
+  cambiarEstadoProducto(producto: ProductoPropio): void {
+    const activar = !producto.esVisible;
+    this.productoCambiandoEstado.set(producto.id);
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
+
+    const peticion = activar
+      ? this.servicioProductos.activarProducto(producto.id)
+      : this.servicioProductos.desactivarProducto(producto.id);
+
+    peticion.subscribe({
+      next: () => {
+        this.productoCambiandoEstado.set(null);
+        this.mensajeExito.set(
+          activar ? 'Producto activado correctamente.' : 'Producto desactivado correctamente.'
+        );
+        this.cargarProductos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.productoCambiandoEstado.set(null);
+        const mensajeBackend = typeof error.error?.error === 'string' ? error.error.error : null;
+        this.mensajeError.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
+            : mensajeBackend ?? 'No se pudo cambiar el estado del producto.'
+        );
+        this.cargarProductos();
       }
     });
   }

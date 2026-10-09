@@ -11,8 +11,10 @@ import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
+import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -61,6 +63,18 @@ public class RegistrationExceptionHandler {
 	@ExceptionHandler(CategoriaNoEncontradaException.class)
 	public ResponseEntity<ApiErrorResponse> handleCategoryNotFound(CategoriaNoEncontradaException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(ProductoNoEncontradoException.class)
+	public ResponseEntity<ApiErrorResponse> handleProductNotFound(ProductoNoEncontradoException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(EstadoProductoException.class)
+	public ResponseEntity<ApiErrorResponse> handleProductStateConflict(EstadoProductoException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 

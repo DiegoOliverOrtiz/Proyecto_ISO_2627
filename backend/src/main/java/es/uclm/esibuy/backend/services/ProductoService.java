@@ -7,12 +7,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
+import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
+import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
@@ -24,18 +27,21 @@ public class ProductoService {
     private final CategoriaDAO categoriaDAO;
     private final Validator validar;
     private final ProductoImagenService productoImagenService;
+    private final ClienteDAO clienteDAO;
 
     public ProductoService(
             ProductoDAO productoDAO,
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             Validator validar,
-            ProductoImagenService productoImagenService) {
+            ProductoImagenService productoImagenService,
+            ClienteDAO clienteDAO) {
         this.productoDAO = productoDAO;
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.validar = validar;
         this.productoImagenService = productoImagenService;
+        this.clienteDAO = clienteDAO;
     }
 
     public List<ConsultarProductosResponse> consultarProductosPropios(String emailVendedor) {
@@ -45,17 +51,34 @@ public class ProductoService {
                         "Solo un vendedor activo puede consultar sus productos."));
 
         return productoDAO.findByVendedor(vendedor.getNombreComercial()).stream()
-                .map(producto -> new ConsultarProductosResponse(
-                        producto.getNombre(),
-                        producto.getCategoria(),
-                        producto.getStock(),
-                        producto.getDescripcion(),
-                        producto.getPrecio(),
-                        producto.getDescuento(),
-                        producto.getDescuentoPremium(),
-                        producto.isEsVisible(),
-                        producto.getImagen()))
+                .map(this::aConsultarProductosResponse)
                 .toList();
+    }
+
+    public List<ConsultarProductosResponse> consultarProductosParaClientes(String emailCliente) {
+        clienteDAO.findByEmail(emailCliente)
+                .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un cliente activo puede consultar los productos."));
+
+        // Los productos desactivados no se muestran a los clientes.
+        return productoDAO.findByEsVisibleTrue().stream()
+                .map(this::aConsultarProductosResponse)
+                .toList();
+    }
+
+    private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {
+        return new ConsultarProductosResponse(
+                producto.getId(),
+                producto.getNombre(),
+                producto.getCategoria(),
+                producto.getStock(),
+                producto.getDescripcion(),
+                producto.getPrecio(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                producto.isEsVisible(),
+                producto.getImagen());
     }
 
     public CrearProductoResponse crearProducto(
@@ -118,5 +141,33 @@ public class ProductoService {
             }
             throw e;
         }
+    }
+
+    public void activarProducto(String emailVendedor, String idProducto) {
+        cambiarEstadoProducto(emailVendedor, idProducto, true);
+    }
+
+    public void desactivarProducto(String emailVendedor, String idProducto) {
+        cambiarEstadoProducto(emailVendedor, idProducto, false);
+    }
+
+    private void cambiarEstadoProducto(String emailVendedor, String idProducto, boolean activo) {
+        Vendedor vendedor = vendedorDAO.findByEmail(emailVendedor)
+                .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un vendedor activo puede cambiar el estado de sus productos."));
+
+        // Un producto ajeno se trata como inexistente para no revelar productos de otros vendedores.
+        Producto producto = productoDAO.findById(idProducto)
+                .filter(encontrado -> vendedor.getNombreComercial().equals(encontrado.getVendedor()))
+                .orElseThrow(ProductoNoEncontradoException::new);
+
+        if (producto.isEsVisible() == activo) {
+            throw new EstadoProductoException(activo);
+        }
+
+        // La desactivación es lógica: solo cambia el estado, el producto nunca se elimina.
+        producto.setEsVisible(activo);
+        productoDAO.save(producto);
     }
 }
