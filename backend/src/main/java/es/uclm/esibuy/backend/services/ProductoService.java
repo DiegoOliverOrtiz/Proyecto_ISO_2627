@@ -12,7 +12,9 @@ import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
+import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
@@ -129,8 +131,21 @@ public class ProductoService {
     }
 
     private void cambiarEstadoProducto(String emailVendedor, String idProducto, boolean activo) {
+        Vendedor vendedor = vendedorDAO.findByEmail(emailVendedor)
+                .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un vendedor activo puede cambiar el estado de sus productos."));
+
+        // Un producto ajeno se trata como inexistente para no revelar productos de otros vendedores.
+        Producto producto = productoDAO.findById(idProducto)
+                .filter(encontrado -> vendedor.getNombreComercial().equals(encontrado.getVendedor()))
+                .orElseThrow(ProductoNoEncontradoException::new);
+
+        if (producto.isEsVisible() == activo) {
+            throw new EstadoProductoException(activo);
+        }
+
         // La desactivación es lógica: solo cambia el estado, el producto nunca se elimina.
-        Producto producto = productoDAO.findById(idProducto).orElseThrow();
         producto.setEsVisible(activo);
         productoDAO.save(producto);
     }
