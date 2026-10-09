@@ -146,6 +146,30 @@ export class UsuariosService {
       );
   }
 
+  activarUsuario(id: string): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(
+        this.csrfUrl,
+        {
+          withCredentials: true
+        }
+      )
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.patch<void>(
+            `${this.url}/${encodeURIComponent(id)}/activar`,
+            null,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
+  }
+
   bloquearUsuario(
     id: string
   ): Observable<void> {

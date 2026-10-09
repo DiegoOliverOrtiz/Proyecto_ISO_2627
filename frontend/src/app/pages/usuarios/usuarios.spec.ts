@@ -22,7 +22,7 @@ describe('Usuarios', () => {
   let component: Usuarios;
   let fixture: ComponentFixture<Usuarios>;
   
-const usuario: UsuarioAdministracion = {
+  const usuario: UsuarioAdministracion = {
     id: 'usuario-1',
     nombre: 'Mario',
     apellidos: 'Muñoz',
@@ -57,13 +57,15 @@ const usuario: UsuarioAdministracion = {
   const usuariosServiceMock = {
     consultarUsuarios: vi.fn(),
     bloquearUsuario: vi.fn(),
-    desbloquearUsuario: vi.fn()
+    desbloquearUsuario: vi.fn(),
+    activarUsuario: vi.fn() // Añadido mock
   };
 
   beforeEach(async () => {
     usuariosServiceMock.consultarUsuarios.mockReturnValue(of(listado));
     usuariosServiceMock.bloquearUsuario.mockReturnValue(of(void 0));
     usuariosServiceMock.desbloquearUsuario.mockReturnValue(of(void 0));
+    usuariosServiceMock.activarUsuario.mockReturnValue(of(void 0)); // Añadido retorno por defecto
 
     await TestBed.configureTestingModule({
       imports: [Usuarios],
@@ -160,6 +162,45 @@ const usuario: UsuarioAdministracion = {
     expect(
       usuariosServiceMock.consultarUsuarios
     ).toHaveBeenCalledTimes(2);
+  });
+
+  // NUEVO TEST: Activar usuario feliz
+  it('activa al usuario y recarga el listado', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    fixture.detectChanges();
+
+    component.activar(usuario);
+
+    expect(
+      usuariosServiceMock.activarUsuario
+    ).toHaveBeenCalledWith('usuario-1');
+
+    expect(component.usuarioEnProceso()).toBeNull();
+
+    expect(component.mensajeExito()).toBe(
+      'Mario Muñoz ha sido activado correctamente.'
+    );
+
+    expect(
+      usuariosServiceMock.consultarUsuarios
+    ).toHaveBeenCalledTimes(2);
+  });
+
+  // NUEVO TEST: Cancelar activación
+  it('no activa al usuario si se cancela la confirmacion', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    fixture.detectChanges();
+
+    component.activar(usuario);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(
+      usuariosServiceMock.activarUsuario
+    ).not.toHaveBeenCalled();
+
+    expect(component.usuarioEnProceso()).toBeNull();
   });
 
   it('muestra el error del backend si falla el bloqueo', () => {

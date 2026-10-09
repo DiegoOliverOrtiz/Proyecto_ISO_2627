@@ -355,48 +355,39 @@
 
                       </a>
 
-                      @if (
-                        usuario.estado === 'BLOQUEADO'
-                      ) {
+                      @if (usuario.estado === 'PENDIENTE') {
+                        
+                        <button
+                          type="button"
+                          class="lock-action"
+                          style="color: #216342;"
+                          (click)="activar(usuario)"
+                          [disabled]="usuarioEnProceso() === usuario.id"
+                          [attr.aria-label]="'Activar a ' + usuario.nombre + ' ' + usuario.apellidos"
+                          title="Usuario pendiente. Pulsa para activarlo y permitir su acceso."
+                        >
+                          @if (usuarioEnProceso() === usuario.id) {
+                            <span class="lock-loading" aria-hidden="true">...</span>
+                          } @else {
+                            <span class="lock-icon" aria-hidden="true">&#10003;</span>
+                          }
+                        </button>
+
+                      } @else if (usuario.estado === 'BLOQUEADO') {
 
                         <button
                           type="button"
                           class="lock-action lock-closed"
                           (click)="desbloquear(usuario)"
-                          [disabled]="
-                            usuarioEnProceso()
-                            === usuario.id
-                          "
-                          [attr.aria-label]="
-                            'Desbloquear a '
-                            + usuario.nombre
-                            + ' '
-                            + usuario.apellidos
-                          "
+                          [disabled]="usuarioEnProceso() === usuario.id"
+                          [attr.aria-label]="'Desbloquear a ' + usuario.nombre + ' ' + usuario.apellidos"
                           title="Usuario bloqueado. Pulsa para desbloquear"
                         >
 
-                          @if (
-                            usuarioEnProceso()
-                            === usuario.id
-                          ) {
-
-                            <span
-                              class="lock-loading"
-                              aria-hidden="true"
-                            >
-                              ...
-                            </span>
-
+                          @if (usuarioEnProceso() === usuario.id) {
+                            <span class="lock-loading" aria-hidden="true">...</span>
                           } @else {
-
-                            <span
-                              class="lock-icon"
-                              aria-hidden="true"
-                            >
-                              &#128274;
-                            </span>
-
+                            <span class="lock-icon" aria-hidden="true">&#128274;</span>
                           }
 
                         </button>
@@ -407,40 +398,15 @@
                           type="button"
                           class="lock-action lock-open"
                           (click)="bloquear(usuario)"
-                          [disabled]="
-                            usuarioEnProceso()
-                            === usuario.id
-                          "
-                          [attr.aria-label]="
-                            'Bloquear a '
-                            + usuario.nombre
-                            + ' '
-                            + usuario.apellidos
-                          "
+                          [disabled]="usuarioEnProceso() === usuario.id"
+                          [attr.aria-label]="'Bloquear a ' + usuario.nombre + ' ' + usuario.apellidos"
                           title="Usuario desbloqueado. Pulsa para bloquear"
                         >
 
-                          @if (
-                            usuarioEnProceso()
-                            === usuario.id
-                          ) {
-
-                            <span
-                              class="lock-loading"
-                              aria-hidden="true"
-                            >
-                              ...
-                            </span>
-
+                          @if (usuarioEnProceso() === usuario.id) {
+                            <span class="lock-loading" aria-hidden="true">...</span>
                           } @else {
-
-                            <span
-                              class="lock-icon"
-                              aria-hidden="true"
-                            >
-                              &#128275;
-                            </span>
-
+                            <span class="lock-icon" aria-hidden="true">&#128275;</span>
                           }
 
                         </button>
