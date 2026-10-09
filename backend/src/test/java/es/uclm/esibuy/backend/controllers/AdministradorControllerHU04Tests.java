@@ -37,7 +37,11 @@ class AdministradorControllerHU04Tests {
 
     @Test
     void administradorPuedeConsultarElListadoConFiltros() throws Exception {
-        PageRequest pagina = PageRequest.of(0, 20, Sort.by("apellidos").ascending());
+        PageRequest pagina = PageRequest.of(
+                0,
+                20,
+                Sort.by("apellidos").ascending());
+
         UsuarioAdministracionResponse usuario = new UsuarioAdministracionResponse(
                 "usuario-id",
                 "Ana",
@@ -50,7 +54,11 @@ class AdministradorControllerHU04Tests {
                 null,
                 null,
                 true,
+                null,
+                null,
+                null,
                 null);
+
         ListadoUsuariosResponse respuesta = new ListadoUsuariosResponse(
                 List.of(usuario),
                 0,
@@ -58,7 +66,12 @@ class AdministradorControllerHU04Tests {
                 1,
                 1,
                 new EstadisticasUsuariosResponse(1, 1, 0, 0));
-        when(administradorService.consultarUsuarios("Ana", "ACTIVO", "CLIENTE", pagina))
+
+        when(administradorService.consultarUsuarios(
+                "Ana",
+                "ACTIVO",
+                "CLIENTE",
+                pagina))
                 .thenReturn(respuesta);
 
         mockMvc.perform(get("/administrador/usuarios")
@@ -75,7 +88,8 @@ class AdministradorControllerHU04Tests {
                 .andExpect(jsonPath("$.estadisticas.totalUsuarios").value(1))
                 .andExpect(jsonPath("$.contenido[0].contrasenaHash").doesNotExist());
 
-        verify(administradorService).consultarUsuarios("Ana", "ACTIVO", "CLIENTE", pagina);
+        verify(administradorService)
+                .consultarUsuarios("Ana", "ACTIVO", "CLIENTE", pagina);
     }
 
     @Test
@@ -110,8 +124,13 @@ class AdministradorControllerHU04Tests {
                 null,
                 null,
                 false,
+                null,
+                null,
+                null,
                 null);
-        when(administradorService.consultarUsuario("usuario-id")).thenReturn(respuesta);
+
+        when(administradorService.consultarUsuario("usuario-id"))
+                .thenReturn(respuesta);
 
         mockMvc.perform(get("/administrador/usuarios/usuario-id")
                         .with(user("admin").roles("ADMIN")))
