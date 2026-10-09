@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
+import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
@@ -26,18 +27,21 @@ public class ProductoService {
     private final CategoriaDAO categoriaDAO;
     private final Validator validar;
     private final ProductoImagenService productoImagenService;
+    private final ClienteDAO clienteDAO;
 
     public ProductoService(
             ProductoDAO productoDAO,
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             Validator validar,
-            ProductoImagenService productoImagenService) {
+            ProductoImagenService productoImagenService,
+            ClienteDAO clienteDAO) {
         this.productoDAO = productoDAO;
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.validar = validar;
         this.productoImagenService = productoImagenService;
+        this.clienteDAO = clienteDAO;
     }
 
     public List<ConsultarProductosResponse> consultarProductosPropios(String emailVendedor) {
@@ -51,7 +55,12 @@ public class ProductoService {
                 .toList();
     }
 
-    public List<ConsultarProductosResponse> consultarProductosParaClientes() {
+    public List<ConsultarProductosResponse> consultarProductosParaClientes(String emailCliente) {
+        clienteDAO.findByEmail(emailCliente)
+                .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un cliente activo puede consultar los productos."));
+
         // Los productos desactivados no se muestran a los clientes.
         return productoDAO.findByEsVisibleTrue().stream()
                 .map(this::aConsultarProductosResponse)
