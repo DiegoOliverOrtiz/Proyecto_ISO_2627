@@ -167,4 +167,11 @@ public class AdministradorController {
 						new ApiErrorResponse(
 								excepcion.getMessage()));
 	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@PatchMapping("/usuarios/{id}/activar")
+	public ResponseEntity<Void> activarUsuario(@PathVariable String id) {
+		administradorService.activarUsuario(id);
+		return ResponseEntity.noContent().build();
+	}
 }

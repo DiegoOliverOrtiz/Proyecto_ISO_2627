@@ -346,6 +346,7 @@ public class AdministradorService {
 	}
 
 	public void activarUsuario(String id) {
+<<<<<<< HEAD
 
 		Usuario usuario =
 				usuarioDAO.findById(id)
@@ -477,4 +478,12 @@ public class AdministradorService {
 		sesionService.cerrarSesiones(
 				objetivo.getEmail());
 	}
+=======
+		Usuario usuario = usuarioDAO.findById(id).orElseThrow(UsuarioNoEncontradoException::new);
+		if (!usuario.isActivada()) {
+			usuario.setActivada(true);
+			usuarioDAO.save(usuario);
+		}
+	}
+>>>>>>> feature/HU05-ActivarUsuarios
 }
