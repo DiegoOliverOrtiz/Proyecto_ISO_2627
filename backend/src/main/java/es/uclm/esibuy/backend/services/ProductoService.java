@@ -105,7 +105,7 @@ public class ProductoService {
         int descuento = request.descuento();
         int descuentoPremium = request.descuentoPremium();
 
-        if (precio <= 0 || stock < 0 || descuento < 0 || descuentoPremium < 0) {
+        if (precio <= 0 || stock < 0 || !esDescuentoValido(descuento) || !esDescuentoValido(descuentoPremium)) {
             throw new InvalidProductException();
         }
 

@@ -1,5 +1,6 @@
 package es.uclm.esibuy.backend.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -12,8 +13,8 @@ public record CrearProductoRequest(
     Boolean esVisible,
     @NotNull @Positive Double precio,
     @PositiveOrZero int stock,
-    @PositiveOrZero int descuento,
-    @PositiveOrZero int descuentoPremium
+    @PositiveOrZero @Max(100) int descuento,
+    @PositiveOrZero @Max(100) int descuentoPremium
 ) {
     public CrearProductoRequest(
             String nombre,
