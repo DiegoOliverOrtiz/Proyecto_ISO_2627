@@ -280,7 +280,8 @@ class AuthControllerSecurityTests {
                         49.99,
                         0,
                         0,
-                        true)));
+                        true,
+                        null)));
 
         mockMvc.perform(get("/vendedor/productos")
                         .with(user("vendedor@example.com").roles("VENDEDOR")))

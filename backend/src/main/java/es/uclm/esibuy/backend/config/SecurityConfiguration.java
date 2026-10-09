@@ -112,18 +112,23 @@ public class SecurityConfiguration {
                                                                 "/usuarios/csrf")
                                                 .permitAll()
 
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/product-images/**")
+                                                .permitAll()
+
                                                 // Necesario para el registro público de vendedores.
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias/registro")
                                                 .permitAll()
 
-                                                // HU11: consulta administrativa de categorías.
+                                                // HU11 + HU17: los vendedores necesitan consultar categorías para asociar productos
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias",
-                                                                RUTA_CATEGORIAS)
-                                                .hasRole(ROL_ADMIN)
+                                                                "/categorias/**")
+                                                .hasAnyRole("ADMIN", "VENDEDOR")
 
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
