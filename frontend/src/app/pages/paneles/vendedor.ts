@@ -27,6 +27,7 @@ export class PanelVendedor implements OnInit {
   readonly cargandoProductos = signal(true);
   readonly errorCatalogo = signal('');
   readonly productoCambiandoEstado = signal<string | null>(null);
+  readonly productoEnEdicion = signal<ProductoPropio | null>(null);
 
   private readonly servicioVendedor = inject(VendedorService);
   readonly nombreComercial = signal('');
@@ -76,6 +77,7 @@ export class PanelVendedor implements OnInit {
     this.mensajeError.set('');
     this.mostrandoFormulario.update((valor) => !valor);
     if (!this.mostrandoFormulario()) {
+      this.productoEnEdicion.set(null);
       this.limpiarImagenSeleccionada();
       this.formularioProducto.reset({
         nombre: '',
@@ -88,6 +90,25 @@ export class PanelVendedor implements OnInit {
         descuentoPremium: 0,
       });
     }
+  }
+
+  editarProducto(producto: ProductoPropio): void {
+    this.mensajeExito.set('');
+    this.mensajeError.set('');
+    this.limpiarImagenSeleccionada();
+    this.productoEnEdicion.set(producto);
+    // Se reutiliza el formulario de creación cargando los valores actuales del producto.
+    this.formularioProducto.reset({
+      nombre: producto.nombre,
+      categoria: producto.categoria,
+      descripcion: producto.descripcion ?? '',
+      esVisible: producto.esVisible,
+      precio: producto.precio ?? 0,
+      stock: producto.stock,
+      descuento: producto.descuento,
+      descuentoPremium: producto.descuentoPremium,
+    });
+    this.mostrandoFormulario.set(true);
   }
 
   cargarProductos(): void {

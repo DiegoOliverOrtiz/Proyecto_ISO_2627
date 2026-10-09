@@ -296,6 +296,7 @@ li.producto-desactivado h2 {
 
 .acciones-producto {
   display: flex;
+  gap: .5rem;
   justify-content: flex-end;
   margin-top: 1rem;
 }
