@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -44,6 +45,8 @@ class ProductoServiceHU18Tests {
     private static final String ID_PRODUCTO = "producto-1";
     private static final String IMAGEN_ACTUAL = "/product-images/actual.png";
     private static final String IMAGEN_NUEVA = "/product-images/nueva.png";
+    private static final ModificarProductoRequest REQUEST_VALIDO = new ModificarProductoRequest(
+            "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20);
 
     @Mock
     private ProductoDAO productoDAO;
@@ -76,7 +79,7 @@ class ProductoServiceHU18Tests {
         prepararModificacionValida(crearProducto(NOMBRE_COMERCIAL));
 
         ConsultarProductosResponse response = productoService.modificarProducto(
-                EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null);
+                EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
 
         Producto guardado = productoGuardado();
         assertEquals(ID_PRODUCTO, guardado.getId());
@@ -97,7 +100,7 @@ class ProductoServiceHU18Tests {
         producto.setEsVisible(false);
         prepararModificacionValida(producto);
 
-        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null);
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
 
         Producto guardado = productoGuardado();
         assertEquals(NOMBRE_COMERCIAL, guardado.getVendedor());
@@ -135,7 +138,7 @@ class ProductoServiceHU18Tests {
     void conservaLaImagenActualSiNoSeEnviaOtra() {
         prepararModificacionValida(crearProducto(NOMBRE_COMERCIAL));
 
-        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null);
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
 
         assertEquals(IMAGEN_ACTUAL, productoGuardado().getImagen());
         verify(productoImagenService, never()).eliminar(any());
@@ -148,7 +151,7 @@ class ProductoServiceHU18Tests {
         when(productoImagenService.guardar(imagen)).thenReturn(IMAGEN_NUEVA);
 
         ConsultarProductosResponse response = productoService.modificarProducto(
-                EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), imagen);
+                EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, imagen);
 
         assertEquals(IMAGEN_NUEVA, productoGuardado().getImagen());
         assertEquals(IMAGEN_NUEVA, response.imagen());
@@ -167,7 +170,7 @@ class ProductoServiceHU18Tests {
 
         RuntimeException lanzada = assertThrows(
                 RuntimeException.class,
-                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), imagen));
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, imagen));
 
         assertSame(errorGuardado, lanzada);
         verify(productoImagenService).eliminar(IMAGEN_NUEVA);
@@ -182,7 +185,7 @@ class ProductoServiceHU18Tests {
 
         assertThrows(
                 ProductoNoEncontradoException.class,
-                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null));
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null));
 
         verify(productoDAO, never()).save(any());
         verifyNoInteractions(productoImagenService);
@@ -196,7 +199,7 @@ class ProductoServiceHU18Tests {
 
         assertThrows(
                 ProductoNoEncontradoException.class,
-                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null));
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null));
 
         verify(productoDAO, never()).save(any());
     }
@@ -209,7 +212,7 @@ class ProductoServiceHU18Tests {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null));
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null));
 
         verifyNoInteractions(productoDAO, productoImagenService);
     }
@@ -220,7 +223,7 @@ class ProductoServiceHU18Tests {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, crearRequest(), null));
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null));
 
         verifyNoInteractions(productoDAO, productoImagenService);
     }
@@ -280,6 +283,8 @@ class ProductoServiceHU18Tests {
 
     private void assertDatosInvalidos(ModificarProductoRequest request) {
         when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        // La categoría existe: así el rechazo se debe al dato inválido que prueba cada caso.
+        lenient().when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
 
         assertThrows(
                 InvalidProductException.class,
@@ -299,11 +304,6 @@ class ProductoServiceHU18Tests {
         ArgumentCaptor<Producto> guardado = ArgumentCaptor.forClass(Producto.class);
         verify(productoDAO).save(guardado.capture());
         return guardado.getValue();
-    }
-
-    private ModificarProductoRequest crearRequest() {
-        return new ModificarProductoRequest(
-                "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20);
     }
 
     private MockMultipartFile crearImagen() {

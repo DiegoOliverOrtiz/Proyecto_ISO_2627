@@ -15,7 +15,7 @@ public record CrearProductoRequest(
     @PositiveOrZero int stock,
     @PositiveOrZero @Max(100) int descuento,
     @PositiveOrZero @Max(100) int descuentoPremium
-) {
+) implements DatosProductoRequest {
     public CrearProductoRequest(
             String nombre,
             String categoria,

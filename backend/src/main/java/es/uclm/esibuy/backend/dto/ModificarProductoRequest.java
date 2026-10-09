@@ -18,5 +18,5 @@ public record ModificarProductoRequest(
     @Max(value = 100, message = "El descuento no puede superar el 100 %") int descuento,
     @PositiveOrZero(message = "El descuento premium no puede ser negativo")
     @Max(value = 100, message = "El descuento premium no puede superar el 100 %") int descuentoPremium
-) {
+) implements DatosProductoRequest {
 }
