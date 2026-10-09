@@ -75,21 +75,27 @@ export class PanelVendedor implements OnInit {
   alternarFormulario(): void {
     this.mensajeExito.set('');
     this.mensajeError.set('');
-    this.mostrandoFormulario.update((valor) => !valor);
-    if (!this.mostrandoFormulario()) {
-      this.productoEnEdicion.set(null);
-      this.limpiarImagenSeleccionada();
-      this.formularioProducto.reset({
-        nombre: '',
-        categoria: '',
-        descripcion: '',
-        esVisible: true,
-        precio: 0,
-        stock: 0,
-        descuento: 0,
-        descuentoPremium: 0,
-      });
+    if (this.mostrandoFormulario()) {
+      this.cerrarFormulario();
+    } else {
+      this.mostrandoFormulario.set(true);
     }
+  }
+
+  private cerrarFormulario(): void {
+    this.mostrandoFormulario.set(false);
+    this.productoEnEdicion.set(null);
+    this.limpiarImagenSeleccionada();
+    this.formularioProducto.reset({
+      nombre: '',
+      categoria: '',
+      descripcion: '',
+      esVisible: true,
+      precio: 0,
+      stock: 0,
+      descuento: 0,
+      descuentoPremium: 0,
+    });
   }
 
   editarProducto(producto: ProductoPropio): void {
@@ -193,6 +199,12 @@ export class PanelVendedor implements OnInit {
     this.mensajeError.set('');
     this.mensajeExito.set('');
 
+    const productoEnEdicion = this.productoEnEdicion();
+    if (productoEnEdicion) {
+      this.modificarProducto(productoEnEdicion.id);
+      return;
+    }
+
     this.servicioProductos.crearProducto(
       this.formularioProducto.getRawValue(),
       this.imagenSeleccionada()
@@ -200,18 +212,7 @@ export class PanelVendedor implements OnInit {
       next: () => {
         this.enviandoProducto.set(false);
         this.mensajeExito.set('Producto creado correctamente.');
-        this.limpiarImagenSeleccionada();
-        this.formularioProducto.reset({
-          nombre: '',
-          categoria: '',
-          descripcion: '',
-          esVisible: true,
-          precio: 0,
-          stock: 0,
-          descuento: 0,
-          descuentoPremium: 0,
-        });
-        this.mostrandoFormulario.set(false);
+        this.cerrarFormulario();
         this.cargarProductos();
       },
       error: (error: HttpErrorResponse) => {
@@ -220,6 +221,33 @@ export class PanelVendedor implements OnInit {
           error.status === 0
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
             : 'No se pudo crear el producto. Revisa los datos e inténtalo otra vez.'
+        );
+      }
+    });
+  }
+
+  private modificarProducto(id: string): void {
+    const { nombre, categoria, descripcion, precio, stock, descuento, descuentoPremium } =
+      this.formularioProducto.getRawValue();
+
+    this.servicioProductos.modificarProducto(
+      id,
+      { nombre, categoria, descripcion, precio, stock, descuento, descuentoPremium },
+      this.imagenSeleccionada()
+    ).subscribe({
+      next: () => {
+        this.enviandoProducto.set(false);
+        this.mensajeExito.set('Producto modificado correctamente.');
+        this.cerrarFormulario();
+        this.cargarProductos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.enviandoProducto.set(false);
+        const mensajeBackend = typeof error.error?.error === 'string' ? error.error.error : null;
+        this.mensajeError.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
+            : mensajeBackend ?? 'No se pudo modificar el producto. Revisa los datos e inténtalo otra vez.'
         );
       }
     });
