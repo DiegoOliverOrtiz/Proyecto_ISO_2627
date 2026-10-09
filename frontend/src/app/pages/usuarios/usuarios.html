@@ -74,6 +74,7 @@
           </article>
 
         </section>
+
       }
 
       <form
@@ -202,20 +203,31 @@
           <table>
 
             <thead>
-
               <tr>
-                <th>Nombre</th>
-                <th>Email</th>
-                <th>Estado</th>
-                <th>Rol</th>
+
+                <th>
+                  Nombre
+                </th>
+
+                <th>
+                  Email
+                </th>
+
+                <th>
+                  Estado
+                </th>
+
+                <th>
+                  Rol
+                </th>
 
                 <th>
                   <span class="visually-hidden">
                     Acciones
                   </span>
                 </th>
-              </tr>
 
+              </tr>
             </thead>
 
             <tbody>
@@ -298,7 +310,6 @@
 
                     <div class="user-actions">
 
-                      <!-- Ver detalle -->
                       <a
                         class="view-action"
                         [routerLink]="[
@@ -320,7 +331,30 @@
 
                       </a>
 
-                      <!-- Usuario bloqueado -->
+                      <a
+                        class="view-action"
+                        [routerLink]="[
+                          '/admin/usuarios',
+                          usuario.id
+                        ]"
+                        [queryParams]="{
+                          editar: true
+                        }"
+                        [attr.aria-label]="
+                          'Modificar a '
+                          + usuario.nombre
+                          + ' '
+                          + usuario.apellidos
+                        "
+                        title="Modificar"
+                      >
+
+                        <span aria-hidden="true">
+                          &#9998;
+                        </span>
+
+                      </a>
+
                       @if (
                         usuario.estado === 'BLOQUEADO'
                       ) {
@@ -367,10 +401,7 @@
 
                         </button>
 
-                      }
-
-                      <!-- Usuario no bloqueado -->
-                      @else {
+                      } @else {
 
                         <button
                           type="button"
