@@ -138,9 +138,16 @@ public class ProductoService {
             String idProducto,
             ModificarProductoRequest request,
             MultipartFile imagen) {
+        Vendedor vendedor = vendedorDAO.findByEmail(emailVendedor)
+                .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Solo un vendedor activo puede modificar sus productos."));
+
         String nombreCategoria = validarModificacion(request);
 
+        // Un producto ajeno se trata como inexistente para no revelar productos de otros vendedores.
         Producto producto = productoDAO.findById(idProducto)
+                .filter(encontrado -> vendedor.getNombreComercial().equals(encontrado.getVendedor()))
                 .orElseThrow(ProductoNoEncontradoException::new);
 
         // Solo se actualizan los campos permitidos; el vendedor y la visibilidad se conservan.
