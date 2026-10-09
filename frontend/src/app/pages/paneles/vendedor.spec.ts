@@ -39,6 +39,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     activarProducto: vi.fn(),
     desactivarProducto: vi.fn(),
     crearProducto: vi.fn(),
+    modificarProducto: vi.fn(),
     urlImagen: vi.fn()
   };
 
@@ -134,5 +135,136 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     expect(component.mensajeError()).toBe(
       'No se pudo conectar con el servicio. Inténtalo de nuevo.'
     );
+  });
+
+  describe('modificar producto (HU18)', () => {
+    const productoConDatos: ProductoPropio = {
+      ...productoActivo,
+      descripcion: 'Teclado compacto',
+      descuento: 5,
+      descuentoPremium: 10,
+      imagen: '/product-images/teclado.png'
+    };
+
+    function botonesModificar(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('.acciones-producto button.boton-secundario'));
+    }
+
+    beforeEach(() => {
+      productoServiceMock.modificarProducto.mockReturnValue(of(productoConDatos));
+      productoServiceMock.urlImagen.mockImplementation((imagen: string) => `http://api${imagen}`);
+    });
+
+    it('muestra la acción Modificar en cada producto del listado', () => {
+      expect(botonesModificar().map((boton) => boton.textContent?.trim())).toEqual([
+        'Modificar',
+        'Modificar'
+      ]);
+    });
+
+    it('abre el formulario con los valores actuales del producto y sin el selector de visibilidad', () => {
+      component.editarProducto(productoConDatos);
+      fixture.detectChanges();
+
+      expect(component.mostrandoFormulario()).toBe(true);
+      expect(component.formularioProducto.getRawValue()).toEqual({
+        nombre: 'Teclado',
+        categoria: 'Informática',
+        descripcion: 'Teclado compacto',
+        esVisible: true,
+        precio: 49.99,
+        stock: 4,
+        descuento: 5,
+        descuentoPremium: 10
+      });
+      const formulario: HTMLElement = fixture.nativeElement.querySelector('form');
+      expect(formulario.getAttribute('aria-label')).toBe('Modificar producto');
+      expect(formulario.textContent).not.toContain('Visibilidad del producto');
+      expect(formulario.textContent).toContain('Guardar cambios');
+      expect(formulario.querySelector('img')?.getAttribute('src')).toBe(
+        'http://api/product-images/teclado.png'
+      );
+    });
+
+    it('envía solo los campos modificables, informa del resultado y recarga el catálogo', () => {
+      component.editarProducto(productoConDatos);
+      component.formularioProducto.patchValue({ precio: 39.99, stock: 0 });
+
+      component.guardarProducto();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.modificarProducto).toHaveBeenCalledWith(
+        'producto-1',
+        {
+          nombre: 'Teclado',
+          categoria: 'Informática',
+          descripcion: 'Teclado compacto',
+          precio: 39.99,
+          stock: 0,
+          descuento: 5,
+          descuentoPremium: 10
+        },
+        null
+      );
+      expect(productoServiceMock.crearProducto).not.toHaveBeenCalled();
+      expect(component.mensajeExito()).toBe('Producto modificado correctamente.');
+      expect(component.mostrandoFormulario()).toBe(false);
+      expect(component.productoEnEdicion()).toBeNull();
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
+    });
+
+    it('no envía la petición si el precio no es mayor que 0', () => {
+      component.editarProducto(productoConDatos);
+      component.formularioProducto.patchValue({ precio: 0 });
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.modificarProducto).not.toHaveBeenCalled();
+      expect(component.mensajeError()).toBe(
+        'Completa todos los campos obligatorios y corrige los valores indicados.'
+      );
+    });
+
+    it('no envía la petición si el stock es negativo o el descuento supera 100', () => {
+      component.editarProducto(productoConDatos);
+
+      component.formularioProducto.patchValue({ stock: -1 });
+      component.guardarProducto();
+      component.formularioProducto.patchValue({ stock: 1, descuento: 101 });
+      component.guardarProducto();
+
+      expect(productoServiceMock.modificarProducto).not.toHaveBeenCalled();
+    });
+
+    it('muestra el motivo devuelto por el backend si la modificación falla', () => {
+      productoServiceMock.modificarProducto.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 404,
+              error: { error: 'No se ha encontrado el producto solicitado.' }
+            })
+        )
+      );
+      component.editarProducto(productoConDatos);
+
+      component.guardarProducto();
+
+      expect(component.mensajeError()).toBe('No se ha encontrado el producto solicitado.');
+      expect(component.mensajeExito()).toBe('');
+      expect(component.mostrandoFormulario()).toBe(true);
+      expect(component.enviandoProducto()).toBe(false);
+    });
+
+    it('al cancelar sale del modo edición y el formulario vuelve a ser de creación', () => {
+      component.editarProducto(productoConDatos);
+      component.alternarFormulario();
+      component.alternarFormulario();
+      fixture.detectChanges();
+
+      expect(component.productoEnEdicion()).toBeNull();
+      expect(component.formularioProducto.getRawValue().nombre).toBe('');
+      expect(fixture.nativeElement.querySelector('form').textContent).toContain('Crear producto');
+    });
   });
 });
