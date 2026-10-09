@@ -13,9 +13,9 @@
 </header>
 
 <div class="acciones-catalogo">
-    <button class="añadirProductos" type="button" (click)="alternarFormulario()">
-        {{ mostrandoFormulario() ? 'Cancelar' : 'Añadir Producto' }}
-    </button>
+    @if (!mostrandoFormulario()) {
+    <button class="añadirProductos" type="button" (click)="alternarFormulario()">Añadir Producto</button>
+    }
 </div>
 
 @if (mensajeError()) {

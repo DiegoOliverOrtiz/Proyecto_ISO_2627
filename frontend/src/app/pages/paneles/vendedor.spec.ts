@@ -256,6 +256,20 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(component.enviandoProducto()).toBe(false);
     });
 
+    it('oculta el botón superior mientras el formulario está abierto (solo queda Cancelar junto a Guardar)', () => {
+      const botonSuperior = () => fixture.nativeElement.querySelector('button.añadirProductos');
+      expect(botonSuperior()?.textContent?.trim()).toBe('Añadir Producto');
+
+      component.editarProducto(productoConDatos);
+      fixture.detectChanges();
+
+      expect(botonSuperior()).toBeNull();
+      const cancelar = Array.from(
+        fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>
+      ).filter((boton) => boton.textContent?.trim() === 'Cancelar');
+      expect(cancelar).toHaveLength(1);
+    });
+
     it('al cancelar sale del modo edición y el formulario vuelve a ser de creación', () => {
       component.editarProducto(productoConDatos);
       component.alternarFormulario();
