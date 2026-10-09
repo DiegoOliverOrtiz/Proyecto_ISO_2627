@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -207,6 +208,23 @@ class ProductoServiceTests {
                 0);
 
         assertThrows(InvalidProductException.class, () -> productoService.crearProducto(EMAIL, request, null));
+    }
+
+    @Test
+    void rechazaCrearProductoConDescuentoMayorQueCien() {
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Informática")).thenReturn(true);
+        CrearProductoRequest request = new CrearProductoRequest(
+                "Mouse",
+                "Informática",
+                "Mouse gaming",
+                20.0,
+                10,
+                0,
+                101);
+
+        assertThrows(InvalidProductException.class, () -> productoService.crearProducto(EMAIL, request, null));
+        verify(productoDAO, never()).save(any(Producto.class));
     }
 
     private Vendedor crearVendedor(boolean activado, boolean bloqueado) {

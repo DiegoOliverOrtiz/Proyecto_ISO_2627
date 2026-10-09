@@ -12,6 +12,7 @@ import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
+import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
@@ -69,6 +70,12 @@ public class RegistrationExceptionHandler {
 	@ExceptionHandler(ProductoNoEncontradoException.class)
 	public ResponseEntity<ApiErrorResponse> handleProductNotFound(ProductoNoEncontradoException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(InvalidProductException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidProduct(InvalidProductException exception) {
+		return ResponseEntity.badRequest()
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 

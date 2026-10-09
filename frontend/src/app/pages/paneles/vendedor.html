@@ -13,9 +13,9 @@
 </header>
 
 <div class="acciones-catalogo">
-    <button class="añadirProductos" type="button" (click)="alternarFormulario()">
-        {{ mostrandoFormulario() ? 'Cancelar' : 'Añadir Producto' }}
-    </button>
+    @if (!mostrandoFormulario()) {
+    <button class="añadirProductos" type="button" (click)="alternarFormulario()">Añadir Producto</button>
+    }
 </div>
 
 @if (mensajeError()) {
@@ -27,7 +27,8 @@
 }
 
 @if (mostrandoFormulario()) {
-<form class="formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()">
+<form class="formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()"
+    [attr.aria-label]="productoEnEdicion() ? 'Modificar producto' : 'Crear producto'">
     <div class="campo">
         <label for="nombre-producto">Nombre</label>
         <input id="nombre-producto" type="text" formControlName="nombre" />
@@ -64,6 +65,9 @@
         }
         @if (vistaPreviaImagen()) {
         <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa de la imagen del producto" />
+        } @else if (productoEnEdicion()?.imagen; as imagenActual) {
+        <small>Si no seleccionas otra imagen, se mantiene la actual.</small>
+        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" />
         }
     </div>
 
@@ -88,21 +92,22 @@
     <div class="fila-campos">
         <div class="campo">
             <label for="descuento-producto">Descuento (%)</label>
-            <input id="descuento-producto" type="number" min="0" step="1" formControlName="descuento" />
+            <input id="descuento-producto" type="number" min="0" max="100" step="1" formControlName="descuento" />
             @if (campoInvalido('descuento')) {
-            <small>El descuento no puede ser negativo.</small>
+            <small>El descuento debe estar entre 0 y 100.</small>
             }
         </div>
 
         <div class="campo">
             <label for="premium-producto">Descuento premium (%)</label>
-            <input id="premium-producto" type="number" min="0" step="1" formControlName="descuentoPremium" />
+            <input id="premium-producto" type="number" min="0" max="100" step="1" formControlName="descuentoPremium" />
             @if (campoInvalido('descuentoPremium')) {
-            <small>El descuento premium no puede ser negativo.</small>
+            <small>El descuento premium debe estar entre 0 y 100.</small>
             }
         </div>
     </div>
 
+    @if (!productoEnEdicion()) {
     <div class="campo">
         <label>Visibilidad del producto</label>
         <div class="grupo-visibilidad" role="group" aria-label="Visibilidad del producto">
@@ -118,11 +123,16 @@
             </button>
         </div>
     </div>
+    }
 
     <div class="acciones-formulario">
         <button class="boton-secundario" type="button" (click)="alternarFormulario()">Cancelar</button>
         <button class="boton-primario" type="submit" [disabled]="enviandoProducto()">
+            @if (productoEnEdicion()) {
+            {{ enviandoProducto() ? 'Guardando...' : 'Guardar cambios' }}
+            } @else {
             {{ enviandoProducto() ? 'Creando...' : 'Crear producto' }}
+            }
         </button>
     </div>
 </form>
@@ -162,6 +172,10 @@
             </p>
 
             <div class="acciones-producto">
+                <button type="button" class="boton-secundario" [attr.aria-label]="'Modificar ' + producto.nombre"
+                    (click)="editarProducto(producto)">
+                    Modificar
+                </button>
                 <button type="button" class="boton-estado" [class.boton-activar]="!producto.esVisible"
                     [disabled]="productoCambiandoEstado() === producto.id"
                     [attr.aria-label]="(producto.esVisible ? 'Desactivar ' : 'Activar ') + producto.nombre"
