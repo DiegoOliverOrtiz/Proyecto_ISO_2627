@@ -80,6 +80,32 @@ export class Usuarios implements OnInit {
     return total === 0 || this.pagina() >= total - 1;
   }
 
+  activar(usuario: UsuarioAdministracion): void {
+    const seguro = window.confirm(
+      `¿Quieres activar la cuenta de ${usuario.nombre} ${usuario.apellidos}?`
+    );
+
+    if (!seguro) {
+      return;
+    }
+
+    this.usuarioEnProceso.set(usuario.id);
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
+
+    this.usuariosService.activarUsuario(usuario.id).subscribe({
+      next: () => {
+        this.usuarioEnProceso.set(null);
+        this.mensajeExito.set(`${usuario.nombre} ${usuario.apellidos} ha sido activado correctamente.`);
+        this.cargarUsuarios();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.usuarioEnProceso.set(null);
+        this.mensajeError.set(this.mensajeParaOperacion(error));
+      }
+    });
+  }
+
   bloquear(usuario: UsuarioAdministracion): void {
     const seguro = window.confirm(
       `¿Quieres bloquear a ${usuario.nombre} ${usuario.apellidos}?`
@@ -163,7 +189,7 @@ export class Usuarios implements OnInit {
   }
 
   private mensajeParaOperacion(error: HttpErrorResponse): string {
-    const mensajeBackend = error.error?.error;
+    const mensajeBackend = error.error?.error || error.error?.message;
 
     if (mensajeBackend) {
       return mensajeBackend;
