@@ -286,6 +286,47 @@ li p:last-child {
   margin-bottom: 0;
 }
 
+li.producto-desactivado {
+  background: #f4f7f8;
+}
+
+li.producto-desactivado h2 {
+  color: #536a75;
+}
+
+.acciones-producto {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.boton-estado {
+  padding: .55rem .9rem;
+  border: 1px solid #c74b35;
+  border-radius: 4px;
+  color: #a63120;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.boton-estado.boton-activar {
+  border-color: #255b4d;
+  color: #fff;
+  background: #255b4d;
+}
+
+.boton-estado:focus-visible {
+  outline: 2px solid #d36b54;
+  outline-offset: 2px;
+}
+
+.boton-estado:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 @media (max-width: 700px) {
   .header {
     grid-template-columns: 1fr;

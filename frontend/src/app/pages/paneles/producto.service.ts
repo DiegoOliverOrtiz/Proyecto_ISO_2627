@@ -4,6 +4,7 @@ import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface ProductoPropio {
+  id: string;
   nombre: string;
   categoria: string;
   stock: number;
@@ -68,6 +69,31 @@ export class ProductoService {
           this.http.post<CrearProductoResponse>(
             `${environment.apiUrl}/vendedor/productos`,
             datosProducto,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders().set('X-XSRF-TOKEN', respuestaCsrf.token),
+            }
+          )
+        )
+      );
+  }
+
+  activarProducto(id: string): Observable<void> {
+    return this.cambiarEstado(id, 'activar');
+  }
+
+  desactivarProducto(id: string): Observable<void> {
+    return this.cambiarEstado(id, 'desactivar');
+  }
+
+  private cambiarEstado(id: string, accion: 'activar' | 'desactivar'): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.patch<void>(
+            `${environment.apiUrl}/vendedor/productos/${encodeURIComponent(id)}/${accion}`,
+            null,
             {
               withCredentials: true,
               headers: new HttpHeaders().set('X-XSRF-TOKEN', respuestaCsrf.token),

@@ -137,8 +137,8 @@
     <p>Aún no tienes productos registrados.</p>
     } @else {
     <ul aria-label="Mis productos">
-        @for (producto of productos(); track $index) {
-        <li>
+        @for (producto of productos(); track producto.id) {
+        <li [class.producto-desactivado]="!producto.esVisible">
             @if (producto.imagen) {
             <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" />
             }
@@ -158,8 +158,21 @@
             <p>Descuento: {{ producto.descuento }} %</p>
             <p>Descuento Premium: {{ producto.descuentoPremium }} %</p>
             <p>
-                Visibilidad: {{ producto.esVisible ? 'Visible' : 'No visible' }}
+                Estado: {{ producto.esVisible ? 'Activo' : 'Desactivado' }}
             </p>
+
+            <div class="acciones-producto">
+                <button type="button" class="boton-estado" [class.boton-activar]="!producto.esVisible"
+                    [disabled]="productoCambiandoEstado() === producto.id"
+                    [attr.aria-label]="(producto.esVisible ? 'Desactivar ' : 'Activar ') + producto.nombre"
+                    (click)="cambiarEstadoProducto(producto)">
+                    @if (productoCambiandoEstado() === producto.id) {
+                    Guardando...
+                    } @else {
+                    {{ producto.esVisible ? 'Desactivar' : 'Activar' }}
+                    }
+                </button>
+            </div>
         </li>
         }
     </ul>
