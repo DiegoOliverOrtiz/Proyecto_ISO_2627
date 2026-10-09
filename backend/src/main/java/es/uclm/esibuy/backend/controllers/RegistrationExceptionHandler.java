@@ -2,13 +2,13 @@ package es.uclm.esibuy.backend.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
@@ -67,6 +67,13 @@ public class RegistrationExceptionHandler {
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ApiErrorResponse> handleInvalidQuery(IllegalArgumentException exception) {
 		return ResponseEntity.badRequest()
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(CategoriaConProductosException.class)
+	public ResponseEntity<ApiErrorResponse> handleCategoryWithProducts(
+			CategoriaConProductosException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 }

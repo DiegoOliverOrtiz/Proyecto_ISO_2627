@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.model.Categoria;
+import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
 
 @ExtendWith(MockitoExtension.class)
 class CategoriaServiceHU12Tests {
@@ -77,10 +78,21 @@ class CategoriaServiceHU12Tests {
         when(categoriaDAO.existsByNombreIgnoreCase("Hogar")).thenReturn(true);
 
         assertThrows(
-                IllegalArgumentException.class,
+                NombreCategoriaDuplicadoException.class,
                 () -> categoriaService.crearCategoria(categoria)
         );
 
+        verify(categoriaDAO).existsByNombreIgnoreCase("Hogar");
+    }
+    @Test
+    void normalizaEspaciosAntesDeComprobarDuplicadosYGuardar() {
+        Categoria categoria = new Categoria("  Hogar  ", "  Productos para el hogar  ");
+        when(categoriaDAO.save(categoria)).thenReturn(categoria);
+
+        Categoria resultado = categoriaService.crearCategoria(categoria);
+
+        assertEquals("Hogar", resultado.getNombre());
+        assertEquals("Productos para el hogar", resultado.getDescripcion());
         verify(categoriaDAO).existsByNombreIgnoreCase("Hogar");
     }
 }

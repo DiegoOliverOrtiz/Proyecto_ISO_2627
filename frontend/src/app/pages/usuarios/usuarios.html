@@ -1,101 +1,468 @@
 <main class="admin-shell">
   <section class="admin-content">
+
     <header class="topbar">
       <span>Gestión / Usuarios registrados</span>
       <a routerLink="/admin">Panel administrador</a>
     </header>
 
     <div class="usuarios-page">
-      <a class="back-link" routerLink="/admin">Volver al panel</a>
+
+      <a class="back-link" routerLink="/admin">
+        Volver al panel
+      </a>
+
       <header class="page-header">
-        <p class="eyebrow">Administración</p>
-        <h1>Usuarios registrados</h1>
-        <p class="subtitle">Consulta y gestiona las cuentas creadas en EsiBuy.</p>
+        <p class="eyebrow">
+          Administración
+        </p>
+
+        <h1>
+          Usuarios registrados
+        </h1>
+
+        <p class="subtitle">
+          Consulta y gestiona las cuentas creadas en EsiBuy.
+        </p>
       </header>
 
       @if (listado(); as datos) {
-        <section class="statistics" aria-label="Resumen de usuarios">
-          <article><span>Total de usuarios</span><strong>{{ datos.estadisticas.totalUsuarios | number }}</strong></article>
-          <article><span>Activos</span><strong>{{ datos.estadisticas.activos | number }}</strong></article>
-          <article><span>Pendientes de validar</span><strong>{{ datos.estadisticas.pendientes | number }}</strong></article>
-          <article><span>Desactivados</span><strong>{{ datos.estadisticas.desactivados | number }}</strong></article>
+
+        <section
+          class="statistics"
+          aria-label="Resumen de usuarios"
+        >
+
+          <article>
+            <span>
+              Total de usuarios
+            </span>
+
+            <strong>
+              {{ datos.estadisticas.totalUsuarios | number }}
+            </strong>
+          </article>
+
+          <article>
+            <span>
+              Activos
+            </span>
+
+            <strong>
+              {{ datos.estadisticas.activos | number }}
+            </strong>
+          </article>
+
+          <article>
+            <span>
+              Pendientes de validar
+            </span>
+
+            <strong>
+              {{ datos.estadisticas.pendientes | number }}
+            </strong>
+          </article>
+
+          <article>
+            <span>
+              Desactivados
+            </span>
+
+            <strong>
+              {{ datos.estadisticas.desactivados | number }}
+            </strong>
+          </article>
+
         </section>
       }
 
-  <form class="filters" (ngSubmit)="buscar()">
-    <label>
-      Buscar
-      <input name="busqueda" type="search" placeholder="Nombre, apellidos o email"
-        [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
-    </label>
-    <label>
-      Estado
-      <select name="estado" [ngModel]="estado()" (ngModelChange)="cambiarEstado($event)">
-        <option value="">Todos</option>
-        <option value="ACTIVO">Activos</option>
-        <option value="PENDIENTE">Pendientes</option>
-        <option value="BLOQUEADO">Bloqueados</option>
-      </select>
-    </label>
-    <label>
-      Rol
-      <select name="rol" [ngModel]="rol()" (ngModelChange)="cambiarRol($event)">
-        <option value="">Todos (Clientes y Vendedores)</option>
-        <option value="CLIENTE">Clientes</option>
-        <option value="VENDEDOR">Vendedores</option>
-      </select>
-    </label>
-    <button type="submit">Buscar</button>
-    @if (hayFiltros()) {
-      <button class="clear-button" type="button" (click)="limpiarFiltros()">Limpiar</button>
-    }
-  </form>
+      <form
+        class="filters"
+        (ngSubmit)="buscar()"
+      >
 
-  @if (cargando()) {
-    <p class="status" aria-live="polite">Cargando usuarios...</p>
-  } @else if (mensajeError()) {
-    <p class="status error" role="alert">{{ mensajeError() }}</p>
-  } @else if (!listado()?.contenido?.length) {
-    <p class="status">No se han encontrado usuarios.</p>
-  } @else {
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>Nombre</th><th>Email</th><th>Estado</th><th>Rol</th><th><span class="visually-hidden">Acciones</span></th></tr>
-        </thead>
-        <tbody>
-          @for (usuario of listado()!.contenido; track usuario.id) {
-            <tr>
-              <td>{{ usuario.nombre }} {{ usuario.apellidos }}</td>
-              <td>{{ usuario.email }}</td>
-              <td>
-                <span class="status-tag"
-                  [class.status-active]="usuario.estado === 'ACTIVO'"
-                  [class.status-pending]="usuario.estado === 'PENDIENTE'"
-                  [class.status-blocked]="usuario.estado === 'BLOQUEADO'"
-                  [attr.aria-label]="'Estado: ' + usuario.estado"
-                  [attr.title]="usuario.estado"
-                  [attr.data-tooltip]="usuario.estado === 'ACTIVO' ? 'Cuenta activa' : usuario.estado === 'PENDIENTE' ? 'Pendiente de validación' : 'Cuenta bloqueada'">
-                  @if (usuario.estado === 'ACTIVO') { <span aria-hidden="true">&#10003;</span> }
-                  @else if (usuario.estado === 'PENDIENTE') { <span aria-hidden="true">&#8987;</span> }
-                  @else { <span aria-hidden="true">&#9940;</span> }
-                </span>
-              </td>
-              <td>{{ usuario.rol }}</td>
-              <td class="actions-cell"><a class="view-action" [routerLink]="['/admin/usuarios', usuario.id]"
-                [attr.aria-label]="'Ver detalle de ' + usuario.nombre + ' ' + usuario.apellidos"
-                title="Ver detalle"><span aria-hidden="true">&#128065;</span></a></td>
-            </tr>
-          }
-        </tbody>
-      </table>
+        <label>
+          Buscar
+
+          <input
+            name="busqueda"
+            type="search"
+            placeholder="Nombre, apellidos o email"
+            [ngModel]="busqueda()"
+            (ngModelChange)="busqueda.set($event)"
+          />
+        </label>
+
+        <label>
+          Estado
+
+          <select
+            name="estado"
+            [ngModel]="estado()"
+            (ngModelChange)="cambiarEstado($event)"
+          >
+
+            <option value="">
+              Todos
+            </option>
+
+            <option value="ACTIVO">
+              Activos
+            </option>
+
+            <option value="PENDIENTE">
+              Pendientes
+            </option>
+
+            <option value="BLOQUEADO">
+              Bloqueados
+            </option>
+
+          </select>
+        </label>
+
+        <label>
+          Rol
+
+          <select
+            name="rol"
+            [ngModel]="rol()"
+            (ngModelChange)="cambiarRol($event)"
+          >
+
+            <option value="">
+              Todos (Clientes y Vendedores)
+            </option>
+
+            <option value="CLIENTE">
+              Clientes
+            </option>
+
+            <option value="VENDEDOR">
+              Vendedores
+            </option>
+
+          </select>
+        </label>
+
+        <button type="submit">
+          Buscar
+        </button>
+
+        @if (hayFiltros()) {
+
+          <button
+            class="clear-button"
+            type="button"
+            (click)="limpiarFiltros()"
+          >
+            Limpiar
+          </button>
+
+        }
+
+      </form>
+
+      @if (mensajeExito()) {
+
+        <output class="status success">
+          {{ mensajeExito() }}
+        </output>
+
+      }
+
+      @if (cargando()) {
+
+        <p
+          class="status"
+          aria-live="polite"
+        >
+          Cargando usuarios...
+        </p>
+
+      } @else if (mensajeError()) {
+
+        <p
+          class="status error"
+          role="alert"
+        >
+          {{ mensajeError() }}
+        </p>
+
+      } @else if (!listado()?.contenido?.length) {
+
+        <p class="status">
+          No se han encontrado usuarios.
+        </p>
+
+      } @else {
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Rol</th>
+
+                <th>
+                  <span class="visually-hidden">
+                    Acciones
+                  </span>
+                </th>
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              @for (
+                usuario of listado()!.contenido;
+                track usuario.id
+              ) {
+
+                <tr>
+
+                  <td>
+                    {{ usuario.nombre }}
+                    {{ usuario.apellidos }}
+                  </td>
+
+                  <td>
+                    {{ usuario.email }}
+                  </td>
+
+                  <td>
+
+                    <span
+                      class="status-tag"
+                      [class.status-active]="
+                        usuario.estado === 'ACTIVO'
+                      "
+                      [class.status-pending]="
+                        usuario.estado === 'PENDIENTE'
+                      "
+                      [class.status-blocked]="
+                        usuario.estado === 'BLOQUEADO'
+                      "
+                      [attr.aria-label]="
+                        'Estado: ' + usuario.estado
+                      "
+                      [attr.title]="usuario.estado"
+                      [attr.data-tooltip]="
+                        usuario.estado === 'ACTIVO'
+                          ? 'Cuenta activa'
+                          : usuario.estado === 'PENDIENTE'
+                            ? 'Pendiente de validación'
+                            : 'Cuenta bloqueada'
+                      "
+                    >
+
+                      @if (
+                        usuario.estado === 'ACTIVO'
+                      ) {
+
+                        <span aria-hidden="true">
+                          &#10003;
+                        </span>
+
+                      } @else if (
+                        usuario.estado === 'PENDIENTE'
+                      ) {
+
+                        <span aria-hidden="true">
+                          &#8987;
+                        </span>
+
+                      } @else {
+
+                        <span aria-hidden="true">
+                          &#9940;
+                        </span>
+
+                      }
+
+                    </span>
+
+                  </td>
+
+                  <td>
+                    {{ usuario.rol }}
+                  </td>
+
+                  <td class="actions-cell">
+
+                    <div class="user-actions">
+
+                      <!-- Ver detalle -->
+                      <a
+                        class="view-action"
+                        [routerLink]="[
+                          '/admin/usuarios',
+                          usuario.id
+                        ]"
+                        [attr.aria-label]="
+                          'Ver detalle de '
+                          + usuario.nombre
+                          + ' '
+                          + usuario.apellidos
+                        "
+                        title="Ver detalle"
+                      >
+
+                        <span aria-hidden="true">
+                          &#128065;
+                        </span>
+
+                      </a>
+
+                      <!-- Usuario bloqueado -->
+                      @if (
+                        usuario.estado === 'BLOQUEADO'
+                      ) {
+
+                        <button
+                          type="button"
+                          class="lock-action lock-closed"
+                          (click)="desbloquear(usuario)"
+                          [disabled]="
+                            usuarioEnProceso()
+                            === usuario.id
+                          "
+                          [attr.aria-label]="
+                            'Desbloquear a '
+                            + usuario.nombre
+                            + ' '
+                            + usuario.apellidos
+                          "
+                          title="Usuario bloqueado. Pulsa para desbloquear"
+                        >
+
+                          @if (
+                            usuarioEnProceso()
+                            === usuario.id
+                          ) {
+
+                            <span
+                              class="lock-loading"
+                              aria-hidden="true"
+                            >
+                              ...
+                            </span>
+
+                          } @else {
+
+                            <span
+                              class="lock-icon"
+                              aria-hidden="true"
+                            >
+                              &#128274;
+                            </span>
+
+                          }
+
+                        </button>
+
+                      }
+
+                      <!-- Usuario no bloqueado -->
+                      @else {
+
+                        <button
+                          type="button"
+                          class="lock-action lock-open"
+                          (click)="bloquear(usuario)"
+                          [disabled]="
+                            usuarioEnProceso()
+                            === usuario.id
+                          "
+                          [attr.aria-label]="
+                            'Bloquear a '
+                            + usuario.nombre
+                            + ' '
+                            + usuario.apellidos
+                          "
+                          title="Usuario desbloqueado. Pulsa para bloquear"
+                        >
+
+                          @if (
+                            usuarioEnProceso()
+                            === usuario.id
+                          ) {
+
+                            <span
+                              class="lock-loading"
+                              aria-hidden="true"
+                            >
+                              ...
+                            </span>
+
+                          } @else {
+
+                            <span
+                              class="lock-icon"
+                              aria-hidden="true"
+                            >
+                              &#128275;
+                            </span>
+
+                          }
+
+                        </button>
+
+                      }
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              }
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+        <nav
+          class="pagination"
+          aria-label="Paginación de usuarios"
+        >
+
+          <button
+            type="button"
+            (click)="cambiarPagina(-1)"
+            [disabled]="esPrimeraPagina()"
+          >
+            Anterior
+          </button>
+
+          <span>
+            Página
+            {{ (listado()?.pagina ?? 0) + 1 }}
+            de
+            {{ listado()?.totalPaginas ?? 1 }}
+          </span>
+
+          <button
+            type="button"
+            (click)="cambiarPagina(1)"
+            [disabled]="esUltimaPagina()"
+          >
+            Siguiente
+          </button>
+
+        </nav>
+
+      }
+
     </div>
-    <nav class="pagination" aria-label="Paginación de usuarios">
-      <button type="button" (click)="cambiarPagina(-1)" [disabled]="esPrimeraPagina()">Anterior</button>
-      <span>Página {{ (listado()?.pagina ?? 0) + 1 }} de {{ listado()?.totalPaginas ?? 1 }}</span>
-      <button type="button" (click)="cambiarPagina(1)" [disabled]="esUltimaPagina()">Siguiente</button>
-    </nav>
-  }
-    </div>
+
   </section>
 </main>

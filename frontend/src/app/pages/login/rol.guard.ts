@@ -15,6 +15,17 @@ export const rolGuard: CanActivateFn = (ruta) => {
         ? true
         : enrutador.parseUrl(rutaParaRol(sesion.role))
     ),
-    catchError(() => of(enrutador.parseUrl('/login')))
+    catchError(() =>
+      of(
+        enrutador.createUrlTree(
+          ['/login'],
+          {
+            queryParams: {
+              motivo: 'sesion-expirada'
+            }
+          }
+        )
+      )
+    )
   );
 };

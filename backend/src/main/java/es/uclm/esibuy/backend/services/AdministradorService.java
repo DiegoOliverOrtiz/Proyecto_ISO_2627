@@ -20,6 +20,7 @@ import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
+import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Cliente;
@@ -160,6 +161,49 @@ public class AdministradorService {
 		}
 	}
 
+	public void bloquearUsuario(String id, String emailSolicitante) {
+		
+		if (emailSolicitante == null || emailSolicitante.isBlank()) {
+			throw new AccessDeniedException("No se ha podido identificar al solicitante.");
+		}
+
+		Usuario usuario = usuarioDAO.findById(id)
+				.orElseThrow(UsuarioNoEncontradoException::new);
+
+		String emailNormalizado = emailSolicitante.trim().toLowerCase(Locale.ROOT);
+
+		if (emailNormalizado.equals(usuario.getEmail())) {
+			throw new AutoBloqueoAdministradorException();
+		}
+
+		if (!usuario.isBloqueada()) {
+			usuario.setBloqueada(true);
+			usuarioDAO.save(usuario);
+			sesionService.cerrarSesiones(usuario.getEmail());
+		}
+	}
+
+	public void desbloquearUsuario(String id, String emailSolicitante) {
+		if (emailSolicitante == null || emailSolicitante.isBlank()) {
+			throw new AccessDeniedException("No se ha podido identificar al solicitante.");
+		}
+
+		Usuario usuario = usuarioDAO.findById(id)
+				.orElseThrow(UsuarioNoEncontradoException::new);
+
+		String emailNormalizado = emailSolicitante.trim().toLowerCase(Locale.ROOT);
+
+		if (emailNormalizado.equals(usuario.getEmail())) {
+			throw new AutoBloqueoAdministradorException();
+		}
+
+		if (usuario.isBloqueada()) {
+			usuario.setBloqueada(false);
+			usuarioDAO.save(usuario);
+		}
+    }
+
+
 	public void eliminarAdministrador(String id, String emailSolicitante) {
 		if (emailSolicitante == null || emailSolicitante.isBlank()) {
 			throw new AccessDeniedException("No se ha podido identificar al solicitante.");
@@ -177,7 +221,7 @@ public class AdministradorService {
 		}
 		if (administradorDAO.contarAdministradores() <= 1) {
 			throw new UltimoAdministradorException();
-		}
+		}	
 
 		administradorDAO.delete(objetivo);
 		sesionService.cerrarSesiones(objetivo.getEmail());
