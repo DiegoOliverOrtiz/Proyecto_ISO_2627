@@ -21,8 +21,8 @@ import {
 describe('Usuarios', () => {
   let component: Usuarios;
   let fixture: ComponentFixture<Usuarios>;
-
-  const usuario: UsuarioAdministracion = {
+  
+const usuario: UsuarioAdministracion = {
     id: 'usuario-1',
     nombre: 'Mario',
     apellidos: 'Muñoz',
@@ -34,7 +34,10 @@ describe('Usuarios', () => {
     sede: null,
     fechaIncorporacion: null,
     esPremium: false,
-    nombreComercial: null
+    nombreComercial: null,
+    dniNif: null,
+    fechaNacimiento: null,
+    categoriaId: null
   };
 
   const listado: ListadoUsuarios = {
