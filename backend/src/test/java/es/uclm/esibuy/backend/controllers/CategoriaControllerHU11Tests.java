@@ -117,12 +117,22 @@ class CategoriaControllerHU11Tests {
     }
 
     @Test
-    void vendedorNoPuedeConsultarCategorias() throws Exception {
+    void vendedorPuedeConsultarCategorias() throws Exception {
+        // HU17: el vendedor necesita las categorías para asociarlas a sus productos.
+        Categoria deportes = new Categoria(
+                "Deportes",
+                "Productos y equipamiento deportivo");
+        deportes.setId("categoria-1");
+
+        when(categoriaService.obtenerTodas())
+                .thenReturn(List.of(deportes));
+
         mockMvc.perform(get("/categorias")
                         .with(user("vendedor").roles("VENDEDOR")))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nombre").value("Deportes"));
 
-        verifyNoInteractions(categoriaService);
+        verify(categoriaService).obtenerTodas();
     }
 
     @Test
