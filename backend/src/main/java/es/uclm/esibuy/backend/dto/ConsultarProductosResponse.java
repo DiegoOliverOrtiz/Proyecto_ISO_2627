@@ -1,6 +1,7 @@
 package es.uclm.esibuy.backend.dto;
 
 public record ConsultarProductosResponse(
+        String id,
         String nombre,
         String categoria,
         int stock,

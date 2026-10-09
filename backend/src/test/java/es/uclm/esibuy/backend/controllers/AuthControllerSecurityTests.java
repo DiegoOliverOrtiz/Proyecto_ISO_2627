@@ -273,6 +273,7 @@ class AuthControllerSecurityTests {
     void consultaProductosUsandoElEmailDeLaSesion() throws Exception {
         when(productoService.consultarProductosPropios("vendedor@example.com"))
                 .thenReturn(List.of(new ConsultarProductosResponse(
+                        "producto-1",
                         "Teclado",
                         "Informática",
                         4,

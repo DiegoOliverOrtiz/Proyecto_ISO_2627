@@ -69,6 +69,7 @@ public class ProductoService {
 
     private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {
         return new ConsultarProductosResponse(
+                producto.getId(),
                 producto.getNombre(),
                 producto.getCategoria(),
                 producto.getStock(),
