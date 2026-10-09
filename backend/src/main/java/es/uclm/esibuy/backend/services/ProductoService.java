@@ -13,6 +13,7 @@ import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
+import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
@@ -121,16 +122,51 @@ public class ProductoService {
         String rutaImagen = productoImagenService.guardar(imagen);
         producto.setImagen(rutaImagen);
 
+        Producto nuevoProducto = guardarEliminandoImagenSiFalla(producto, rutaImagen);
+        return new CrearProductoResponse(
+                nuevoProducto.getNombre(),
+                nuevoProducto.getCategoria(),
+                nuevoProducto.getPrecio(),
+                nuevoProducto.getStock(),
+                nuevoProducto.getDescuento(),
+                nuevoProducto.getDescuentoPremium(),
+                nuevoProducto.getImagen());
+    }
+
+    public ConsultarProductosResponse modificarProducto(
+            String emailVendedor,
+            String idProducto,
+            ModificarProductoRequest request,
+            MultipartFile imagen) {
+        Producto producto = productoDAO.findById(idProducto)
+                .orElseThrow(ProductoNoEncontradoException::new);
+
+        // Solo se actualizan los campos permitidos; el vendedor y la visibilidad se conservan.
+        producto.setNombre(request.nombre().trim());
+        producto.setCategoria(request.categoria().trim());
+        producto.setDescripcion(request.descripcion() == null ? null : request.descripcion().trim());
+        producto.setPrecio(request.precio());
+        producto.setStock(request.stock());
+        producto.setDescuento(request.descuento());
+        producto.setDescuentoPremium(request.descuentoPremium());
+
+        // La imagen es opcional: si no se envía una nueva, se mantiene la actual.
+        String imagenAnterior = producto.getImagen();
+        String imagenNueva = productoImagenService.guardar(imagen);
+        if (imagenNueva != null) {
+            producto.setImagen(imagenNueva);
+        }
+
+        Producto productoModificado = guardarEliminandoImagenSiFalla(producto, imagenNueva);
+        if (imagenNueva != null) {
+            productoImagenService.eliminar(imagenAnterior);
+        }
+        return aConsultarProductosResponse(productoModificado);
+    }
+
+    private Producto guardarEliminandoImagenSiFalla(Producto producto, String rutaImagen) {
         try {
-            Producto nuevoProducto = productoDAO.save(producto);
-            return new CrearProductoResponse(
-                    nuevoProducto.getNombre(),
-                    nuevoProducto.getCategoria(),
-                    nuevoProducto.getPrecio(),
-                    nuevoProducto.getStock(),
-                    nuevoProducto.getDescuento(),
-                    nuevoProducto.getDescuentoPremium(),
-                    nuevoProducto.getImagen());
+            return productoDAO.save(producto);
         } catch (RuntimeException e) {
             if (rutaImagen != null) {
                 try {
