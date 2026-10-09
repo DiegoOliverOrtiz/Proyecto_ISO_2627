@@ -119,4 +119,19 @@ public class ProductoService {
             throw e;
         }
     }
+
+    public void activarProducto(String emailVendedor, String idProducto) {
+        cambiarEstadoProducto(emailVendedor, idProducto, true);
+    }
+
+    public void desactivarProducto(String emailVendedor, String idProducto) {
+        cambiarEstadoProducto(emailVendedor, idProducto, false);
+    }
+
+    private void cambiarEstadoProducto(String emailVendedor, String idProducto, boolean activo) {
+        // La desactivación es lógica: solo cambia el estado, el producto nunca se elimina.
+        Producto producto = productoDAO.findById(idProducto).orElseThrow();
+        producto.setEsVisible(activo);
+        productoDAO.save(producto);
+    }
 }
