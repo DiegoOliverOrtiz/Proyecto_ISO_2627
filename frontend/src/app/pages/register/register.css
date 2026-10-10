@@ -35,17 +35,18 @@
 .field-wide { grid-column: 1 / -1; }
 .field em { margin-left: 4px; color: var(--muted); font-size: 11px; font-style: normal; font-weight: 400; }
 .field input, .field select { width: 100%; min-height: 42px; box-sizing: border-box; padding: 9px 11px; border: 1px solid #cbd6d1; border-radius: 3px; outline: none; color: var(--ink); background: white; font: inherit; font-size: 14px; }
+.customer-type input { margin-right: 5px; accent-color: var(--leaf); }
 .field input:focus, .field select:focus { border-color: var(--leaf); }
 .field-error, .field-hint { color: #a33f32; font-size: 11px; font-weight: 500; line-height: 1.35; }
 .field-hint { color: #806137; }
 .customer-type { margin: 17px 0; padding: 0; border: 0; }
 .customer-type legend { margin-bottom: 8px; font-size: 13px; font-weight: 700; }
 .customer-type label { margin-right: 16px; cursor: pointer; }
-.customer-type input { margin-right: 5px; accent-color: var(--leaf); }
+
 .password-grid { margin-top: 2px; }
 .submit-button { width: 100%; min-height: 46px; margin-top: 20px; border: 0; color: white; background: var(--coral); font: inherit; font-weight: 800; cursor: pointer; }
-.submit-button:hover:not(:disabled) { background: #b9553e; }
 .submit-button:disabled { cursor: not-allowed; opacity: .55; }
+.submit-button:hover:not(:disabled) { background: #b9553e; }
 .feedback { display: block; margin: 0 0 16px; padding: 12px 14px; border-left: 3px solid; font-size: 13px; line-height: 1.5; }
 .feedback.success { border-color: var(--leaf); color: var(--leaf); background: var(--leaf-light); }
 .feedback.error { border-color: var(--coral); color: #923e31; background: #fff0ea; }

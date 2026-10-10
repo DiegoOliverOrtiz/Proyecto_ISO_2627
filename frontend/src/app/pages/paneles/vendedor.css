@@ -243,8 +243,8 @@ main > p {
   background: #fff;
 }
 
-:host > p[role='alert'],
-main > p[role='alert'] {
+main > p[role='alert'],
+:host > p[role='alert'] {
   width: min(920px, calc(100% - 4rem));
   margin: 1rem auto;
   padding: 0;
@@ -346,8 +346,8 @@ li.producto-desactivado h2 {
 
   .formulario-producto,
   main,
-  :host > p[role='alert'],
   main > p[role='alert'],
+  :host > p[role='alert'],
   .mensaje-exito {
     width: calc(100% - 2rem);
   }

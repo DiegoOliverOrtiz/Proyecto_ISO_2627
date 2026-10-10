@@ -25,7 +25,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear, input[typ
 .field-error { color: #A63C28; font-size: .8rem; margin-top: 4px; font-weight: 500; }
 
 .submit-button { width: 100%; min-height: 46px; margin-top: 2rem; border: none; background: #D36B54; color: white; font-weight: 700; font-size: 1rem; border-radius: 4px; cursor: pointer; }
-.submit-button:hover:not(:disabled) { background: #BC5943; }
 .submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.submit-button:hover:not(:disabled) { background: #BC5943; }
 .feedback.error { padding: 1rem; margin-bottom: 1.5rem; background: #FFF1F0; color: #A63C28; border-left: 4px solid #A63C28; font-weight: 600; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .field-wide { grid-column: auto; } }

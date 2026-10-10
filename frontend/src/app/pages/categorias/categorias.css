@@ -106,16 +106,18 @@ h1 {
   color: #fff;
 }
 
-.primary-button:active:not(:disabled),
-.secondary-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
 .primary-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: .5;
 }
+
+.primary-button:active:not(:disabled),
+.secondary-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+
 
 .success-message {
   margin: 0 0 1.5rem;
@@ -298,14 +300,15 @@ textarea:focus {
   color: #fff;
 }
 
-.danger-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
 .danger-button:disabled {
   cursor: not-allowed;
   opacity: .5;
 }
+
+.danger-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 
 .status {
   padding: 2rem;
