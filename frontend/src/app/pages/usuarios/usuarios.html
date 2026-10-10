@@ -359,8 +359,7 @@
                         
                         <button
                           type="button"
-                          class="lock-action"
-                          style="color: #216342;"
+                          class="lock-action lock-activate"
                           (click)="activar(usuario)"
                           [disabled]="usuarioEnProceso() === usuario.id"
                           [attr.aria-label]="'Activar a ' + usuario.nombre + ' ' + usuario.apellidos"

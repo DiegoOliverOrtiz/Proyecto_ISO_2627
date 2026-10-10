@@ -12,7 +12,7 @@ h1 { margin: 0; color: #173042; font-size: clamp(1.8rem, 4vw, 2.8rem); }
 .admin-form { padding: 2rem; border: 1px solid #D9E3DE; background: #fff; box-shadow: 0 5px 18px rgba(37, 91, 77, .05); border-top: 4px solid #255B4D; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; font-weight: 700; color: #173042;}
-.field-wide { grid-column: 1 / -1; }
+.field-wide { grid-column: 1 / -1; margin-top: 1rem;}
 .field em { font-weight: 400; color: #64777b; font-size: .8rem; font-style: normal; margin-left: 4px; }
 input { min-height: 42px; padding: 0 12px; border: 1px solid #cbd6d1; border-radius: 4px; font: inherit; outline: none; }
 input:focus { border-color: #255B4D; }

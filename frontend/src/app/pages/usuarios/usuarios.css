@@ -359,6 +359,10 @@ th {
     transform .18s ease;
 }
 
+.lock-activate {
+  color: #216342;
+}
+
 /* Candado abierto */
 
 .lock-open {
