@@ -50,7 +50,11 @@
           <label class="field">
             <span>Contraseña (Mínimo 8 caracteres)</span>
             <div class="password-container">
-              <input [type]="hidePassword ? 'password' : 'text'" formControlName="contrasena" autocomplete="new-password" />
+              @if (hidePassword) {
+                <input type="password" formControlName="contrasena" autocomplete="new-password" />
+              } @else {
+                <input type="text" formControlName="contrasena" autocomplete="off" />
+              }
               <button type="button" (click)="togglePassword()" class="eye-button">
                 {{ hidePassword ? '👁️' : '🙈' }}
               </button>
@@ -60,7 +64,11 @@
           <label class="field">
             <span>Repetir contraseña</span>
             <div class="password-container">
-              <input [type]="hideRepeatPassword ? 'password' : 'text'" formControlName="repetirContrasena" autocomplete="new-password" />
+              @if (hideRepeatPassword) {
+                <input type="password" formControlName="repetirContrasena" autocomplete="new-password" />
+              } @else {
+                <input type="text" formControlName="repetirContrasena" autocomplete="off" />
+              }
               <button type="button" (click)="toggleRepeatPassword()" class="eye-button">
                 {{ hideRepeatPassword ? '👁️' : '🙈' }}
               </button>

@@ -91,6 +91,12 @@ h1 {
   color: #fff;
 }
 
+.primary-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
 .primary-button:hover:not(:disabled) {
   background: #BC5943;
 }
@@ -106,11 +112,6 @@ h1 {
   color: #fff;
 }
 
-.primary-button:disabled,
-.secondary-button:disabled {
-  cursor: not-allowed;
-  opacity: .5;
-}
 
 .primary-button:active:not(:disabled),
 .secondary-button:active:not(:disabled) {
@@ -296,15 +297,16 @@ textarea:focus {
   transition: background .18s ease, transform .18s ease;
 }
 
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
 .danger-button:hover:not(:disabled) {
   background: #B84A3A;
   color: #fff;
 }
 
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: .5;
-}
 
 .danger-button:active:not(:disabled) {
   transform: translateY(1px);
