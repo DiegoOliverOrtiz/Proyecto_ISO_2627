@@ -91,6 +91,12 @@ h1 {
   color: #fff;
 }
 
+.secondary-button {
+  border: 1px solid #B8CBC1;
+  background: #fff;
+  color: #255B4D;
+}
+
 .primary-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
@@ -101,11 +107,7 @@ h1 {
   background: #BC5943;
 }
 
-.secondary-button {
-  border: 1px solid #B8CBC1;
-  background: #fff;
-  color: #255B4D;
-}
+
 
 .secondary-button:hover:not(:disabled) {
   background: #255B4D;
