@@ -32,6 +32,9 @@ import jakarta.validation.Validator;
 @Service
 public class AdministradorService {
 
+	private static final String MENSAJE_SOLICITANTE_NO_IDENTIFICADO =
+			"No se ha podido identificar al solicitante.";
+
 	private final AdministradorDAO administradorDAO;
 	private final UsuarioDAO usuarioDAO;
 	private final PasswordEncoder passwordEncoder;
@@ -368,7 +371,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		Usuario usuario =
@@ -406,7 +409,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		Usuario usuario =
@@ -441,7 +444,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		if (id == null ||

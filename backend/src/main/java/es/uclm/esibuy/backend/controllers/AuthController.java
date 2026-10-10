@@ -37,6 +37,8 @@ import jakarta.validation.Valid;
 @RequestMapping("/usuarios")
 public class AuthController {
 
+    private static final String PREFIJO_ROL = "ROLE_";
+
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
     private final SesionService sesionService;
@@ -65,7 +67,7 @@ public class AuthController {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 usuarioValidado.getEmail(),
                 null,
-                java.util.List.of(new SimpleGrantedAuthority("ROLE_" + rol)));
+                java.util.List.of(new SimpleGrantedAuthority(PREFIJO_ROL + rol)));
 
         HttpSession sesion = request.getSession(true);
         request.changeSessionId();
@@ -88,14 +90,14 @@ public class AuthController {
 
         String autoridad = authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
-                .filter(value -> value != null && value.startsWith("ROLE_"))
+                .filter(value -> value != null && value.startsWith(PREFIJO_ROL))
                 .findFirst()
                 .orElse(null);
-        if (autoridad == null || autoridad.length() == "ROLE_".length()) {
+        if (autoridad == null || autoridad.length() == PREFIJO_ROL.length()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String rol = autoridad.substring("ROLE_".length());
+        String rol = autoridad.substring(PREFIJO_ROL.length());
         return ResponseEntity.ok(new LoginResponse(authentication.getName(), rol));
     }
 
