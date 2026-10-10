@@ -64,7 +64,7 @@
         <small role="alert">{{ errorImagen() }}</small>
         }
         @if (vistaPreviaImagen()) {
-        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa de la imagen del producto" width="320" height="240"/>
+        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa del producto" width="320" height="240"/>
         } @else if (productoEnEdicion()?.imagen; as imagenActual) {
         <small>Si no seleccionas otra imagen, se mantiene la actual.</small>
         <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" width="320" height="240" />
