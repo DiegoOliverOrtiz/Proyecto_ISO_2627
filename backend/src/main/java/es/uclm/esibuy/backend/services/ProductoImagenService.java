@@ -17,7 +17,7 @@ public class ProductoImagenService {
             "image/jpeg", ".jpg",
             "image/png", ".png",
             "image/gif", ".gif");
-    private static final long TAMANO_MAXIMO = 5 * 1024 * 1024;
+    private static final long TAMANO_MAXIMO = 5L * 1024 * 1024;
     private static final String RUTA_PUBLICA = "/product-images/";
 
     private final Path directorio;

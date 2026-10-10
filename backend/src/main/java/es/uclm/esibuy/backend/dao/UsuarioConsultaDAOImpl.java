@@ -28,6 +28,10 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 
 	private static final String CAMPO_ACTIVADA = "activada";
 	private static final String CAMPO_BLOQUEADA = "bloqueada";
+	private static final String CAMPO_TIPO = "_class";
+	private static final String TIPO_ADMINISTRADOR = "administrador";
+	private static final String TIPO_CLIENTE = "cliente";
+	private static final String TIPO_VENDEDOR = "vendedor";
 
 	private final MongoTemplate mongoTemplate;
 	private final MongoConverter mongoConverter;
@@ -99,12 +103,12 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 	}
 
 	private Class<? extends Usuario> resolverTipo(Document documento) {
-		String tipo = documento.getString("_class");
+		String tipo = documento.getString(CAMPO_TIPO);
 		if (tipo != null) {
 			String tipoNormalizado = tipo.toLowerCase(Locale.ROOT);
-			if (tipoNormalizado.endsWith("administrador")) return Administrador.class;
-			if (tipoNormalizado.endsWith("cliente")) return Cliente.class;
-			if (tipoNormalizado.endsWith("vendedor")) return Vendedor.class;
+			if (tipoNormalizado.endsWith(TIPO_ADMINISTRADOR)) return Administrador.class;
+			if (tipoNormalizado.endsWith(TIPO_CLIENTE)) return Cliente.class;
+			if (tipoNormalizado.endsWith(TIPO_VENDEDOR)) return Vendedor.class;
 		}
 		if (documento.containsKey("nombreComercial")) return Vendedor.class;
 		if (documento.containsKey("fechaNacimiento") || documento.containsKey("esPremium")) return Cliente.class;
@@ -129,17 +133,17 @@ public class UsuarioConsultaDAOImpl implements UsuarioConsultaDAO {
 		if (rolUpperCase.equals("NO_ADMIN")) {
 			// Excluye a los administradores buscando solo clientes y vendedores
 			return new Criteria().orOperator(
-				Criteria.where("_class").is("cliente"),
-				Criteria.where("_class").is("vendedor")
+				Criteria.where(CAMPO_TIPO).is(TIPO_CLIENTE),
+				Criteria.where(CAMPO_TIPO).is(TIPO_VENDEDOR)
 			);
 		}
 
 		String alias = switch (rolUpperCase) {
-		case "ADMIN" -> "administrador";
-		case "CLIENTE" -> "cliente";
-		case "VENDEDOR" -> "vendedor";
+		case "ADMIN" -> TIPO_ADMINISTRADOR;
+		case "CLIENTE" -> TIPO_CLIENTE;
+		case "VENDEDOR" -> TIPO_VENDEDOR;
 		default -> throw new IllegalArgumentException("Rol de usuario no válido: " + rol);
 		};
-		return Criteria.where("_class").is(alias);
+		return Criteria.where(CAMPO_TIPO).is(alias);
 	}
 }

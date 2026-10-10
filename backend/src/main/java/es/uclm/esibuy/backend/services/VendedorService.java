@@ -30,7 +30,10 @@ public class VendedorService {
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
-		soporteRegistro.validarSolicitud(request, request == null ? null : request.contrasena());
+        if (request == null) {
+            throw new InvalidRegistrationException();
+        }
+        soporteRegistro.validarSolicitud(request, request.contrasena());
 		String email = soporteRegistro.normalizarCorreo(request.email());
         String nombreComercial = request.nombreComercial().trim();
         String categoriaId = request.categoriaId().trim();

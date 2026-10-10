@@ -51,18 +51,6 @@ class AdministradorServiceEliminacionTests {
 		return administrador;
 	}
 
-    /* Test sustituido por uno más adelante
-	@Test
-	void eliminarAdministrador_conOtroAdministradorExistente_loElimina() {
-		Administrador objetivo = crearAdministrador(ID_OBJETIVO, EMAIL_OBJETIVO);
-		when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.of(objetivo));
-
-		administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
-
-		verify(administradorDAO).delete(objetivo);
-	}
-    */
-
 	@Test
 	void eliminarAdministrador_siNoExiste_lanzaUsuarioNoEncontradoYNoElimina() {
 		when(administradorDAO.findById(ID_OBJETIVO)).thenReturn(Optional.empty());

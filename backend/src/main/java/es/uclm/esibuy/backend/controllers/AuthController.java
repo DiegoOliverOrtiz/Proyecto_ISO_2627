@@ -2,7 +2,6 @@ package es.uclm.esibuy.backend.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,7 +9,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,8 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import es.uclm.esibuy.backend.dto.CsrfTokenResponse;
 import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.dto.LoginResponse;
-import es.uclm.esibuy.backend.dto.ApiErrorResponse;
-import es.uclm.esibuy.backend.exceptions.AccountPendingException;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
@@ -36,6 +32,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/usuarios")
 public class AuthController {
+
+    private static final String PREFIJO_ROL = "ROLE_";
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
@@ -65,7 +63,7 @@ public class AuthController {
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 usuarioValidado.getEmail(),
                 null,
-                java.util.List.of(new SimpleGrantedAuthority("ROLE_" + rol)));
+                java.util.List.of(new SimpleGrantedAuthority(PREFIJO_ROL + rol)));
 
         HttpSession sesion = request.getSession(true);
         request.changeSessionId();
@@ -88,27 +86,15 @@ public class AuthController {
 
         String autoridad = authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
-                .filter(value -> value != null && value.startsWith("ROLE_"))
+                .filter(value -> value != null && value.startsWith(PREFIJO_ROL))
                 .findFirst()
                 .orElse(null);
-        if (autoridad == null || autoridad.length() == "ROLE_".length()) {
+        if (autoridad == null || autoridad.length() == PREFIJO_ROL.length()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String rol = autoridad.substring("ROLE_".length());
+        String rol = autoridad.substring(PREFIJO_ROL.length());
         return ResponseEntity.ok(new LoginResponse(authentication.getName(), rol));
-    }
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiErrorResponse> manejarCredencialesIncorrectas(BadCredentialsException excepcion) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new ApiErrorResponse(excepcion.getMessage()));
-    }
-
-    @ExceptionHandler(AccountPendingException.class)
-    public ResponseEntity<ApiErrorResponse> manejarCuentaPendiente(AccountPendingException excepcion) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ApiErrorResponse(excepcion.getMessage()));
     }
 
     private String obtenerRol(Usuario usuario) {
