@@ -71,7 +71,7 @@ public class AdministradorService {
 
 		Page<UsuarioAdministracionResponse> pagina =
 				usuarioDAO.buscar(texto, estado, rolFiltro, pageable)
-						.map(this::convertirRespuesta);
+						.map(UsuarioAdministracionResponse::desde);
 
 		return new ListadoUsuariosResponse(
 				pagina.getContent(),
@@ -85,7 +85,7 @@ public class AdministradorService {
 	public UsuarioAdministracionResponse consultarUsuario(String id) {
 
 		return usuarioDAO.buscarPorId(id)
-				.map(this::convertirRespuesta)
+				.map(UsuarioAdministracionResponse::desde)
 				.orElseThrow(() ->
 						new UsuarioNoEncontradoException(id));
 	}
@@ -157,7 +157,7 @@ public class AdministradorService {
 		Usuario usuarioGuardado =
 				usuarioDAO.save(usuario);
 
-		return convertirRespuesta(
+		return UsuarioAdministracionResponse.desde(
 				usuarioGuardado);
 	}
 
@@ -185,111 +185,6 @@ public class AdministradorService {
 
 		cliente.setFechaNacimiento(
 				request.fechaNacimiento());
-	}
-
-	/*
-	 * Campos de la respuesta que dependen
-	 * del tipo de usuario
-	 */
-	private record DatosRol(
-			String rol,
-			String sede,
-			LocalDate fechaIncorporacion,
-			Boolean esPremium,
-			String nombreComercial,
-			String dniNif,
-			LocalDate fechaNacimiento,
-			String categoriaId) {
-	}
-
-	private DatosRol datosAdministrador(
-			Administrador administrador) {
-
-		return new DatosRol(
-				"ADMIN",
-				administrador.getSede(),
-				administrador.getFechaIncorporacion(),
-				null,
-				null,
-				null,
-				null,
-				null);
-	}
-
-	private DatosRol datosCliente(
-			Cliente cliente) {
-
-		return new DatosRol(
-				"CLIENTE",
-				null,
-				null,
-				cliente.isEsPremium(),
-				null,
-				cliente.getDniNif(),
-				cliente.getFechaNacimiento(),
-				null);
-	}
-
-	private DatosRol datosVendedor(
-			Vendedor vendedor) {
-
-		return new DatosRol(
-				"VENDEDOR",
-				null,
-				null,
-				null,
-				vendedor.getNombreComercial(),
-				vendedor.getDniNif(),
-				null,
-				vendedor.getCategoriaId());
-	}
-
-	private UsuarioAdministracionResponse convertirRespuesta(
-			Usuario usuario) {
-
-		DatosRol datos = switch (usuario) {
-
-			case Administrador administrador -> datosAdministrador(administrador);
-
-			case Cliente cliente -> datosCliente(cliente);
-
-			case Vendedor vendedor -> datosVendedor(vendedor);
-
-			default -> throw new IllegalStateException(
-					"Tipo de usuario no soportado.");
-		};
-
-		String estado;
-
-		if (usuario.isBloqueada()) {
-
-			estado = "BLOQUEADO";
-
-		} else if (usuario.isActivada()) {
-
-			estado = "ACTIVO";
-
-		} else {
-
-			estado = "PENDIENTE";
-		}
-
-		return new UsuarioAdministracionResponse(
-				usuario.getId(),
-				usuario.getNombre(),
-				usuario.getApellidos(),
-				usuario.getEmail(),
-				usuario.getTelefono(),
-				estado,
-				datos.rol(),
-				usuario.getImagenPerfil(),
-				datos.sede(),
-				datos.fechaIncorporacion(),
-				datos.esPremium(),
-				datos.nombreComercial(),
-				datos.dniNif(),
-				datos.fechaNacimiento(),
-				datos.categoriaId());
 	}
 
 	public RegistroUsuarioResponse registrar(
