@@ -11,4 +11,6 @@ public interface ProductoDAO extends MongoRepository<Producto, String> {
     List<Producto> findByEsVisibleTrue();
 
     boolean existsByCategoriaIgnoreCase(String categoria);
+
+    List<Producto> findByCategoriaIgnoreCase(String categoria);
 }
