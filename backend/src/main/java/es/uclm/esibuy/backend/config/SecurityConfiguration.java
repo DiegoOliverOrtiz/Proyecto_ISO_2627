@@ -127,8 +127,8 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias",
-                                                                "/categorias/**")
-                                                .hasAnyRole("ADMIN", "VENDEDOR")
+                                                                RUTA_CATEGORIAS)
+                                                .hasAnyRole(ROL_ADMIN, "VENDEDOR")
 
                                                 .requestMatchers(
                                                                 HttpMethod.POST,

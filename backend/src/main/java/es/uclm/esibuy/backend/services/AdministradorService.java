@@ -32,6 +32,9 @@ import jakarta.validation.Validator;
 @Service
 public class AdministradorService {
 
+	private static final String MENSAJE_SOLICITANTE_NO_IDENTIFICADO =
+			"No se ha podido identificar al solicitante.";
+
 	private final AdministradorDAO administradorDAO;
 	private final UsuarioDAO usuarioDAO;
 	private final PasswordEncoder passwordEncoder;
@@ -68,7 +71,7 @@ public class AdministradorService {
 
 		Page<UsuarioAdministracionResponse> pagina =
 				usuarioDAO.buscar(texto, estado, rolFiltro, pageable)
-						.map(this::convertirRespuesta);
+						.map(UsuarioAdministracionResponse::desde);
 
 		return new ListadoUsuariosResponse(
 				pagina.getContent(),
@@ -82,7 +85,7 @@ public class AdministradorService {
 	public UsuarioAdministracionResponse consultarUsuario(String id) {
 
 		return usuarioDAO.buscarPorId(id)
-				.map(this::convertirRespuesta)
+				.map(UsuarioAdministracionResponse::desde)
 				.orElseThrow(() ->
 						new UsuarioNoEncontradoException(id));
 	}
@@ -138,41 +141,11 @@ public class AdministradorService {
 		 */
 		switch (usuario) {
 
-			case Cliente cliente -> {
+			case Cliente cliente -> modificarDatosCliente(cliente, request);
 
-				if (request.fechaNacimiento() == null) {
-					throw new IllegalArgumentException(
-							"La fecha de nacimiento es obligatoria.");
-				}
+			case Vendedor vendedor -> vendedor.setDniNif(request.dniNif());
 
-				LocalDate fechaLimite =
-						LocalDate.now().minusYears(18);
-
-				if (request.fechaNacimiento()
-						.isAfter(fechaLimite)) {
-
-					throw new IllegalArgumentException(
-							"El cliente debe ser mayor de edad.");
-				}
-
-				cliente.setDniNif(
-						request.dniNif());
-
-				cliente.setFechaNacimiento(
-						request.fechaNacimiento());
-			}
-
-			case Vendedor vendedor -> {
-
-				vendedor.setDniNif(
-						request.dniNif());
-			}
-
-			case Administrador administrador -> {
-
-				administrador.setSede(
-						request.sede());
-			}
+			case Administrador administrador -> administrador.setSede(request.sede());
 
 			default -> throw new IllegalStateException(
 					"Tipo de usuario no soportado.");
@@ -184,98 +157,34 @@ public class AdministradorService {
 		Usuario usuarioGuardado =
 				usuarioDAO.save(usuario);
 
-		return convertirRespuesta(
+		return UsuarioAdministracionResponse.desde(
 				usuarioGuardado);
 	}
 
-	private UsuarioAdministracionResponse convertirRespuesta(
-			Usuario usuario) {
+	private void modificarDatosCliente(
+			Cliente cliente,
+			ModificarUsuarioRequest request) {
 
-		String rol;
-		String sede = null;
-		LocalDate fechaIncorporacion = null;
-		Boolean esPremium = null;
-		String nombreComercial = null;
-		String dniNif = null;
-		LocalDate fechaNacimiento = null;
-		String categoriaId = null;
-
-		switch (usuario) {
-
-			case Administrador administrador -> {
-
-				rol = "ADMIN";
-
-				sede =
-						administrador.getSede();
-
-				fechaIncorporacion =
-						administrador.getFechaIncorporacion();
-			}
-
-			case Cliente cliente -> {
-
-				rol = "CLIENTE";
-
-				esPremium =
-						cliente.isEsPremium();
-
-				dniNif =
-						cliente.getDniNif();
-
-				fechaNacimiento =
-						cliente.getFechaNacimiento();
-			}
-
-			case Vendedor vendedor -> {
-
-				rol = "VENDEDOR";
-
-				nombreComercial =
-						vendedor.getNombreComercial();
-
-				dniNif =
-						vendedor.getDniNif();
-
-				categoriaId =
-						vendedor.getCategoriaId();
-			}
-
-			default -> throw new IllegalStateException(
-					"Tipo de usuario no soportado.");
+		if (request.fechaNacimiento() == null) {
+			throw new IllegalArgumentException(
+					"La fecha de nacimiento es obligatoria.");
 		}
 
-		String estado;
+		LocalDate fechaLimite =
+				LocalDate.now().minusYears(18);
 
-		if (usuario.isBloqueada()) {
+		if (request.fechaNacimiento()
+				.isAfter(fechaLimite)) {
 
-			estado = "BLOQUEADO";
-
-		} else if (usuario.isActivada()) {
-
-			estado = "ACTIVO";
-
-		} else {
-
-			estado = "PENDIENTE";
+			throw new IllegalArgumentException(
+					"El cliente debe ser mayor de edad.");
 		}
 
-		return new UsuarioAdministracionResponse(
-				usuario.getId(),
-				usuario.getNombre(),
-				usuario.getApellidos(),
-				usuario.getEmail(),
-				usuario.getTelefono(),
-				estado,
-				rol,
-				usuario.getImagenPerfil(),
-				sede,
-				fechaIncorporacion,
-				esPremium,
-				nombreComercial,
-				dniNif,
-				fechaNacimiento,
-				categoriaId);
+		cliente.setDniNif(
+				request.dniNif());
+
+		cliente.setFechaNacimiento(
+				request.fechaNacimiento());
 	}
 
 	public RegistroUsuarioResponse registrar(
@@ -368,7 +277,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		Usuario usuario =
@@ -406,7 +315,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		Usuario usuario =
@@ -441,7 +350,7 @@ public class AdministradorService {
 				emailSolicitante.isBlank()) {
 
 			throw new AccessDeniedException(
-					"No se ha podido identificar al solicitante.");
+					MENSAJE_SOLICITANTE_NO_IDENTIFICADO);
 		}
 
 		if (id == null ||
