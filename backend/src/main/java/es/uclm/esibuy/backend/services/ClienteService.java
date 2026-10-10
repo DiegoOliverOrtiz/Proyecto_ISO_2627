@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
+import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Cliente;
 
 @Service
@@ -19,7 +20,10 @@ public class ClienteService {
 	}
 
 	public RegistroUsuarioResponse registrar(RegistroClienteRequest request) {
-		soporteRegistro.validarSolicitud(request, request == null ? null : request.contrasena());
+		if (request == null) {
+			throw new InvalidRegistrationException();
+		}
+		soporteRegistro.validarSolicitud(request, request.contrasena());
 		String email = soporteRegistro.normalizarCorreo(request.email());
 		soporteRegistro.comprobarCorreoDisponible(email);
 
