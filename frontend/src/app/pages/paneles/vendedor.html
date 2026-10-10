@@ -64,10 +64,10 @@
         <small role="alert">{{ errorImagen() }}</small>
         }
         @if (vistaPreviaImagen()) {
-        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa de la imagen del producto" />
+        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa de la imagen del producto" width="320" height="240"/>
         } @else if (productoEnEdicion()?.imagen; as imagenActual) {
         <small>Si no seleccionas otra imagen, se mantiene la actual.</small>
-        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" />
+        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" width="320" height="240" />
         }
     </div>
 
@@ -150,7 +150,7 @@
         @for (producto of productos(); track producto.id) {
         <li [class.producto-desactivado]="!producto.esVisible">
             @if (producto.imagen) {
-            <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" />
+            <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="180"/>
             }
             <h2>{{ producto.nombre }}</h2>
             <p>Categoría: {{ producto.categoria }}</p>
