@@ -141,41 +141,11 @@ public class AdministradorService {
 		 */
 		switch (usuario) {
 
-			case Cliente cliente -> {
+			case Cliente cliente -> modificarDatosCliente(cliente, request);
 
-				if (request.fechaNacimiento() == null) {
-					throw new IllegalArgumentException(
-							"La fecha de nacimiento es obligatoria.");
-				}
+			case Vendedor vendedor -> vendedor.setDniNif(request.dniNif());
 
-				LocalDate fechaLimite =
-						LocalDate.now().minusYears(18);
-
-				if (request.fechaNacimiento()
-						.isAfter(fechaLimite)) {
-
-					throw new IllegalArgumentException(
-							"El cliente debe ser mayor de edad.");
-				}
-
-				cliente.setDniNif(
-						request.dniNif());
-
-				cliente.setFechaNacimiento(
-						request.fechaNacimiento());
-			}
-
-			case Vendedor vendedor -> {
-
-				vendedor.setDniNif(
-						request.dniNif());
-			}
-
-			case Administrador administrador -> {
-
-				administrador.setSede(
-						request.sede());
-			}
+			case Administrador administrador -> administrador.setSede(request.sede());
 
 			default -> throw new IllegalStateException(
 					"Tipo de usuario no soportado.");
@@ -191,62 +161,103 @@ public class AdministradorService {
 				usuarioGuardado);
 	}
 
+	private void modificarDatosCliente(
+			Cliente cliente,
+			ModificarUsuarioRequest request) {
+
+		if (request.fechaNacimiento() == null) {
+			throw new IllegalArgumentException(
+					"La fecha de nacimiento es obligatoria.");
+		}
+
+		LocalDate fechaLimite =
+				LocalDate.now().minusYears(18);
+
+		if (request.fechaNacimiento()
+				.isAfter(fechaLimite)) {
+
+			throw new IllegalArgumentException(
+					"El cliente debe ser mayor de edad.");
+		}
+
+		cliente.setDniNif(
+				request.dniNif());
+
+		cliente.setFechaNacimiento(
+				request.fechaNacimiento());
+	}
+
+	/*
+	 * Campos de la respuesta que dependen
+	 * del tipo de usuario
+	 */
+	private record DatosRol(
+			String rol,
+			String sede,
+			LocalDate fechaIncorporacion,
+			Boolean esPremium,
+			String nombreComercial,
+			String dniNif,
+			LocalDate fechaNacimiento,
+			String categoriaId) {
+	}
+
+	private DatosRol datosAdministrador(
+			Administrador administrador) {
+
+		return new DatosRol(
+				"ADMIN",
+				administrador.getSede(),
+				administrador.getFechaIncorporacion(),
+				null,
+				null,
+				null,
+				null,
+				null);
+	}
+
+	private DatosRol datosCliente(
+			Cliente cliente) {
+
+		return new DatosRol(
+				"CLIENTE",
+				null,
+				null,
+				cliente.isEsPremium(),
+				null,
+				cliente.getDniNif(),
+				cliente.getFechaNacimiento(),
+				null);
+	}
+
+	private DatosRol datosVendedor(
+			Vendedor vendedor) {
+
+		return new DatosRol(
+				"VENDEDOR",
+				null,
+				null,
+				null,
+				vendedor.getNombreComercial(),
+				vendedor.getDniNif(),
+				null,
+				vendedor.getCategoriaId());
+	}
+
 	private UsuarioAdministracionResponse convertirRespuesta(
 			Usuario usuario) {
 
-		String rol;
-		String sede = null;
-		LocalDate fechaIncorporacion = null;
-		Boolean esPremium = null;
-		String nombreComercial = null;
-		String dniNif = null;
-		LocalDate fechaNacimiento = null;
-		String categoriaId = null;
+		DatosRol datos = switch (usuario) {
 
-		switch (usuario) {
+			case Administrador administrador -> datosAdministrador(administrador);
 
-			case Administrador administrador -> {
+			case Cliente cliente -> datosCliente(cliente);
 
-				rol = "ADMIN";
-
-				sede =
-						administrador.getSede();
-
-				fechaIncorporacion =
-						administrador.getFechaIncorporacion();
-			}
-
-			case Cliente cliente -> {
-
-				rol = "CLIENTE";
-
-				esPremium =
-						cliente.isEsPremium();
-
-				dniNif =
-						cliente.getDniNif();
-
-				fechaNacimiento =
-						cliente.getFechaNacimiento();
-			}
-
-			case Vendedor vendedor -> {
-
-				rol = "VENDEDOR";
-
-				nombreComercial =
-						vendedor.getNombreComercial();
-
-				dniNif =
-						vendedor.getDniNif();
-
-				categoriaId =
-						vendedor.getCategoriaId();
-			}
+			case Vendedor vendedor -> datosVendedor(vendedor);
 
 			default -> throw new IllegalStateException(
 					"Tipo de usuario no soportado.");
-		}
+		};
 
 		String estado;
 
@@ -270,15 +281,15 @@ public class AdministradorService {
 				usuario.getEmail(),
 				usuario.getTelefono(),
 				estado,
-				rol,
+				datos.rol(),
 				usuario.getImagenPerfil(),
-				sede,
-				fechaIncorporacion,
-				esPremium,
-				nombreComercial,
-				dniNif,
-				fechaNacimiento,
-				categoriaId);
+				datos.sede(),
+				datos.fechaIncorporacion(),
+				datos.esPremium(),
+				datos.nombreComercial(),
+				datos.dniNif(),
+				datos.fechaNacimiento(),
+				datos.categoriaId());
 	}
 
 	public RegistroUsuarioResponse registrar(
