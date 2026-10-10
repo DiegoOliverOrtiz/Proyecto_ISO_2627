@@ -120,6 +120,7 @@ h1 {
 
 
 .success-message {
+  display: block;
   margin: 0 0 1.5rem;
   padding: .9rem 1rem;
   border: 1px solid #B8CBC1;

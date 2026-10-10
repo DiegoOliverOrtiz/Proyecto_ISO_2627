@@ -159,6 +159,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 }
 
 .success-text {
+  display: block;
   color: #255B4D;
   font-size: 14px;
   margin: 0 0 16px;

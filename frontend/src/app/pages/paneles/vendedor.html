@@ -23,7 +23,7 @@
 }
 
 @if (mensajeExito()) {
-<p class="mensaje-exito" role="status">{{ mensajeExito() }}</p>
+<output class="mensaje-exito">{{ mensajeExito() }}</output>
 }
 
 @if (mostrandoFormulario()) {
@@ -109,8 +109,8 @@
 
     @if (!productoEnEdicion()) {
     <div class="campo">
-        <label>Visibilidad del producto</label>
-        <div class="grupo-visibilidad" role="group" aria-label="Visibilidad del producto">
+        <fieldset class="grupo-visibilidad">
+            <legend>Visibilidad del producto</legend>
             <button type="button" class="boton-visibilidad" [class.activo]="formularioProducto.get('esVisible')?.value"
                 [attr.aria-pressed]="formularioProducto.get('esVisible')?.value === true"
                 (click)="cambiarVisibilidad(true)">
@@ -121,7 +121,7 @@
                 (click)="cambiarVisibilidad(false)">
                 No visible
             </button>
-        </div>
+        </fieldset>
     </div>
     }
 
@@ -140,7 +140,7 @@
 
 <main>
     @if (cargandoProductos()) {
-    <p role="status">Cargando productos...</p>
+    <output>Cargando productos...</output>
     } @else if (errorCatalogo()) {
     <p role="alert">{{ errorCatalogo() }}</p>
     } @else if (productos().length === 0) {
