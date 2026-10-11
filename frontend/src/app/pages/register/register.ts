@@ -1,6 +1,6 @@
-
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
+
 import {
   AbstractControl,
   FormBuilder,
@@ -9,6 +9,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
+
 import { RouterLink } from '@angular/router';
 
 import {
@@ -18,7 +19,9 @@ import {
   type VendedorRegistrationRequest
 } from './registration.service';
 
+
 type UserRole = 'cliente' | 'vendedor';
+
 
 type Feedback = {
   kind: 'success' | 'error';
@@ -26,14 +29,19 @@ type Feedback = {
   details?: string[];
 } | null;
 
+
 const getLatestBirthDate = (): string => {
   const today = new Date();
   const year = today.getFullYear() - 18;
   const month = today.getMonth();
-  const day = Math.min(today.getDate(), new Date(year, month + 1, 0).getDate());
+  const day = Math.min(
+    today.getDate(),
+    new Date(year, month + 1, 0).getDate()
+  );
 
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 };
+
 
 const passwordMatchValidator: ValidatorFn = (
   control: AbstractControl
@@ -46,6 +54,7 @@ const passwordMatchValidator: ValidatorFn = (
     : { passwordMismatch: true };
 };
 
+
 const adultDateValidator: ValidatorFn = (
   control: AbstractControl
 ): ValidationErrors | null => {
@@ -56,11 +65,14 @@ const adultDateValidator: ValidatorFn = (
     : null;
 };
 
+
 const optionalPhoneValidator =
   Validators.pattern(/^\+?[0-9\s().-]{7,20}$/);
 
+
 const optionalImageUrlValidator =
   Validators.pattern(/^https?:\/\/.+/i);
+
 
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -73,6 +85,7 @@ export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly registrationService = inject(RegistrationService);
   private readonly cdr = inject(ChangeDetectorRef);
+
 
   // Categorías obtenidas del backend.
   sellerCategories: CategoriaRegistro[] = [];
@@ -88,64 +101,94 @@ export class Register {
   avatarFailed = false;
   feedback: Feedback = null;
 
+
   readonly clienteForm = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
+
     apellidos: ['', Validators.required],
+
     fechaNacimiento: ['', [
       Validators.required,
       adultDateValidator
     ]],
-    dniNif: ['', [
-      Validators.required,
-      Validators.maxLength(9)
-    ]],
+
+    dniNif: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(9),
+        Validators.maxLength(9),
+        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+      ]
+    ],
+
     email: ['', [
       Validators.required,
       Validators.email
     ]],
+
     telefono: ['', optionalPhoneValidator],
+
     imagenPerfil: ['', optionalImageUrlValidator],
+
     contrasena: ['', [
       Validators.required,
       Validators.minLength(8)
     ]],
+
     repetirContrasena: ['', Validators.required],
+
     tipoCliente: ['normal'],
   }, {
     validators: passwordMatchValidator
   });
 
+
   readonly vendedorForm = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
+
     apellidos: ['', Validators.required],
 
     categoriaId: ['', Validators.required],
 
     nombreComercial: ['', Validators.required],
-    dniNif: ['', [
-      Validators.required,
-      Validators.maxLength(9)
-    ]],
+
+    dniNif: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(9),
+        Validators.maxLength(9),
+        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+      ]
+    ],
+
     email: ['', [
       Validators.required,
       Validators.email
     ]],
+
     telefono: ['', optionalPhoneValidator],
+
     imagenPerfil: ['', optionalImageUrlValidator],
+
     contrasena: ['', [
       Validators.required,
       Validators.minLength(8)
     ]],
+
     repetirContrasena: ['', Validators.required],
   }, {
     validators: passwordMatchValidator
   });
+
 
   get fallbackAvatar(): string {
     return this.role === 'cliente'
       ? '/avatars/cliente.svg'
       : '/avatars/vendedor.svg';
   }
+
 
   get avatarSource(): string {
     if (this.avatarFailed) {
@@ -158,6 +201,7 @@ export class Register {
 
     return imageUrl.trim() || this.fallbackAvatar;
   }
+
 
   selectRole(role: UserRole): void {
     this.role = role;
@@ -172,6 +216,7 @@ export class Register {
       this.loadSellerCategories();
     }
   }
+
 
   private loadSellerCategories(): void {
     this.categoriesLoading = true;
@@ -211,9 +256,11 @@ export class Register {
     });
   }
 
+
   resetAvatarError(): void {
     this.avatarFailed = false;
   }
+
 
   controlError(form: AbstractControl, name: string): string {
     const control = form.get(name);
@@ -230,11 +277,21 @@ export class Register {
       return 'Introduce un correo electrónico válido.';
     }
 
-    if (control.hasError('maxlength')) {
-      return 'El DNI/NIF no puede superar los 9 caracteres.';
+    if (
+      name === 'dniNif' &&
+      (
+        control.hasError('minlength') ||
+        control.hasError('maxlength') ||
+        control.hasError('pattern')
+      )
+    ) {
+      return 'El DNI debe tener 8 números y una letra.';
     }
 
-    if (control.hasError('minlength')) {
+    if (
+      name === 'contrasena' &&
+      control.hasError('minlength')
+    ) {
       return 'La contraseña debe tener al menos 8 caracteres.';
     }
 
@@ -249,17 +306,22 @@ export class Register {
       return 'Introduce un teléfono válido o deja el campo vacío.';
     }
 
-    if (control.hasError('pattern')) {
+    if (
+      control.hasError('pattern') &&
+      name === 'imagenPerfil'
+    ) {
       return 'Introduce una URL que empiece por http:// o https://.';
     }
 
     return 'Revisa este campo.';
   }
 
+
   passwordMismatch(form: AbstractControl): boolean {
     return form.hasError('passwordMismatch') &&
       Boolean(form.get('repetirContrasena')?.touched);
   }
+
 
   register(): void {
     this.feedback = null;
@@ -305,6 +367,7 @@ export class Register {
         email: values.email.trim(),
         contrasena: values.contrasena,
         esPremium: values.tipoCliente === 'premium',
+
         ...this.optionalDetails(
           values.telefono,
           values.imagenPerfil
@@ -332,6 +395,7 @@ export class Register {
       categoriaId: values.categoriaId,
 
       nombreComercial: values.nombreComercial.trim(),
+
       ...this.optionalDetails(
         values.telefono,
         values.imagenPerfil
@@ -344,6 +408,7 @@ export class Register {
     });
   }
 
+
   private optionalDetails(
     telefono: string,
     imagenPerfil: string
@@ -352,11 +417,13 @@ export class Register {
       ...(telefono.trim()
         ? { telefono: telefono.trim() }
         : {}),
+
       ...(imagenPerfil.trim()
         ? { imagenPerfil: imagenPerfil.trim() }
         : {}),
     };
   }
+
 
   private completeRegistration(): void {
     this.isSubmitting = false;
@@ -372,16 +439,21 @@ export class Register {
     this.cdr.markForCheck();
   }
 
+
   private failRegistration(error: unknown): void {
     this.isSubmitting = false;
 
     const responseBody = error instanceof HttpErrorResponse
       ? error.error
       : null;
-    const backendMessage = typeof responseBody?.error === 'string'
-      ? responseBody.error
-      : null;
+
+    const backendMessage =
+      typeof responseBody?.error === 'string'
+        ? responseBody.error
+        : null;
+
     const fieldErrors = responseBody?.errores;
+
     const fieldLabels: Record<string, string> = {
       nombre: 'Nombre',
       apellidos: 'Apellidos',
@@ -392,20 +464,36 @@ export class Register {
       categoriaId: 'Categoría',
       nombreComercial: 'Nombre comercial',
     };
-    const details = fieldErrors && typeof fieldErrors === 'object'
-      ? Object.entries(fieldErrors as Record<string, unknown>)
-          .flatMap(([field, messages]) => Array.isArray(messages)
-            ? messages
-                .filter((message): message is string => typeof message === 'string')
-                .map(message => `${fieldLabels[field] ?? field}: ${message}`)
-            : [])
-      : [];
+
+    const details =
+      fieldErrors && typeof fieldErrors === 'object'
+        ? Object.entries(
+            fieldErrors as Record<string, unknown>
+          ).flatMap(([field, messages]) =>
+            Array.isArray(messages)
+              ? messages
+                  .filter(
+                    (message): message is string =>
+                      typeof message === 'string'
+                  )
+                  .map(
+                    message =>
+                      `${fieldLabels[field] ?? field}: ${message}`
+                  )
+              : []
+          )
+        : [];
 
     this.feedback = {
       kind: 'error',
-      text: backendMessage ??
+
+      text:
+        backendMessage ??
         'No se pudo completar el registro. Comprueba los datos e inténtalo de nuevo.',
-      ...(details.length ? { details } : {}),
+
+      ...(details.length
+        ? { details }
+        : {}),
     };
 
     // Refrescamos también la interfaz si hay algún error.
