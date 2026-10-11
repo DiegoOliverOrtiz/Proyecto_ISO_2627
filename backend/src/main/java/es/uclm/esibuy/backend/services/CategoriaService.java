@@ -12,6 +12,7 @@ import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
 import es.uclm.esibuy.backend.model.Categoria;
+import es.uclm.esibuy.backend.model.Producto;
 
 @Service
 public class CategoriaService {
@@ -58,10 +59,22 @@ public class CategoriaService {
             throw new NombreCategoriaDuplicadoException();
         }
 
+        String nombreAnterior = categoria.getNombre();
+
         categoria.setNombre(nombre);
         categoria.setDescripcion(descripcion);
 
-        return categoriaDAO.save(categoria);
+        Categoria categoriaGuardada = categoriaDAO.save(categoria);
+
+        if (!nombreAnterior.equals(nombre)) {
+            List<Producto> productos = productoDAO.findByCategoriaIgnoreCase(nombreAnterior);
+
+            productos.forEach(producto -> producto.setCategoria(nombre));
+
+            productoDAO.saveAll(productos);
+        }
+
+        return categoriaGuardada;
     }
 
     public void eliminarCategoria(String id) {
