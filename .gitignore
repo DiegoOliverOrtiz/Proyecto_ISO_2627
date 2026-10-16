@@ -1,1 +1,5 @@
 .DS_Store
+.env
+*.p12
+*.pfx
+.scannerwork/

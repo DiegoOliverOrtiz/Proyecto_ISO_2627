@@ -1,0 +1,194 @@
+<header class="header">
+    <div class="logo">ESIBuy</div>
+
+    <h1 class="titulo">Catálogo de productos</h1>
+
+    <div class="acciones-header">
+        <h2 class="vendedor">{{ nombreComercial() }}</h2>
+
+        <button class="cerrarSesion" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
+            {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+        </button>
+    </div>
+</header>
+
+<div class="acciones-catalogo">
+    @if (!mostrandoFormulario()) {
+    <button class="añadirProductos" type="button" (click)="alternarFormulario()">Añadir Producto</button>
+    }
+</div>
+
+@if (mensajeError()) {
+<p role="alert">{{ mensajeError() }}</p>
+}
+
+@if (mensajeExito()) {
+<output class="mensaje-exito">{{ mensajeExito() }}</output>
+}
+
+@if (mostrandoFormulario()) {
+<form class="formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()"
+    [attr.aria-label]="productoEnEdicion() ? 'Modificar producto' : 'Crear producto'">
+    <div class="campo">
+        <label for="nombre-producto">Nombre</label>
+        <input id="nombre-producto" type="text" formControlName="nombre" />
+        @if (campoInvalido('nombre')) {
+        <small>Introduce un nombre válido.</small>
+        }
+    </div>
+
+    <div class="campo">
+        <label for="categoria-producto">Categoría</label>
+        <select id="categoria-producto" formControlName="categoria">
+            <option value="">Selecciona una categoría</option>
+            @for (categoria of categorias(); track categoria) {
+            <option [value]="categoria">{{ categoria }}</option>
+            }
+        </select>
+        @if (campoInvalido('categoria')) {
+        <small>Debes seleccionar una categoría.</small>
+        }
+    </div>
+
+    <div class="campo campo-amplio">
+        <label for="descripcion-producto">Descripción</label>
+        <textarea id="descripcion-producto" rows="3" formControlName="descripcion"></textarea>
+    </div>
+
+    <div class="campo campo-imagen">
+        <label for="imagen-producto">Imagen del producto (opcional)</label>
+        <input id="imagen-producto" type="file" accept="image/png,image/jpeg,image/gif"
+            (change)="seleccionarImagen($event)" />
+        <small>Formatos PNG, JPG o GIF. Tamaño máximo: 5 MB.</small>
+        @if (errorImagen()) {
+        <small role="alert">{{ errorImagen() }}</small>
+        }
+        @if (vistaPreviaImagen()) {
+        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa del producto" width="320" height="240"/>
+        } @else if (productoEnEdicion()?.imagen; as imagenActual) {
+        <small>Si no seleccionas otra imagen, se mantiene la actual.</small>
+        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" width="320" height="240" />
+        }
+    </div>
+
+    <div class="fila-campos">
+        <div class="campo">
+            <label for="precio-producto">Precio (€)</label>
+            <input id="precio-producto" type="number" min="0.01" step="0.01" formControlName="precio" />
+            @if (campoInvalido('precio')) {
+            <small>El precio debe ser mayor que 0.</small>
+            }
+        </div>
+
+        <div class="campo">
+            <label for="stock-producto">Stock</label>
+            <input id="stock-producto" type="number" min="0" step="1" formControlName="stock" />
+            @if (campoInvalido('stock')) {
+            <small>El stock no puede ser negativo.</small>
+            }
+        </div>
+    </div>
+
+    <div class="fila-campos">
+        <div class="campo">
+            <label for="descuento-producto">Descuento (%)</label>
+            <input id="descuento-producto" type="number" min="0" max="100" step="1" formControlName="descuento" />
+            @if (campoInvalido('descuento')) {
+            <small>El descuento debe estar entre 0 y 100.</small>
+            }
+        </div>
+
+        <div class="campo">
+            <label for="premium-producto">Descuento premium (%)</label>
+            <input id="premium-producto" type="number" min="0" max="100" step="1" formControlName="descuentoPremium" />
+            @if (campoInvalido('descuentoPremium')) {
+            <small>El descuento premium debe estar entre 0 y 100.</small>
+            }
+        </div>
+    </div>
+
+    @if (!productoEnEdicion()) {
+    <div class="campo">
+        <fieldset class="grupo-visibilidad">
+            <legend>Visibilidad del producto</legend>
+            <button type="button" class="boton-visibilidad" [class.activo]="formularioProducto.get('esVisible')?.value"
+                [attr.aria-pressed]="formularioProducto.get('esVisible')?.value === true"
+                (click)="cambiarVisibilidad(true)">
+                Visible
+            </button>
+            <button type="button" class="boton-visibilidad" [class.activo]="!formularioProducto.get('esVisible')?.value"
+                [attr.aria-pressed]="formularioProducto.get('esVisible')?.value === false"
+                (click)="cambiarVisibilidad(false)">
+                No visible
+            </button>
+        </fieldset>
+    </div>
+    }
+
+    <div class="acciones-formulario">
+        <button class="boton-secundario" type="button" (click)="alternarFormulario()">Cancelar</button>
+        <button class="boton-primario" type="submit" [disabled]="enviandoProducto()">
+            @if (productoEnEdicion()) {
+            {{ enviandoProducto() ? 'Guardando...' : 'Guardar cambios' }}
+            } @else {
+            {{ enviandoProducto() ? 'Creando...' : 'Crear producto' }}
+            }
+        </button>
+    </div>
+</form>
+}
+
+<main>
+    @if (cargandoProductos()) {
+    <output>Cargando productos...</output>
+    } @else if (errorCatalogo()) {
+    <p role="alert">{{ errorCatalogo() }}</p>
+    } @else if (productos().length === 0) {
+    <p>Aún no tienes productos registrados.</p>
+    } @else {
+    <ul aria-label="Mis productos">
+        @for (producto of productos(); track producto.id) {
+        <li [class.producto-desactivado]="!producto.esVisible">
+            @if (producto.imagen) {
+            <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="180"/>
+            }
+            <h2>{{ producto.nombre }}</h2>
+            <p>Categoría: {{ producto.categoria }}</p>
+
+            @if (producto.precio !== null) {
+            <p>Precio: {{ producto.precio }} €</p>
+            }
+
+            <p>Stock: {{ producto.stock }}</p>
+
+            @if (producto.descripcion) {
+            <p>{{ producto.descripcion }}</p>
+            }
+
+            <p>Descuento: {{ producto.descuento }} %</p>
+            <p>Descuento Premium: {{ producto.descuentoPremium }} %</p>
+            <p>
+                Estado: {{ producto.esVisible ? 'Activo' : 'Desactivado' }}
+            </p>
+
+            <div class="acciones-producto">
+                <button type="button" class="boton-secundario" [attr.aria-label]="'Modificar ' + producto.nombre"
+                    (click)="editarProducto(producto)">
+                    Modificar
+                </button>
+                <button type="button" class="boton-estado" [class.boton-activar]="!producto.esVisible"
+                    [disabled]="productoCambiandoEstado() === producto.id"
+                    [attr.aria-label]="(producto.esVisible ? 'Desactivar ' : 'Activar ') + producto.nombre"
+                    (click)="cambiarEstadoProducto(producto)">
+                    @if (productoCambiandoEstado() === producto.id) {
+                    Guardando...
+                    } @else {
+                    {{ producto.esVisible ? 'Desactivar' : 'Activar' }}
+                    }
+                </button>
+            </div>
+        </li>
+        }
+    </ul>
+    }
+</main>
