@@ -1,6 +1,8 @@
 package es.uclm.esibuy.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
@@ -16,6 +18,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +33,7 @@ import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
+import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 
 @ExtendWith(MockitoExtension.class)
@@ -271,6 +277,120 @@ class ProductoServiceTests {
                 () -> productoService.consultarProductosPropios(emailMalicioso));
 
         verifyNoInteractions(productoDAO);
+    }
+
+    // --- HU17: solo premium, descuento premium, categoría libre y stock inicial ---
+
+    private Producto crearProductoConSolicitud(CrearProductoRequest request) {
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase(request.categoria())).thenReturn(true);
+        when(productoDAO.save(any(Producto.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        productoService.crearProducto(EMAIL, request, null);
+
+        ArgumentCaptor<Producto> captor = ArgumentCaptor.forClass(Producto.class);
+        verify(productoDAO).save(captor.capture());
+        return captor.getValue();
+    }
+
+    private static CrearProductoRequest solicitud(
+            String categoria, int stock, int descuentoPremium, Boolean soloPremium) {
+        return new CrearProductoRequest(
+                "Lámpara", categoria, "Lámpara de mesa", true, 25.0, stock, 0, descuentoPremium, soloPremium);
+    }
+
+    @Test
+    void creaProductoMarcadoComoSoloPremium() {
+        Producto guardado = crearProductoConSolicitud(solicitud("Informática", 5, 20, true));
+
+        assertTrue(guardado.isSoloPremium());
+        assertEquals(20, guardado.getDescuentoPremium());
+    }
+
+    @Test
+    void creaProductoSinMarcaSoloPremiumPorDefecto() {
+        assertFalse(crearProductoConSolicitud(solicitud("Informática", 5, 0, null)).isSoloPremium());
+    }
+
+    @Test
+    void creaProductoExplicitamenteNoSoloPremium() {
+        assertFalse(crearProductoConSolicitud(solicitud("Informática", 5, 0, false)).isSoloPremium());
+    }
+
+    @Test
+    void elConstructorSimpleCreaProductosNoSoloPremium() {
+        CrearProductoRequest request =
+                new CrearProductoRequest("Lámpara", "Informática", "Lámpara", 25.0, 5, 0, 0);
+
+        assertFalse(crearProductoConSolicitud(request).isSoloPremium());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 1, 50, 100 })
+    void aceptaDescuentoPremiumEntreCeroYCien(int descuentoPremium) {
+        assertEquals(
+                descuentoPremium,
+                crearProductoConSolicitud(solicitud("Informática", 5, descuentoPremium, true))
+                        .getDescuentoPremium());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 101, 1000, -1 })
+    void rechazaDescuentoPremiumFueraDeRango(int descuentoPremium) {
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Informática")).thenReturn(true);
+
+        assertThrows(
+                InvalidProductException.class,
+                () -> productoService.crearProducto(
+                        EMAIL, solicitud("Informática", 5, descuentoPremium, true), null));
+        verify(productoDAO, never()).save(any(Producto.class));
+    }
+
+    @Test
+    void elDescuentoPremiumEsValidoSeaONoSoloPremium() {
+        assertEquals(30, crearProductoConSolicitud(solicitud("Informática", 5, 30, false)).getDescuentoPremium());
+    }
+
+    @Test
+    void aceptaCualquierCategoriaExistenteConIndependenciaDeLaDelVendedor() {
+        // El vendedor se registró en otra categoría, pero el producto puede ser de cualquiera.
+        Producto guardado = crearProductoConSolicitud(solicitud("Jardinería", 5, 0, false));
+
+        assertEquals("Jardinería", guardado.getCategoria());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, -1 })
+    void rechazaCrearProductoConStockInicialCeroONegativo(int stock) {
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Informática")).thenReturn(true);
+
+        assertThrows(
+                InvalidProductException.class,
+                () -> productoService.crearProducto(EMAIL, solicitud("Informática", stock, 0, false), null));
+        verify(productoDAO, never()).save(any(Producto.class));
+    }
+
+    @Test
+    void elProductoSeAsociaSiempreAlVendedorAutenticado() {
+        // La petición no tiene campo de vendedor: solo puede asociarse al de la sesión.
+        assertEquals(
+                NOMBRE_COMERCIAL,
+                crearProductoConSolicitud(solicitud("Informática", 5, 0, true)).getVendedor());
+    }
+
+    @Test
+    void laValidacionDeLaPeticionRechazaStockCeroPrecioCeroYDescuentosInvalidos() {
+        Validator real = Validation.buildDefaultValidatorFactory().getValidator();
+
+        assertTrue(real.validate(solicitud("Informática", 5, 100, true)).isEmpty());
+        assertFalse(real.validate(solicitud("Informática", 0, 0, true)).isEmpty());
+        assertFalse(real.validate(solicitud("Informática", 5, 101, true)).isEmpty());
+        assertFalse(real.validate(solicitud("Informática", 5, -1, true)).isEmpty());
+        assertFalse(real.validate(new CrearProductoRequest("Lámpara", "Informática", "d", 0.0, 5, 0, 0)).isEmpty());
+        assertFalse(real.validate(new CrearProductoRequest("", "Informática", "d", 10.0, 5, 0, 0)).isEmpty());
+        assertFalse(real.validate(new CrearProductoRequest("Lámpara", "", "d", 10.0, 5, 0, 0)).isEmpty());
     }
 
     private Vendedor crearVendedor(boolean activado, boolean bloqueado) {
