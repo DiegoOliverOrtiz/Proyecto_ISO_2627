@@ -117,6 +117,7 @@ export class PanelVendedor implements OnInit {
     this.mostrandoFormulario.set(false);
     this.productoEnEdicion.set(null);
     this.limpiarImagenSeleccionada();
+    this.errorImagen.set('');
     this.formularioProducto.reset({
       nombre: '',
       categoria: '',
@@ -133,6 +134,7 @@ export class PanelVendedor implements OnInit {
     this.mensajeExito.set('');
     this.mensajeError.set('');
     this.limpiarImagenSeleccionada();
+    this.errorImagen.set('');
     this.productoEnEdicion.set(producto);
     // Se reutiliza el formulario de creación cargando los valores actuales del producto.
     this.formularioProducto.reset({
@@ -266,6 +268,13 @@ export class PanelVendedor implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.enviandoProducto.set(false);
+        const mensajeBackend = typeof error.error?.error === 'string' ? error.error.error : null;
+        // El backend rechaza la imagen con un 400 cuyo mensaje empieza por «La imagen»: se muestra junto al campo.
+        if (error.status === 400 && this.imagenSeleccionada() && mensajeBackend?.startsWith('La imagen')) {
+          this.errorImagen.set(mensajeBackend);
+          this.mensajeError.set('La imagen del producto no es válida. Elige otra e inténtalo de nuevo.');
+          return;
+        }
         this.mensajeError.set(
           error.status === 0
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
