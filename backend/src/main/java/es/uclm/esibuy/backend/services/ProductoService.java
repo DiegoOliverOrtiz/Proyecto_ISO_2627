@@ -88,10 +88,15 @@ public class ProductoService {
         Vendedor vendedor = obtenerVendedorActivo(
                 emailVendedor, "Solo un vendedor activo puede crear productos.");
         String nombreCategoria = validarDatosProducto(request);
+        // Al crear el stock inicial debe ser mayor que 0 (al modificar se admite 0).
+        if (request.stock() <= 0) {
+            throw new InvalidProductException();
+        }
 
         Producto producto = new Producto();
         asignarDatos(producto, request, nombreCategoria);
         producto.setEsVisible(request.esVisible() == null || request.esVisible());
+        producto.setSoloPremium(Boolean.TRUE.equals(request.soloPremium()));
         producto.setVendedor(vendedor.getNombreComercial());
         String rutaImagen = productoImagenService.guardar(imagen);
         producto.setImagen(rutaImagen);

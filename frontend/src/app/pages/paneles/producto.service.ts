@@ -25,10 +25,12 @@ export interface CrearProductoRequest {
   stock: number;
   descuento: number;
   descuentoPremium: number;
+  soloPremium: boolean;
 }
 
 // La visibilidad no se modifica desde el formulario: se gestiona con Activar/Desactivar (HU16).
-export type ModificarProductoRequest = Omit<CrearProductoRequest, 'esVisible'>;
+// «Solo premium» solo se indica al crear; su modificación pertenece a HU18.
+export type ModificarProductoRequest = Omit<CrearProductoRequest, 'esVisible' | 'soloPremium'>;
 
 export interface CrearProductoResponse {
   nombre: string;

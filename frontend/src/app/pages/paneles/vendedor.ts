@@ -72,13 +72,17 @@ export class PanelVendedor implements OnInit {
   readonly vistaPreviaImagen = signal('');
   readonly errorImagen = signal('');
 
+  // Solo se indica al crear (la modificación de la marca pertenece a HU18), por eso va fuera del formulario compartido.
+  readonly soloPremium = this.formBuilder.nonNullable.control(false);
+
   readonly formularioProducto = this.formBuilder.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     categoria: ['', Validators.required],
     descripcion: [''],
     esVisible: [true],
     precio: [0, [Validators.required, Validators.min(0.01)]],
-    stock: [0, [Validators.required, Validators.min(0)]],
+    // Al crear el stock debe ser mayor que 0; al modificar (HU18) se admite 0.
+    stock: [0, [Validators.required, Validators.min(1)]],
     descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
@@ -113,10 +117,19 @@ export class PanelVendedor implements OnInit {
     }
   }
 
+  private ajustarStockMinimo(minimo: number): void {
+    const stock = this.formularioProducto.controls.stock;
+    stock.setValidators([Validators.required, Validators.min(minimo)]);
+    stock.updateValueAndValidity();
+  }
+
   private cerrarFormulario(): void {
     this.mostrandoFormulario.set(false);
     this.productoEnEdicion.set(null);
     this.limpiarImagenSeleccionada();
+    this.errorImagen.set('');
+    this.ajustarStockMinimo(1);
+    this.soloPremium.reset(false);
     this.formularioProducto.reset({
       nombre: '',
       categoria: '',
@@ -133,7 +146,9 @@ export class PanelVendedor implements OnInit {
     this.mensajeExito.set('');
     this.mensajeError.set('');
     this.limpiarImagenSeleccionada();
+    this.errorImagen.set('');
     this.productoEnEdicion.set(producto);
+    this.ajustarStockMinimo(0);
     // Se reutiliza el formulario de creación cargando los valores actuales del producto.
     this.formularioProducto.reset({
       nombre: producto.nombre,
@@ -255,7 +270,7 @@ export class PanelVendedor implements OnInit {
     }
 
     this.servicioProductos.crearProducto(
-      this.formularioProducto.getRawValue(),
+      { ...this.formularioProducto.getRawValue(), soloPremium: this.soloPremium.value },
       this.imagenSeleccionada()
     ).subscribe({
       next: () => {
@@ -266,6 +281,13 @@ export class PanelVendedor implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.enviandoProducto.set(false);
+        const mensajeBackend = typeof error.error?.error === 'string' ? error.error.error : null;
+        // El backend rechaza la imagen con un 400 cuyo mensaje empieza por «La imagen»: se muestra junto al campo.
+        if (error.status === 400 && this.imagenSeleccionada() && mensajeBackend?.startsWith('La imagen')) {
+          this.errorImagen.set(mensajeBackend);
+          this.mensajeError.set('La imagen del producto no es válida. Elige otra e inténtalo de nuevo.');
+          return;
+        }
         this.mensajeError.set(
           error.status === 0
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
