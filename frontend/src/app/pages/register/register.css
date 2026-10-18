@@ -35,6 +35,11 @@
 .field-wide { grid-column: 1 / -1; }
 .field em { margin-left: 4px; color: var(--muted); font-size: 11px; font-style: normal; font-weight: 400; }
 .field input, .field select { width: 100%; min-height: 42px; box-sizing: border-box; padding: 9px 11px; border: 1px solid #cbd6d1; border-radius: 3px; outline: none; color: var(--ink); background: white; font: inherit; font-size: 14px; }
+.password-input-wrap { display: flex; min-width: 0; border: 1px solid #cbd6d1; border-radius: 3px; }
+.password-input-wrap input { flex: 1; min-width: 0; border: 0; border-radius: 3px 0 0 3px; }
+.eye-button { min-width: 44px; border: 0; border-radius: 0 3px 3px 0; background: white; font-size: 18px; cursor: pointer; }
+.password-input-wrap:focus-within { border-color: var(--leaf); }
+.eye-button:focus-visible { outline: 2px solid var(--leaf); outline-offset: 2px; }
 .customer-type input { margin-right: 5px; accent-color: var(--leaf); }
 .field input:focus, .field select:focus { border-color: var(--leaf); }
 .field-error, .field-hint { color: #a33f32; font-size: 11px; font-weight: 500; line-height: 1.35; }

@@ -143,6 +143,10 @@ export class Register {
   feedback: Feedback = null;
   customerPasswordFocused = false;
   sellerPasswordFocused = false;
+  customerPasswordHidden = true;
+  customerConfirmationHidden = true;
+  sellerPasswordHidden = true;
+  sellerConfirmationHidden = true;
 
 
   readonly clienteForm = this.formBuilder.nonNullable.group({
