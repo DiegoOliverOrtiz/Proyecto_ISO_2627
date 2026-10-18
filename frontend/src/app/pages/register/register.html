@@ -199,13 +199,22 @@
 
                         <label class="field">
                             <span>Contraseña</span>
-                            <input
-                                type="password"
-                                formControlName="contrasena"
-                                autocomplete="new-password"
-                                (focus)="customerPasswordFocused = true"
-                                (blur)="customerPasswordFocused = !!clienteForm.controls.contrasena.value"
-                            />
+                            <div class="password-input-wrap">
+                                <input
+                                    [type]="customerPasswordHidden ? 'password' : 'text'"
+                                    formControlName="contrasena"
+                                    autocomplete="new-password"
+                                    (focus)="customerPasswordFocused = true"
+                                    (blur)="customerPasswordFocused = !!clienteForm.controls.contrasena.value"
+                                />
+                                <button
+                                    type="button"
+                                    class="eye-button"
+                                    [attr.aria-label]="customerPasswordHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                                    (click)="customerPasswordHidden = !customerPasswordHidden">
+                                    {{ customerPasswordHidden ? '👁️' : '🙈' }}
+                                </button>
+                            </div>
 
                             @if (customerPasswordFocused) {
                                 <div class="password-requirements" aria-live="polite">
@@ -228,11 +237,20 @@
 
                         <label class="field">
                             <span>Repetir contraseña</span>
-                            <input
-                                type="password"
-                                formControlName="repetirContrasena"
-                                autocomplete="new-password"
-                            />
+                            <div class="password-input-wrap">
+                                <input
+                                    [type]="customerConfirmationHidden ? 'password' : 'text'"
+                                    formControlName="repetirContrasena"
+                                    autocomplete="new-password"
+                                />
+                                <button
+                                    type="button"
+                                    class="eye-button"
+                                    [attr.aria-label]="customerConfirmationHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                                    (click)="customerConfirmationHidden = !customerConfirmationHidden">
+                                    {{ customerConfirmationHidden ? '👁️' : '🙈' }}
+                                </button>
+                            </div>
 
                             @if (controlError(clienteForm, 'repetirContrasena'); as error) {
                                 <small class="field-error">{{ error }}</small>
@@ -396,13 +414,22 @@
 
                         <label class="field">
                             <span>Contraseña</span>
-                            <input
-                                type="password"
-                                formControlName="contrasena"
-                                autocomplete="new-password"
-                                (focus)="sellerPasswordFocused = true"
-                                (blur)="sellerPasswordFocused = !!vendedorForm.controls.contrasena.value"
-                            />
+                            <div class="password-input-wrap">
+                                <input
+                                    [type]="sellerPasswordHidden ? 'password' : 'text'"
+                                    formControlName="contrasena"
+                                    autocomplete="new-password"
+                                    (focus)="sellerPasswordFocused = true"
+                                    (blur)="sellerPasswordFocused = !!vendedorForm.controls.contrasena.value"
+                                />
+                                <button
+                                    type="button"
+                                    class="eye-button"
+                                    [attr.aria-label]="sellerPasswordHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                                    (click)="sellerPasswordHidden = !sellerPasswordHidden">
+                                    {{ sellerPasswordHidden ? '👁️' : '🙈' }}
+                                </button>
+                            </div>
 
                             @if (sellerPasswordFocused) {
                                 <div class="password-requirements" aria-live="polite">
@@ -425,11 +452,20 @@
 
                         <label class="field">
                             <span>Repetir contraseña</span>
-                            <input
-                                type="password"
-                                formControlName="repetirContrasena"
-                                autocomplete="new-password"
-                            />
+                            <div class="password-input-wrap">
+                                <input
+                                    [type]="sellerConfirmationHidden ? 'password' : 'text'"
+                                    formControlName="repetirContrasena"
+                                    autocomplete="new-password"
+                                />
+                                <button
+                                    type="button"
+                                    class="eye-button"
+                                    [attr.aria-label]="sellerConfirmationHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                                    (click)="sellerConfirmationHidden = !sellerConfirmationHidden">
+                                    {{ sellerConfirmationHidden ? '👁️' : '🙈' }}
+                                </button>
+                            </div>
 
                             @if (controlError(vendedorForm, 'repetirContrasena'); as error) {
                                 <small class="field-error">{{ error }}</small>

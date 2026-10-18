@@ -161,6 +161,57 @@ describe('Register', () => {
     ).toBeTruthy();
   });
 
+  it('toggles password visibility independently for all registration password fields', () => {
+    const fields = [
+      'contrasena',
+      'repetirContrasena',
+    ];
+
+    for (const field of fields) {
+      const input = fixture.nativeElement.querySelector(
+        `[formControlName="${field}"]`
+      ) as HTMLInputElement;
+      const toggle = input.parentElement?.querySelector(
+        '.eye-button'
+      ) as HTMLButtonElement;
+
+      expect(input.type).toBe('password');
+      expect(toggle.type).toBe('button');
+
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(input.type).toBe('text');
+
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(input.type).toBe('password');
+    }
+
+    fixture.nativeElement
+      .querySelector('.role-switch button:last-child')
+      .click();
+    httpMock.expectOne(
+      'http://localhost:8080/categorias/registro'
+    ).flush([]);
+    fixture.detectChanges();
+
+    for (const field of fields) {
+      const input = fixture.nativeElement.querySelector(
+        `[formControlName="${field}"]`
+      ) as HTMLInputElement;
+      const toggle = input.parentElement?.querySelector(
+        '.eye-button'
+      ) as HTMLButtonElement;
+
+      expect(input.type).toBe('password');
+      toggle.click();
+      fixture.detectChanges();
+      expect(input.type).toBe('text');
+    }
+  });
+
   it('prevents customers under 18 from submitting', () => {
     component.clienteForm.patchValue({
       nombre: 'Ada',
