@@ -92,6 +92,7 @@ public class ProductoService {
         Producto producto = new Producto();
         asignarDatos(producto, request, nombreCategoria);
         producto.setEsVisible(request.esVisible() == null || request.esVisible());
+        producto.setSoloPremium(Boolean.TRUE.equals(request.soloPremium()));
         producto.setVendedor(vendedor.getNombreComercial());
         String rutaImagen = productoImagenService.guardar(imagen);
         producto.setImagen(rutaImagen);
