@@ -203,7 +203,23 @@
                                 type="password"
                                 formControlName="contrasena"
                                 autocomplete="new-password"
+                                (focus)="customerPasswordFocused = true"
+                                (blur)="customerPasswordFocused = !!clienteForm.controls.contrasena.value"
                             />
+
+                            @if (customerPasswordFocused) {
+                                <div class="password-requirements" aria-live="polite">
+                                    <strong>Requisitos:</strong>
+                                    <ul>
+                                        @for (requirement of passwordRequirements(clienteForm); track requirement.label) {
+                                            <li [class.met]="requirement.met">
+                                                <span class="requirement-status" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
+                                                <span>{{ requirement.label }}</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
 
                             @if (controlError(clienteForm, 'contrasena'); as error) {
                                 <small class="field-error">{{ error }}</small>
@@ -384,7 +400,23 @@
                                 type="password"
                                 formControlName="contrasena"
                                 autocomplete="new-password"
+                                (focus)="sellerPasswordFocused = true"
+                                (blur)="sellerPasswordFocused = !!vendedorForm.controls.contrasena.value"
                             />
+
+                            @if (sellerPasswordFocused) {
+                                <div class="password-requirements" aria-live="polite">
+                                    <strong>Requisitos:</strong>
+                                    <ul>
+                                        @for (requirement of passwordRequirements(vendedorForm); track requirement.label) {
+                                            <li [class.met]="requirement.met">
+                                                <span class="requirement-status" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
+                                                <span>{{ requirement.label }}</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
 
                             @if (controlError(vendedorForm, 'contrasena'); as error) {
                                 <small class="field-error">{{ error }}</small>

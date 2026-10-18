@@ -39,6 +39,13 @@
 .field input:focus, .field select:focus { border-color: var(--leaf); }
 .field-error, .field-hint { color: #a33f32; font-size: 11px; font-weight: 500; line-height: 1.35; }
 .field-hint { color: #806137; }
+.password-requirements { padding: 12px 14px; border: 1px solid #d36b50; border-radius: 12px; color: #d36b50; background: #e9f0f3; font-family: "Trebuchet MS", "Segoe UI", sans-serif; font-size: 14px; }
+.password-requirements > strong { display: block; margin-bottom: 8px; font-size: 16px; }
+.password-requirements ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.password-requirements li { display: flex; align-items: center; gap: 9px; color: #d92727; }
+.password-requirements li.met { color: #18833b; }
+.requirement-status { display: inline-grid; width: 25px; height: 25px; flex: 0 0 25px; place-items: center; border-radius: 50%; color: #d92727; background: #f4e5e7; font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
+.password-requirements li.met .requirement-status { color: #18833b; background: #dcefe4; }
 .customer-type { margin: 17px 0; padding: 0; border: 0; }
 .customer-type legend { margin-bottom: 8px; font-size: 13px; font-weight: 700; }
 .customer-type label { margin-right: 16px; cursor: pointer; }
