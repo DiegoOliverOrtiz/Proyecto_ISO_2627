@@ -476,4 +476,74 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(fixture.nativeElement.querySelector('form').textContent).toContain('Crear producto');
     });
   });
+
+  describe('crear producto: imagen rechazada (HU17)', () => {
+    const imagen = new File([new Uint8Array([1, 2, 3])], 'falsa.png', { type: 'image/png' });
+
+    function prepararCreacion(): void {
+      component.alternarFormulario();
+      component.formularioProducto.patchValue({
+        nombre: 'Teclado',
+        categoria: 'Informática',
+        descripcion: 'Teclado compacto',
+        precio: 49.99,
+        stock: 3
+      });
+      component.imagenSeleccionada.set(imagen);
+    }
+
+    it('muestra junto al campo el motivo del rechazo de la imagen devuelto por el backend', () => {
+      productoServiceMock.crearProducto.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 400,
+              error: { error: 'La imagen debe ser PNG, JPG o GIF y no superar 5 MB.' }
+            })
+        )
+      );
+      prepararCreacion();
+
+      component.guardarProducto();
+      fixture.detectChanges();
+
+      expect(component.errorImagen()).toBe('La imagen debe ser PNG, JPG o GIF y no superar 5 MB.');
+      expect(component.mensajeError()).toContain('La imagen del producto no es válida');
+      expect(component.mostrandoFormulario()).toBe(true);
+      expect(component.enviandoProducto()).toBe(false);
+      expect(fixture.nativeElement.querySelector('.campo-imagen').textContent).toContain(
+        'no superar 5 MB'
+      );
+    });
+
+    it('usa el mensaje genérico si el 400 no se debe a la imagen', () => {
+      productoServiceMock.crearProducto.mockReturnValue(
+        throwError(
+          () => new HttpErrorResponse({ status: 400, error: { error: 'Los datos del producto no son válidos.' } })
+        )
+      );
+      prepararCreacion();
+
+      component.guardarProducto();
+
+      expect(component.errorImagen()).toBe('');
+      expect(component.mensajeError()).toBe(
+        'No se pudo crear el producto. Revisa los datos e inténtalo otra vez.'
+      );
+    });
+
+    it('limpia el error de imagen al cancelar el formulario', () => {
+      productoServiceMock.crearProducto.mockReturnValue(
+        throwError(
+          () => new HttpErrorResponse({ status: 400, error: { error: 'La imagen debe ser PNG, JPG o GIF y no superar 5 MB.' } })
+        )
+      );
+      prepararCreacion();
+      component.guardarProducto();
+
+      component.alternarFormulario();
+
+      expect(component.errorImagen()).toBe('');
+    });
+  });
 });
