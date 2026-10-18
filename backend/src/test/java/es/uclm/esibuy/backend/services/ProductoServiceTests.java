@@ -227,6 +227,52 @@ class ProductoServiceTests {
         verify(productoDAO, never()).save(any(Producto.class));
     }
 
+    @Test
+    void consultaSoloPorElNombreComercialDelVendedorAutenticado() {
+        Vendedor vendedor = crearVendedor(true, false);
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(vendedor));
+        when(productoDAO.findByVendedor(NOMBRE_COMERCIAL)).thenReturn(List.of(crearProducto()));
+
+        var resultado = productoService.consultarProductosPropios(EMAIL);
+
+        assertEquals(1, resultado.size());
+        verify(productoDAO).findByVendedor(NOMBRE_COMERCIAL);
+        verify(productoDAO, never()).findAll();
+        verify(productoDAO, never()).findByEsVisibleTrue();
+        verify(productoDAO, never()).findByCategoriaIgnoreCase(any());
+    }
+
+    @Test
+    void unVendedorNoVeLosProductosDeOtroVendedor() {
+        Vendedor otroVendedor = crearVendedor(true, false);
+        otroVendedor.setEmail("otro@example.com");
+        otroVendedor.setNombreComercial("Otra tienda");
+        Producto productoAjeno = crearProducto();
+        productoAjeno.setNombre("Producto de otra tienda");
+        productoAjeno.setVendedor("Otra tienda");
+        when(vendedorDAO.findByEmail("otro@example.com")).thenReturn(Optional.of(otroVendedor));
+        when(productoDAO.findByVendedor("Otra tienda")).thenReturn(List.of(productoAjeno));
+
+        var resultado = productoService.consultarProductosPropios("otro@example.com");
+
+        assertEquals(1, resultado.size());
+        assertEquals("Producto de otra tienda", resultado.get(0).nombre());
+        verify(productoDAO).findByVendedor("Otra tienda");
+        verify(productoDAO, never()).findByVendedor(NOMBRE_COMERCIAL);
+    }
+
+    @Test
+    void elEmailConOperadoresDeMongoSeTrataComoLiteralYNoDaAcceso() {
+        String emailMalicioso = "{\"$ne\": \"\"}";
+        when(vendedorDAO.findByEmail(emailMalicioso)).thenReturn(Optional.empty());
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> productoService.consultarProductosPropios(emailMalicioso));
+
+        verifyNoInteractions(productoDAO);
+    }
+
     private Vendedor crearVendedor(boolean activado, boolean bloqueado) {
         Vendedor vendedor = new Vendedor();
         vendedor.setEmail(EMAIL);

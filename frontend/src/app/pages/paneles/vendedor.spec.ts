@@ -137,6 +137,201 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     );
   });
 
+  describe('búsqueda y filtros del catálogo (HU15)', () => {
+    const teclado: ProductoPropio = { ...productoActivo, nombre: 'Teclado Mecánico' };
+    const raton: ProductoPropio = {
+      ...productoActivo,
+      id: 'producto-2',
+      nombre: 'Ratón inalámbrico',
+      esVisible: false
+    };
+    const silla: ProductoPropio = {
+      ...productoActivo,
+      id: 'producto-3',
+      nombre: 'Silla Gaming',
+      categoria: 'Hogar'
+    };
+    const literal: ProductoPropio = {
+      ...productoActivo,
+      id: 'producto-4',
+      nombre: 'Cable (USB) .* $where',
+      categoria: 'Hogar'
+    };
+    const catalogo = [teclado, raton, silla, literal];
+
+    function nombresMostrados(): string[] {
+      return Array.from(
+        fixture.nativeElement.querySelectorAll('ul[aria-label="Mis productos"] li h2')
+      ).map((titulo) => (titulo as HTMLElement).textContent?.trim() ?? '');
+    }
+
+    function buscar(texto: string): void {
+      const entrada = fixture.nativeElement.querySelector('#busqueda-producto') as HTMLInputElement;
+      entrada.value = texto;
+      entrada.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    function elegir(idSelect: string, valor: string): void {
+      const select = fixture.nativeElement.querySelector(idSelect) as HTMLSelectElement;
+      select.value = valor;
+      select.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    beforeEach(() => {
+      productoServiceMock.consultarProductosPropios.mockReturnValue(of(catalogo));
+      component.cargarProductos();
+      fixture.detectChanges();
+    });
+
+    it('muestra todo el catálogo cuando no hay búsqueda ni filtros', () => {
+      expect(nombresMostrados()).toHaveLength(4);
+    });
+
+    it('busca por nombre parcial', () => {
+      buscar('tecl');
+
+      expect(nombresMostrados()).toEqual(['Teclado Mecánico']);
+    });
+
+    it('la búsqueda no distingue mayúsculas de minúsculas', () => {
+      buscar('SILLA');
+      expect(nombresMostrados()).toEqual(['Silla Gaming']);
+
+      buscar('silla');
+      expect(nombresMostrados()).toEqual(['Silla Gaming']);
+    });
+
+    it('ignora los espacios al principio y al final del texto buscado', () => {
+      buscar('  ratón  ');
+
+      expect(nombresMostrados()).toEqual(['Ratón inalámbrico']);
+    });
+
+    it('lista las categorías presentes en el catálogo, sin repetir', () => {
+      expect(component.categoriasDisponibles()).toEqual(['Hogar', 'Informática']);
+    });
+
+    it('filtra por categoría', () => {
+      elegir('#filtro-categoria', 'Hogar');
+
+      expect(nombresMostrados()).toEqual(['Silla Gaming', 'Cable (USB) .* $where']);
+    });
+
+    it('filtra por estado activo y desactivado', () => {
+      elegir('#filtro-estado', 'desactivados');
+      expect(nombresMostrados()).toEqual(['Ratón inalámbrico']);
+
+      elegir('#filtro-estado', 'activos');
+      expect(nombresMostrados()).toEqual([
+        'Teclado Mecánico',
+        'Silla Gaming',
+        'Cable (USB) .* $where'
+      ]);
+    });
+
+    it('combina búsqueda, categoría y estado', () => {
+      elegir('#filtro-categoria', 'Informática');
+      elegir('#filtro-estado', 'activos');
+      buscar('ra');
+      expect(nombresMostrados()).toEqual([]);
+
+      buscar('tec');
+      expect(nombresMostrados()).toEqual(['Teclado Mecánico']);
+    });
+
+    it('informa claramente cuando no hay coincidencias', () => {
+      buscar('inexistente');
+
+      const texto = fixture.nativeElement.textContent as string;
+      expect(nombresMostrados()).toEqual([]);
+      expect(texto).toContain(
+        'No se encontraron productos que coincidan con la búsqueda o los filtros.'
+      );
+      expect(texto).not.toContain('Aún no tienes productos registrados.');
+    });
+
+    it('limpiar los filtros restaura el listado completo', () => {
+      buscar('tecl');
+      elegir('#filtro-estado', 'activos');
+      expect(component.hayFiltrosActivos()).toBe(true);
+
+      component.limpiarFiltros();
+      fixture.detectChanges();
+
+      expect(component.hayFiltrosActivos()).toBe(false);
+      expect(nombresMostrados()).toHaveLength(4);
+    });
+
+    it('borrar el texto de búsqueda restaura el listado completo', () => {
+      buscar('tecl');
+      buscar('');
+
+      expect(nombresMostrados()).toHaveLength(4);
+    });
+
+    it.each(['.*', '(', '[', '\\', '$where', '{"$ne": ""}', '^', '$'])(
+      'trata %s como texto literal: no devuelve el catálogo entero ni falla',
+      (texto) => {
+        expect(() => buscar(texto)).not.toThrow();
+
+        const esperados = catalogo
+          .map((producto) => producto.nombre)
+          .filter((nombre) => nombre.toLowerCase().includes(texto.toLowerCase()));
+        expect(nombresMostrados()).toEqual(esperados);
+        expect(nombresMostrados().length).toBeLessThan(catalogo.length);
+      }
+    );
+
+    it('encuentra un nombre que contiene caracteres especiales de forma literal', () => {
+      buscar('(usb) .* $where');
+
+      expect(nombresMostrados()).toEqual(['Cable (USB) .* $where']);
+    });
+
+    it('no envía el texto de búsqueda al backend', () => {
+      productoServiceMock.consultarProductosPropios.mockClear();
+
+      buscar('{"$ne": ""}');
+
+      expect(productoServiceMock.consultarProductosPropios).not.toHaveBeenCalled();
+    });
+
+    it('mantiene las acciones Modificar y Activar/Desactivar asociadas a cada producto filtrado', () => {
+      buscar('ratón');
+
+      const acciones = Array.from(
+        fixture.nativeElement.querySelectorAll('ul[aria-label="Mis productos"] .acciones-producto button')
+      ).map((boton) => (boton as HTMLButtonElement).getAttribute('aria-label'));
+      expect(acciones).toEqual(['Modificar Ratón inalámbrico', 'Activar Ratón inalámbrico']);
+    });
+
+    it('activar un producto desde un listado filtrado actúa sobre ese producto y conserva el filtro', () => {
+      buscar('ratón');
+
+      (fixture.nativeElement.querySelector('button.boton-estado') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.activarProducto).toHaveBeenCalledWith('producto-2');
+      expect(component.terminoBusqueda()).toBe('ratón');
+      expect(nombresMostrados()).toEqual(['Ratón inalámbrico']);
+    });
+
+    it('modificar un producto desde un listado filtrado abre el formulario con ese producto', () => {
+      buscar('silla');
+
+      (
+        fixture.nativeElement.querySelector(
+          '.acciones-producto button.boton-secundario'
+        ) as HTMLButtonElement
+      ).click();
+      fixture.detectChanges();
+
+      expect(component.productoEnEdicion()?.id).toBe('producto-3');
+    });
+  });
+
   describe('modificar producto (HU18)', () => {
     const productoConDatos: ProductoPropio = {
       ...productoActivo,
