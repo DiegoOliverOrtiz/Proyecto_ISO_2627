@@ -546,4 +546,111 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(component.errorImagen()).toBe('');
     });
   });
+
+  describe('crear producto: solo premium y stock (HU17)', () => {
+    function rellenarFormulario(valores: Record<string, unknown> = {}): void {
+      component.formularioProducto.patchValue({
+        nombre: 'Teclado',
+        categoria: 'Informática',
+        descripcion: 'Teclado compacto',
+        precio: 49.99,
+        stock: 3,
+        descuentoPremium: 15,
+        ...valores
+      });
+    }
+
+    function casilla(): HTMLInputElement | null {
+      return fixture.nativeElement.querySelector('#solo-premium-producto');
+    }
+
+    beforeEach(() => {
+      productoServiceMock.crearProducto.mockReturnValue(of({}));
+    });
+
+    it('muestra la casilla «solo premium» al crear, sin marcar por defecto', () => {
+      component.alternarFormulario();
+      fixture.detectChanges();
+
+      expect(casilla()).not.toBeNull();
+      expect(casilla()?.checked).toBe(false);
+    });
+
+    it('envía soloPremium y el descuento premium al crear', () => {
+      component.alternarFormulario();
+      rellenarFormulario();
+      component.soloPremium.setValue(true);
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.crearProducto).toHaveBeenCalledWith(
+        expect.objectContaining({ soloPremium: true, descuentoPremium: 15, stock: 3 }),
+        null
+      );
+      expect(component.mensajeExito()).toBe('Producto creado correctamente.');
+    });
+
+    it('envía soloPremium false si no se marca la casilla', () => {
+      component.alternarFormulario();
+      rellenarFormulario();
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.crearProducto).toHaveBeenCalledWith(
+        expect.objectContaining({ soloPremium: false }),
+        null
+      );
+    });
+
+    it('reinicia la casilla tras crear el producto', () => {
+      component.alternarFormulario();
+      rellenarFormulario();
+      component.soloPremium.setValue(true);
+
+      component.guardarProducto();
+
+      expect(component.soloPremium.value).toBe(false);
+    });
+
+    it('no envía la petición con stock 0 o negativo al crear', () => {
+      component.alternarFormulario();
+      rellenarFormulario({ stock: 0 });
+      component.guardarProducto();
+      rellenarFormulario({ stock: -1 });
+      component.guardarProducto();
+
+      expect(productoServiceMock.crearProducto).not.toHaveBeenCalled();
+    });
+
+    it('rechaza descuentos premium de 101 o negativos y acepta 0 y 100', () => {
+      component.alternarFormulario();
+
+      rellenarFormulario({ descuentoPremium: 101 });
+      expect(component.formularioProducto.valid).toBe(false);
+      rellenarFormulario({ descuentoPremium: -1 });
+      expect(component.formularioProducto.valid).toBe(false);
+      rellenarFormulario({ descuentoPremium: 0 });
+      expect(component.formularioProducto.valid).toBe(true);
+      rellenarFormulario({ descuentoPremium: 100 });
+      expect(component.formularioProducto.valid).toBe(true);
+    });
+
+    it('al modificar oculta la casilla y se admite stock 0', () => {
+      component.editarProducto(productoActivo);
+      fixture.detectChanges();
+      component.formularioProducto.patchValue({ stock: 0 });
+
+      expect(casilla()).toBeNull();
+      expect(component.formularioProducto.controls.stock.valid).toBe(true);
+    });
+
+    it('al cancelar la edición vuelve a exigir stock mayor que 0', () => {
+      component.editarProducto(productoActivo);
+      component.alternarFormulario();
+      component.alternarFormulario();
+      component.formularioProducto.patchValue({ stock: 0 });
+
+      expect(component.formularioProducto.controls.stock.valid).toBe(false);
+    });
+  });
 });
