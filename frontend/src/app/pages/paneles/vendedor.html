@@ -82,9 +82,9 @@
 
         <div class="campo">
             <label for="stock-producto">Stock</label>
-            <input id="stock-producto" type="number" min="0" step="1" formControlName="stock" />
+            <input id="stock-producto" type="number" [attr.min]="productoEnEdicion() ? 0 : 1" step="1" formControlName="stock" />
             @if (campoInvalido('stock')) {
-            <small>El stock no puede ser negativo.</small>
+            <small>{{ productoEnEdicion() ? 'El stock no puede ser negativo.' : 'El stock debe ser mayor que 0.' }}</small>
             }
         </div>
     </div>
@@ -108,6 +108,13 @@
     </div>
 
     @if (!productoEnEdicion()) {
+    <div class="campo">
+        <label for="solo-premium-producto">
+            <input id="solo-premium-producto" type="checkbox" [formControl]="soloPremium" />
+            Solo para clientes premium
+        </label>
+    </div>
+
     <div class="campo">
         <fieldset class="grupo-visibilidad">
             <legend>Visibilidad del producto</legend>

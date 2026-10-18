@@ -24,7 +24,7 @@ pr:
     - feature/*
 
 pool:
-  vmImage: 'ubuntu-latest'  # Entorno limpio, actualizado
+  name: Default             # Agente propio (WSL Ubuntu); ver documents/sprint2/instruccionesCI-CD.md
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -40,13 +40,11 @@ stages:
     displayName: 'Maven Compile & Tests'
     steps:
 
-    # Paso 1: Instalar Java 21
-    - task: JavaToolInstaller@0
-      inputs:
-        versionSpec: '21'
-        jdkArchitectureOption: 'x64'
-        jdkSourceOption: 'PreInstalled'
-      displayName: 'Install Java 21'
+    # Paso 1: Comprobar Java 21 (instalado en el agente propio; JavaToolInstaller@0 exigiría JAVA_HOME_21_X64)
+    - script: |
+        java -version
+        java -version 2>&1 | grep -q '"21' || { echo "##vso[task.logissue type=error]Se requiere Java 21 en el agente"; exit 1; }
+      displayName: 'Comprobar Java 21'
 
     # Paso 2: Cache Maven (acelera builds posteriores)
     - task: Cache@2

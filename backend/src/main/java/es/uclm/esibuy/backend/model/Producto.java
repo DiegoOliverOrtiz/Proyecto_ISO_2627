@@ -29,6 +29,9 @@ public class Producto {
     private int descuento;
     private int descuentoPremium;
 
+    // Producto reservado a clientes premium (HU17).
+    private boolean soloPremium;
+
     private boolean esVisible;
 
     private String vendedor;
@@ -64,6 +67,10 @@ public class Producto {
 
     public int getDescuentoPremium() {
         return descuentoPremium;
+    }
+
+    public boolean isSoloPremium() {
+        return soloPremium;
     }
 
     public boolean isEsVisible() {
@@ -108,6 +115,10 @@ public class Producto {
 
     public void setDescuentoPremium(int descuentoPremium) {
         this.descuentoPremium = descuentoPremium;
+    }
+
+    public void setSoloPremium(boolean soloPremium) {
+        this.soloPremium = soloPremium;
     }
 
     public void setEsVisible(boolean esVisible) {

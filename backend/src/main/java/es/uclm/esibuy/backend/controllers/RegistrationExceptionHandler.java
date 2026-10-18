@@ -6,6 +6,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
@@ -89,6 +90,13 @@ public class RegistrationExceptionHandler {
 	public ResponseEntity<ApiErrorResponse> handleInvalidQuery(IllegalArgumentException exception) {
 		return ResponseEntity.badRequest()
 				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	// El límite multipart del contenedor (5 MB) se responde igual que el resto de imágenes rechazadas.
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ApiErrorResponse> handleUploadTooLarge() {
+		return ResponseEntity.badRequest()
+				.body(new ApiErrorResponse("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
 	}
 
 	@ExceptionHandler(CategoriaConProductosException.class)
