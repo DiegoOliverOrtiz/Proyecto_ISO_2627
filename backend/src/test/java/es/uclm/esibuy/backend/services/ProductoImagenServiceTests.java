@@ -23,7 +23,9 @@ class ProductoImagenServiceTests {
                 "imagen",
                 "foto.png",
                 "image/png",
-                new byte[] { 1, 2, 3 });
+                new byte[] {
+                    (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A,
+                    0, 0, 0, 0, 'I', 'E', 'N', 'D', (byte) 0xAE, 0x42, 0x60, (byte) 0x82 });
 
         String ruta = servicio.guardar(imagen);
         Path archivo = directorioTemporal.resolve(Path.of(ruta).getFileName());
