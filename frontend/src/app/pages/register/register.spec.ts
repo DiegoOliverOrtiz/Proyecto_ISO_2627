@@ -87,6 +87,80 @@ describe('Register', () => {
     httpMock.expectNone('http://localhost:8080/cliente/register');
   });
 
+  it('validates all password requirements for customer and seller forms', () => {
+    const passwords = [
+      'password1!',
+      'PASSWORD1!',
+      'Password!',
+      'Password1',
+      'Password1 ',
+    ];
+
+    for (const password of passwords) {
+      component.clienteForm.controls.contrasena.setValue(password);
+      component.vendedorForm.controls.contrasena.setValue(password);
+
+      expect(
+        component.clienteForm.controls.contrasena.hasError('passwordRequirements')
+      ).toBe(true);
+      expect(
+        component.vendedorForm.controls.contrasena.hasError('passwordRequirements')
+      ).toBe(true);
+    }
+
+    component.clienteForm.controls.contrasena.setValue('Password1!');
+    component.vendedorForm.controls.contrasena.setValue('Password1!');
+
+    expect(component.clienteForm.controls.contrasena.valid).toBe(true);
+    expect(component.vendedorForm.controls.contrasena.valid).toBe(true);
+  });
+
+  it('shows password requirements on focus and marks satisfied rules with a check', () => {
+    expect(
+      fixture.nativeElement.querySelector('.password-requirements')
+    ).toBeNull();
+
+    const passwordInput = fixture.nativeElement.querySelector(
+      '[formControlName="contrasena"]'
+    ) as HTMLInputElement;
+
+    passwordInput.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.password-requirements')
+    ).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelectorAll('.password-requirements li.met')
+    ).toHaveLength(0);
+
+    passwordInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.password-requirements')
+    ).toBeNull();
+
+    passwordInput.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    component.clienteForm.controls.contrasena.setValue('Password1!');
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelectorAll('.password-requirements li.met')
+    ).toHaveLength(5);
+    expect(
+      fixture.nativeElement.querySelector('.requirement-status').textContent
+    ).toBe('✓');
+
+    passwordInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.password-requirements')
+    ).toBeTruthy();
+  });
+
   it('prevents customers under 18 from submitting', () => {
     component.clienteForm.patchValue({
       nombre: 'Ada',
@@ -94,8 +168,8 @@ describe('Register', () => {
       fechaNacimiento: '2020-01-01',
       dniNif: '12345678A',
       email: 'ada@example.com',
-      contrasena: 'strong-pass-123',
-      repetirContrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
+      repetirContrasena: 'Strong-pass-123!',
     });
 
     component.register();
@@ -120,8 +194,8 @@ describe('Register', () => {
       email: 'ada@example.com',
       telefono: '',
       imagenPerfil: '',
-      contrasena: 'strong-pass-123',
-      repetirContrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
+      repetirContrasena: 'Strong-pass-123!',
       tipoCliente: 'premium',
     });
 
@@ -139,7 +213,7 @@ describe('Register', () => {
       fechaNacimiento: '1990-12-10',
       dniNif: '12345678A',
       email: 'ada@example.com',
-      contrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
       esPremium: true,
     });
 
@@ -164,8 +238,8 @@ describe('Register', () => {
       email: 'ada@example.com',
       telefono: '',
       imagenPerfil: '',
-      contrasena: 'strong-pass-123',
-      repetirContrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
+      repetirContrasena: 'Strong-pass-123!',
       tipoCliente: 'normal',
     });
 
@@ -199,8 +273,8 @@ describe('Register', () => {
       email: 'ada@example.com',
       telefono: '',
       imagenPerfil: '',
-      contrasena: 'strong-pass-123',
-      repetirContrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
+      repetirContrasena: 'Strong-pass-123!',
       tipoCliente: 'normal',
     });
 
@@ -279,7 +353,7 @@ describe('Register', () => {
       apellidos: 'Hopper',
       dniNif: '12345678B',
       email: 'grace@example.com',
-      contrasena: 'strong-pass-123',
+      contrasena: 'Strong-pass-123!',
       categoriaId: '6abe34098deff53da8a2c052',
       nombreComercial: 'Grace Shop',
     };

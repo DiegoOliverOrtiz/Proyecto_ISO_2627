@@ -74,6 +74,47 @@ const optionalImageUrlValidator =
   Validators.pattern(/^https?:\/\/.+/i);
 
 
+const passwordRules = [
+  {
+    label: '8 caracteres mínimo',
+    test: (password: string) => password.length >= 8,
+  },
+  {
+    label: '1 mayúscula (A-Z)',
+    test: (password: string) => /[A-Z]/.test(password),
+  },
+  {
+    label: '1 minúscula (a-z)',
+    test: (password: string) => /[a-z]/.test(password),
+  },
+  {
+    label: '1 número (0-9)',
+    test: (password: string) => /[0-9]/.test(password),
+  },
+  {
+    label: '1 carácter especial (@, #, $, ...)',
+    test: (password: string) => /[^A-Za-z0-9\s]/.test(password),
+  },
+] as const;
+
+
+const passwordRequirementsValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const password = typeof control.value === 'string'
+    ? control.value
+    : '';
+
+  const unmetRequirements = passwordRules
+    .filter(rule => !rule.test(password))
+    .map(rule => rule.label);
+
+  return unmetRequirements.length
+    ? { passwordRequirements: unmetRequirements }
+    : null;
+};
+
+
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-register',
@@ -100,6 +141,8 @@ export class Register {
   isSubmitting = false;
   avatarFailed = false;
   feedback: Feedback = null;
+  customerPasswordFocused = false;
+  sellerPasswordFocused = false;
 
 
   readonly clienteForm = this.formBuilder.nonNullable.group({
@@ -133,7 +176,8 @@ export class Register {
 
     contrasena: ['', [
       Validators.required,
-      Validators.minLength(8)
+      Validators.minLength(8),
+      passwordRequirementsValidator
     ]],
 
     repetirContrasena: ['', Validators.required],
@@ -174,7 +218,8 @@ export class Register {
 
     contrasena: ['', [
       Validators.required,
-      Validators.minLength(8)
+      Validators.minLength(8),
+      passwordRequirementsValidator
     ]],
 
     repetirContrasena: ['', Validators.required],
@@ -295,6 +340,13 @@ export class Register {
       return 'La contraseña debe tener al menos 8 caracteres.';
     }
 
+    if (
+      name === 'contrasena' &&
+      control.hasError('passwordRequirements')
+    ) {
+      return 'La contraseña debe cumplir todos los requisitos indicados.';
+    }
+
     if (control.hasError('underage')) {
       return 'Debes tener al menos 18 años para registrarte como cliente.';
     }
@@ -320,6 +372,19 @@ export class Register {
   passwordMismatch(form: AbstractControl): boolean {
     return form.hasError('passwordMismatch') &&
       Boolean(form.get('repetirContrasena')?.touched);
+  }
+
+
+  passwordRequirements(
+    form: AbstractControl
+  ): { label: string; met: boolean }[] {
+    const password = form.get('contrasena')?.value;
+    const value = typeof password === 'string' ? password : '';
+
+    return passwordRules.map(rule => ({
+      label: rule.label,
+      met: rule.test(value),
+    }));
   }
 
 
