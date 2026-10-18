@@ -265,6 +265,28 @@ main > p[role='alert'],
   background: transparent;
 }
 
+.filtros-catalogo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filtros-catalogo .campo {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.filtros-catalogo .boton-secundario {
+  flex: 0 0 auto;
+}
+
+.filtros-catalogo + p {
+  margin-top: 1rem;
+}
+
 ul {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
