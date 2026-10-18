@@ -146,8 +146,41 @@
     } @else if (productos().length === 0) {
     <p>Aún no tienes productos registrados.</p>
     } @else {
+    <form class="filtros-catalogo" role="search" aria-label="Buscar y filtrar productos"
+        (submit)="$event.preventDefault()">
+        <div class="campo">
+            <label for="busqueda-producto">Buscar por nombre</label>
+            <input id="busqueda-producto" type="search" autocomplete="off" [value]="terminoBusqueda()"
+                (input)="actualizarBusqueda($event)" />
+        </div>
+        <div class="campo">
+            <label for="filtro-categoria">Categoría</label>
+            <select id="filtro-categoria" [value]="categoriaFiltro()" (change)="actualizarCategoriaFiltro($event)">
+                <option value="">Todas</option>
+                @for (categoria of categoriasDisponibles(); track categoria) {
+                <option [value]="categoria" [selected]="categoria === categoriaFiltro()">{{ categoria }}</option>
+                }
+            </select>
+        </div>
+        <div class="campo">
+            <label for="filtro-estado">Estado</label>
+            <select id="filtro-estado" [value]="estadoFiltro()" (change)="actualizarEstadoFiltro($event)">
+                <option value="todos">Todos</option>
+                <option value="activos">Activos</option>
+                <option value="desactivados">Desactivados</option>
+            </select>
+        </div>
+        <button type="button" class="boton-secundario" [disabled]="!hayFiltrosActivos()"
+            (click)="limpiarFiltros()">
+            Limpiar filtros
+        </button>
+    </form>
+
+    @if (productosFiltrados().length === 0) {
+    <p>No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
+    } @else {
     <ul aria-label="Mis productos">
-        @for (producto of productos(); track producto.id) {
+        @for (producto of productosFiltrados(); track producto.id) {
         <li [class.producto-desactivado]="!producto.esVisible">
             @if (producto.imagen) {
             <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="180"/>
@@ -190,5 +223,6 @@
         </li>
         }
     </ul>
+    }
     }
 </main>

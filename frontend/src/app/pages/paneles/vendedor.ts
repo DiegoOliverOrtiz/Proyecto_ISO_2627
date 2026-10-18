@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../login/auth.service';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { VendedorService } from './vendedor.service';
+
+export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 
 @Component({
   selector: 'app-panel-vendedor',
@@ -28,6 +30,35 @@ export class PanelVendedor implements OnInit {
   readonly errorCatalogo = signal('');
   readonly productoCambiandoEstado = signal<string | null>(null);
   readonly productoEnEdicion = signal<ProductoPropio | null>(null);
+
+  // Búsqueda y filtros del catálogo (HU-15): se aplican en memoria sobre los productos del vendedor.
+  readonly terminoBusqueda = signal('');
+  readonly categoriaFiltro = signal('');
+  readonly estadoFiltro = signal<EstadoFiltro>('todos');
+  readonly categoriasDisponibles = computed(() =>
+    [...new Set(this.productos().map((producto) => producto.categoria))].sort((a, b) =>
+      a.localeCompare(b, 'es')
+    )
+  );
+  readonly productosFiltrados = computed(() => {
+    // El texto se compara como literal con includes(): nunca se interpreta como expresión regular.
+    const termino = this.terminoBusqueda().trim().toLowerCase();
+    const categoria = this.categoriaFiltro();
+    const estado = this.estadoFiltro();
+
+    return this.productos().filter(
+      (producto) =>
+        producto.nombre.toLowerCase().includes(termino) &&
+        (categoria === '' || producto.categoria === categoria) &&
+        (estado === 'todos' || producto.esVisible === (estado === 'activos'))
+    );
+  });
+  readonly hayFiltrosActivos = computed(
+    () =>
+      this.terminoBusqueda().trim() !== '' ||
+      this.categoriaFiltro() !== '' ||
+      this.estadoFiltro() !== 'todos'
+  );
 
   private readonly servicioVendedor = inject(VendedorService);
   readonly nombreComercial = signal('');
@@ -115,6 +146,24 @@ export class PanelVendedor implements OnInit {
       descuentoPremium: producto.descuentoPremium,
     });
     this.mostrandoFormulario.set(true);
+  }
+
+  actualizarBusqueda(evento: Event): void {
+    this.terminoBusqueda.set((evento.target as HTMLInputElement).value);
+  }
+
+  actualizarCategoriaFiltro(evento: Event): void {
+    this.categoriaFiltro.set((evento.target as HTMLSelectElement).value);
+  }
+
+  actualizarEstadoFiltro(evento: Event): void {
+    this.estadoFiltro.set((evento.target as HTMLSelectElement).value as EstadoFiltro);
+  }
+
+  limpiarFiltros(): void {
+    this.terminoBusqueda.set('');
+    this.categoriaFiltro.set('');
+    this.estadoFiltro.set('todos');
   }
 
   cargarProductos(): void {
