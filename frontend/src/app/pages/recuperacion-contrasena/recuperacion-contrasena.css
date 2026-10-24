@@ -23,3 +23,8 @@
 main {
   padding: 40px 10%;
 }
+
+:host { background: radial-gradient(circle at 12% 10%, rgba(37, 91, 77, .12), transparent 34%), linear-gradient(135deg, #f4f7f8, #f8f1ed); }
+.header { padding: 1.4rem clamp(1rem, 5vw, 4.5rem); }
+.logo { color: #255b4d; font-family: 'Playfair Display', Georgia, serif; font-size: 1.7rem; }
+main { width: min(640px, calc(100% - 2rem)); margin: 3rem auto; padding: 2rem; border: 1px solid #d9e3e6; border-radius: 12px; background: rgba(255, 255, 255, .9); box-shadow: 0 18px 45px rgba(23, 48, 66, .1); }

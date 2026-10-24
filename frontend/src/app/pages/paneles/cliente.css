@@ -1,0 +1,13 @@
+:host { display: block; min-height: 100vh; color: #173042; background: #f4f7f8; }
+.client-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid #d9e3e6; background: #e8eef0; }
+.client-header h1 { margin: 0; color: #255b4d; font-size: 1.2rem; }
+.client-actions { display: flex; align-items: center; gap: .75rem; }
+.profile-link, .logout-button { padding: .65rem .9rem; border-radius: 4px; font: inherit; font-weight: 700; cursor: pointer; }
+.profile-link { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid #255b4d; color: #255b4d; background: #fff; text-decoration: none; }
+.profile-icon { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.logout-button { border: 1px solid #c74b35; color: #a63120; background: #fff; }
+.logout-button:disabled { opacity: .55; cursor: not-allowed; }
+.client-content { width: min(920px, calc(100% - 4rem)); margin: 0 auto; padding: 3rem 0; }
+.client-content p { color: #536a75; }
+.error-message { color: #a63120 !important; }
+@media (max-width: 700px) { .client-header { align-items: flex-start; flex-direction: column; padding: .8rem 1rem; } .client-actions { flex-wrap: wrap; } .client-content { width: calc(100% - 2rem); } }

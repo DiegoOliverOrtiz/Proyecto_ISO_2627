@@ -18,10 +18,13 @@ import { AuthService } from '../login/auth.service';
             <span aria-hidden="true">/</span>
             Panel de administración
           </span>
-          <span class="account">
-            <span class="account-dot" aria-hidden="true"></span>
-            Administrador
-          </span>
+          <a class="account profile-account" routerLink="/perfil" aria-label="Abrir mi perfil">
+            <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+              <circle cx="12" cy="8" r="3.5"></circle>
+              <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
+            </svg>
+            <span>Administrador</span>
+          </a>
         </header>
 
         <div class="welcome-block">

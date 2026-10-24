@@ -371,3 +371,8 @@ textarea:focus {
     width: 100%;
   }
 }
+
+.form-panel, .categoria-card, .statistics article, .status { border-radius: 10px; }
+.form-panel, .categoria-card, .statistics article { box-shadow: 0 10px 25px rgba(37, 91, 77, .08); }
+.categoria-card { transition: transform .18s ease, box-shadow .18s ease; }
+.categoria-card:hover { box-shadow: 0 14px 28px rgba(37, 91, 77, .12); transform: translateY(-2px); }

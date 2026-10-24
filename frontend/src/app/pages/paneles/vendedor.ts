@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../login/auth.service';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
@@ -12,7 +12,7 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-panel-vendedor',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   styleUrl: './vendedor.css',
   templateUrl: './vendedor.html',
 })
