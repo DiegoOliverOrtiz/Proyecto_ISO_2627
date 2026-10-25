@@ -151,6 +151,8 @@
 				<configuration>
 					<failBuildOnCVSS>9</failBuildOnCVSS>
 					<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+					<ossindexAnalyzerUrl>https://api.guide.sonatype.com</ossindexAnalyzerUrl>
+					<ossIndexServerId>sonatype-oss-index</ossIndexServerId>
 				</configuration>
 			</plugin>
 
