@@ -85,7 +85,7 @@ stages:
     # NVD_API_KEY: variable secreta; la base de datos de vulnerabilidades se cachea entre ejecuciones.
     - task: Cache@2
       inputs:
-        key: 'dependency-check | "$(Agent.OS)" | nvd'
+        key: 'dependency-check | "$(Agent.OS)" | $(Build.BuildNumber)'
         restoreKeys: |
           dependency-check | "$(Agent.OS)"
         path: $(Pipeline.Workspace)/dependency-check-data

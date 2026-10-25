@@ -76,7 +76,7 @@ describe('Perfil', () => {
     crearComponente(throwError(() => new HttpErrorResponse({ status: 500 })));
 
     expect(componente.cargando()).toBe(false);
-    expect(componente.mensajeError()).toContain('No se ha podido cargar el perfil');
+    expect(componente.mensajeError()).toContain('No se pudo cargar el perfil');
   });
 
   it('redirige al login si la sesión ha caducado', () => {
