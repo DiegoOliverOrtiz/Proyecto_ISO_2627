@@ -27,7 +27,7 @@ class PerfilControllerTests {
         PerfilController controller = new PerfilController(perfilService);
         PerfilResponse esperado = new PerfilResponse(
                 "CLIENTE", "Ana", "García", "ana@esibuy.com", null,
-                null, "12*******", null, true, null, null, null, null, null);
+                null, "12*******", null, true, null, null, null, null, null, null);
         when(authentication.getName()).thenReturn("ana@esibuy.com");
         when(perfilService.consultarPerfil("ana@esibuy.com")).thenReturn(esperado);
 
