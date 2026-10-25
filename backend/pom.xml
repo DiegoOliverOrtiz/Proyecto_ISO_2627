@@ -37,6 +37,8 @@
 
 	<properties>
 		<java.version>21</java.version>
+		<!-- Corrige CVE-2026-110879 y mantiene alineados los módulos Jackson 3. -->
+		<jackson-bom.version>3.1.8</jackson-bom.version>
 	</properties>
 
 	<dependencies>
