@@ -4,10 +4,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import es.uclm.esibuy.backend.dto.PerfilResponse;
+import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
 import es.uclm.esibuy.backend.services.PerfilService;
 
 @RestController
@@ -24,5 +27,17 @@ public class PerfilController {
     @GetMapping("/perfil")
     public ResponseEntity<PerfilResponse> consultarPerfil(Authentication authentication) {
         return ResponseEntity.ok(perfilService.consultarPerfil(authentication.getName()));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/perfil")
+    public ResponseEntity<PerfilResponse> modificarPerfil(
+            Authentication authentication,
+            @RequestBody ModificarUsuarioRequest request) {
+
+        return ResponseEntity.ok(
+                perfilService.modificarPerfil(
+                        authentication.getName(),
+                        request));
     }
 }
