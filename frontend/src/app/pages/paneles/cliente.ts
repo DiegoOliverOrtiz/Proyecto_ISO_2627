@@ -1,19 +1,37 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+
 import { AuthService } from '../login/auth.service';
 
 @Component({
   selector: 'app-panel-cliente',
   standalone: true,
+  imports: [RouterLink],
+  styleUrl: './cliente.css',
   template: `
-    <p>Bienvenido cliente</p>
-    <button type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
-      {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
-    </button>
-    @if (mensajeError()) {
-      <p role="alert">{{ mensajeError() }}</p>
-    }
+    <header class="client-header">
+      <h1>ESIBuy</h1>
+      <nav class="client-actions" aria-label="Cuenta">
+        <a class="profile-link" routerLink="/perfil" aria-label="Abrir mi perfil">
+          <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="8" r="3.5"></circle>
+            <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
+          </svg>
+          Mi perfil
+        </a>
+        <button class="logout-button" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
+          {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+        </button>
+      </nav>
+    </header>
+
+    <main class="client-content">
+      <p>Bienvenido cliente</p>
+      @if (mensajeError()) {
+        <p class="error-message" role="alert">{{ mensajeError() }}</p>
+      }
+    </main>
   `
 })
 export class PanelCliente {

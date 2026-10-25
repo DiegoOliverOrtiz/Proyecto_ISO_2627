@@ -6,6 +6,14 @@
     <div class="acciones-header">
         <h2 class="vendedor">{{ nombreComercial() }}</h2>
 
+        <a class="perfil-link" routerLink="/perfil" aria-label="Abrir mi perfil">
+            <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="8" r="3.5"></circle>
+                <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
+            </svg>
+            Mi perfil
+        </a>
+
         <button class="cerrarSesion" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
             {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
         </button>

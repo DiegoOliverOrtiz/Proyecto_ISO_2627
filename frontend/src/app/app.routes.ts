@@ -14,6 +14,8 @@ import { Categorias } from './pages/categorias/categorias';
 // 1. Importamos los nuevos componentes desde su carpeta
 import { Administradores } from './pages/admin/administradores';
 import { CrearAdministrador } from './pages/admin/crear-administrador';
+import { Perfil } from './pages/perfil/perfil';
+import { autenticadoGuard } from './pages/login/autenticado.guard';
 
 export const routes: Routes = [
   {
@@ -31,6 +33,11 @@ export const routes: Routes = [
   {
     path: 'recuperar-contrasena',
     component: RecuperacionContrasena
+  },
+  {
+    path: 'perfil',
+    component: Perfil,
+    canActivate: [autenticadoGuard]
   },
   {
     path: 'admin',
