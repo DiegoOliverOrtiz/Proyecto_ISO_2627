@@ -37,7 +37,7 @@
           <dt>Correo electrónico</dt>
           <dd>{{ datos.email }}</dd>
         </div>
-        @if (datos.telefono) {
+        @if (datos.telefono && datos.tipoUsuario !== 'ADMIN') {
           <div><dt>Teléfono</dt><dd>{{ datos.telefono }}</dd></div>
         }
         @if (datos.dniNif) {
@@ -58,14 +58,18 @@
             <dd>{{ datos.categoria ?? 'No hay una categoría asociada' }}</dd>
           </div>
         }
-        @if (datos.sede) {
+        @if (datos.sede && datos.tipoUsuario !== 'ADMIN') {
           <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div>
         }
-        @if (datos.fechaIncorporacion) {
+        @if (datos.fechaIncorporacion && datos.tipoUsuario !== 'ADMIN') {
           <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion }}</dd></div>
         }
         @if (datos.rol) {
           <div><dt>Rol</dt><dd>{{ datos.rol }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'ADMIN') {
+          <div><dt>Sede</dt><dd>{{ datos.sede ?? 'No disponible' }}</dd></div>
+          <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion ?? 'No disponible' }}</dd></div>
         }
       </dl>
     </section>
