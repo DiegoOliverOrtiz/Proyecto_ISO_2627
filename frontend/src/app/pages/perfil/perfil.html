@@ -1,0 +1,77 @@
+<main class="profile-page">
+  <header class="profile-header">
+    <div>
+      <p class="eyebrow">Cuenta</p>
+      <h1>Mi perfil</h1>
+      <p>Consulta los datos asociados a tu cuenta.</p>
+    </div>
+
+    <button class="secondary-button" type="button" (click)="volverAlPanel()">
+      Volver al panel
+    </button>
+  </header>
+
+  @if (cargando()) {
+    <output class="status-message">Cargando perfil...</output>
+  } @else if (mensajeError()) {
+    <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
+    <button class="secondary-button" type="button" (click)="cargarPerfil()">
+      Reintentar
+    </button>
+  } @else if (perfil(); as datos) {
+    <section class="profile-card" aria-labelledby="datos-personales">
+      <div class="profile-card-heading">
+        @if (datos.imagenPerfil) {
+          <img class="profile-image" [src]="datos.imagenPerfil" alt="Imagen de perfil" />
+        } @else {
+          <div class="profile-placeholder" aria-hidden="true">{{ datos.nombre.charAt(0) }}</div>
+        }
+        <div>
+          <p class="profile-type">{{ datos.tipoUsuario }}</p>
+          <h2 id="datos-personales">{{ datos.nombre }} {{ datos.apellidos }}</h2>
+        </div>
+      </div>
+
+      <dl class="profile-data">
+        <div>
+          <dt>Correo electrónico</dt>
+          <dd>{{ datos.email }}</dd>
+        </div>
+        @if (datos.telefono && datos.tipoUsuario !== 'ADMIN') {
+          <div><dt>Teléfono</dt><dd>{{ datos.telefono }}</dd></div>
+        }
+        @if (datos.dniNif) {
+          <div><dt>DNI/NIF</dt><dd>{{ datos.dniNif }}</dd></div>
+        }
+        @if (datos.fechaNacimiento) {
+          <div><dt>Fecha de nacimiento</dt><dd>{{ datos.fechaNacimiento }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'CLIENTE' && datos.esPremium !== null) {
+          <div><dt>Tipo de cliente</dt><dd>{{ datos.esPremium ? 'Premium' : 'Normal' }}</dd></div>
+        }
+        @if (datos.nombreComercial) {
+          <div><dt>Nombre comercial</dt><dd>{{ datos.nombreComercial }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'VENDEDOR') {
+          <div>
+            <dt>Categoría</dt>
+            <dd>{{ datos.categoria ?? 'No hay una categoría asociada' }}</dd>
+          </div>
+        }
+        @if (datos.sede && datos.tipoUsuario !== 'ADMIN') {
+          <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div>
+        }
+        @if (datos.fechaIncorporacion && datos.tipoUsuario !== 'ADMIN') {
+          <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion }}</dd></div>
+        }
+        @if (datos.rol) {
+          <div><dt>Rol</dt><dd>{{ datos.rol }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'ADMIN') {
+          <div><dt>Sede</dt><dd>{{ datos.sede ?? 'No disponible' }}</dd></div>
+          <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion ?? 'No disponible' }}</dd></div>
+        }
+      </dl>
+    </section>
+  }
+</main>

@@ -630,3 +630,7 @@ th {
     min-width: 9rem;
   }
 }
+
+.filters, .table-wrapper, .statistics article, .status, .success { border-radius: 10px; }
+.filters, .table-wrapper, .statistics article { box-shadow: 0 10px 25px rgba(37, 91, 77, .08); }
+.table-wrapper { overflow: hidden; }

@@ -43,6 +43,21 @@
   font-weight: 700;
 }
 
+.perfil-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .65rem .9rem;
+  border: 1px solid #255b4d;
+  border-radius: 4px;
+  color: #255b4d;
+  background: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.profile-icon { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+
 .cerrarSesion,
 .añadirProductos,
 .boton-primario,

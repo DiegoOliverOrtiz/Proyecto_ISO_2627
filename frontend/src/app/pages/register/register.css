@@ -66,6 +66,12 @@
 .login-prompt { margin: 18px 0 0; color: var(--muted); text-align: center; font-size: 13px; }
 .login-prompt a { color: var(--leaf); font-weight: 700; }
 
+.register-page { background: radial-gradient(circle at 88% 8%, rgba(211, 107, 84, .11), transparent 30%); }
+.brand { font-family: 'Playfair Display', Georgia, serif; font-size: 1.7rem; }
+.register-intro h1, .panel-heading h2 { font-family: 'Playfair Display', Georgia, serif; }
+.form-panel { border-radius: 12px; box-shadow: 0 18px 45px rgba(23, 48, 66, .1); }
+.submit-button { border-radius: 7px; box-shadow: 0 3px 0 #b9553e; }
+
 @media (max-width: 860px) {
 	.register-page { padding: 20px 16px 36px; }
 	.register-shell { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
