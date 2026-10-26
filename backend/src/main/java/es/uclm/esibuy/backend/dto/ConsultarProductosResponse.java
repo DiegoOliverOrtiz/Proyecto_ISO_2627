@@ -10,5 +10,6 @@ public record ConsultarProductosResponse(
         int descuento,
         int descuentoPremium,
         boolean esVisible,
-        String imagen) {
+        String imagen,
+        boolean soloPremium) {
 }

@@ -92,6 +92,20 @@ class ProductoServiceTests {
     }
 
     @Test
+    void devuelveLaMarcaSoloPremiumDeCadaProducto() {
+        Producto normal = crearProducto();
+        Producto soloPremium = crearProducto();
+        soloPremium.setSoloPremium(true);
+        when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(productoDAO.findByVendedor(NOMBRE_COMERCIAL)).thenReturn(List.of(normal, soloPremium));
+
+        var resultado = productoService.consultarProductosPropios(EMAIL);
+
+        assertEquals(false, resultado.get(0).soloPremium());
+        assertEquals(true, resultado.get(1).soloPremium());
+    }
+
+    @Test
     void devuelveListaVaciaCuandoElVendedorNoTieneProductos() {
         when(vendedorDAO.findByEmail(EMAIL)).thenReturn(Optional.of(crearVendedor(true, false)));
         when(productoDAO.findByVendedor(NOMBRE_COMERCIAL)).thenReturn(List.of());

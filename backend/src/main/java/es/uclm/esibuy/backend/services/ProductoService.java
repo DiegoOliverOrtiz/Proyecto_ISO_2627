@@ -78,7 +78,8 @@ public class ProductoService {
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
                 producto.isEsVisible(),
-                producto.getImagen());
+                producto.getImagen(),
+                producto.isSoloPremium());
     }
 
     public CrearProductoResponse crearProducto(
@@ -124,6 +125,10 @@ public class ProductoService {
 
         // Solo se actualizan los campos permitidos; el vendedor y la visibilidad se conservan.
         asignarDatos(producto, request, nombreCategoria);
+        // La marca «solo premium» es opcional: si no se envía, se conserva la actual.
+        if (request.soloPremium() != null) {
+            producto.setSoloPremium(request.soloPremium());
+        }
 
         // La imagen es opcional: si no se envía una nueva, se mantiene la actual.
         String imagenAnterior = producto.getImagen();
