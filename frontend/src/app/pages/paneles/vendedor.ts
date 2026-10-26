@@ -160,6 +160,7 @@ export class PanelVendedor implements OnInit {
       descuento: producto.descuento,
       descuentoPremium: producto.descuentoPremium,
     });
+    this.soloPremium.setValue(producto.soloPremium);
     this.mostrandoFormulario.set(true);
   }
 
@@ -303,7 +304,16 @@ export class PanelVendedor implements OnInit {
 
     this.servicioProductos.modificarProducto(
       id,
-      { nombre, categoria, descripcion, precio, stock, descuento, descuentoPremium },
+      {
+        nombre,
+        categoria,
+        descripcion,
+        precio,
+        stock,
+        descuento,
+        descuentoPremium,
+        soloPremium: this.soloPremium.value,
+      },
       this.imagenSeleccionada()
     ).subscribe({
       next: () => {

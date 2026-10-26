@@ -17,7 +17,8 @@ describe('ProductoService - modificar producto', () => {
     precio: 59.99,
     stock: 10,
     descuento: 15,
-    descuentoPremium: 20
+    descuentoPremium: 20,
+    soloPremium: true
   };
 
   beforeEach(() => {
