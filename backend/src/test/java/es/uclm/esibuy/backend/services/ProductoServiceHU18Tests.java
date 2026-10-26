@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -132,6 +133,53 @@ class ProductoServiceHU18Tests {
         Producto guardado = productoGuardado();
         assertEquals(0, guardado.getStock());
         assertEquals(100, guardado.getDescuentoPremium());
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "false, true", "true, false" })
+    void modificaLaMarcaSoloPremium(boolean actual, boolean nueva) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20, nueva);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        assertEquals(nueva, productoGuardado().isSoloPremium());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void conservaLaMarcaSoloPremiumSiNoSeEnvia(boolean actual) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
+
+        assertEquals(actual, productoGuardado().isSoloPremium());
+    }
+
+    @Test
+    void modificaElDescuentoPremiumSinCambiarLaMarcaSoloPremium() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(true);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 35, null);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        Producto guardado = productoGuardado();
+        assertEquals(35, guardado.getDescuentoPremium());
+        assertTrue(guardado.isSoloPremium());
+    }
+
+    @Test
+    void rechazaDescuentoPremiumInvalidoAunqueSeIndiqueSoloPremium() {
+        assertDatosInvalidos(new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 101, true));
     }
 
     @Test

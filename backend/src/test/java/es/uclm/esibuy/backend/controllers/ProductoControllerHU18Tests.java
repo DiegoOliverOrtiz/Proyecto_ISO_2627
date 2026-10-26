@@ -100,6 +100,21 @@ class ProductoControllerHU18Tests {
     }
 
     @Test
+    void vendedorPuedeEnviarLaMarcaSoloPremium() throws Exception {
+        mockMvc.perform(peticionModificar(JSON_VALIDO.replace("}", ",\"soloPremium\":true}"))
+                        .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(productoService).modificarProducto(
+                eq(EMAIL_VENDEDOR),
+                eq("producto-1"),
+                eq(new ModificarProductoRequest(
+                        "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20, true)),
+                isNull());
+    }
+
+    @Test
     void imagenNuevaInvalidaDevuelveBadRequestConMensaje() throws Exception {
         MockMultipartFile imagen = new MockMultipartFile(
                 "imagen", "falsa.png", MediaType.IMAGE_PNG_VALUE, new byte[] { 1, 2, 3 });
