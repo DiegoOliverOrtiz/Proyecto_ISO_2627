@@ -78,7 +78,8 @@ public class ProductoService {
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
                 producto.isEsVisible(),
-                producto.getImagen());
+                producto.getImagen(),
+                producto.isSoloPremium());
     }
 
     public CrearProductoResponse crearProducto(

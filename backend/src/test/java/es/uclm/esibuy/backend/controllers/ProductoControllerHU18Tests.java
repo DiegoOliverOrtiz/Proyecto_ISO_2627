@@ -74,7 +74,8 @@ class ProductoControllerHU18Tests {
                         15,
                         20,
                         true,
-                        null));
+                        null,
+                        true));
 
         mockMvc.perform(peticionModificar(JSON_VALIDO)
                         .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
@@ -82,7 +83,8 @@ class ProductoControllerHU18Tests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("producto-1"))
                 .andExpect(jsonPath("$.nombre").value("Teclado mecánico"))
-                .andExpect(jsonPath("$.precio").value(59.99));
+                .andExpect(jsonPath("$.precio").value(59.99))
+                .andExpect(jsonPath("$.soloPremium").value(true));
     }
 
     @Test
