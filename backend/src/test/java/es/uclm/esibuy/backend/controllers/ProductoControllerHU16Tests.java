@@ -164,7 +164,8 @@ class ProductoControllerHU16Tests {
                         0,
                         0,
                         true,
-                        null)));
+                        null,
+                        false)));
 
         mockMvc.perform(get("/cliente/productos")
                         .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
