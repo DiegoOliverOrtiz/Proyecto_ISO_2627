@@ -6,12 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
+import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
+import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.services.ClienteService;
@@ -36,7 +38,11 @@ public class ClienteController {
         }
 
         @GetMapping("/productos")
-        public List<ConsultarProductosResponse> consultarProductos(Authentication authentication) {
-                return productoService.consultarProductosParaClientes(authentication.getName());
+        public List<ProductoCatalogoResponse> consultarProductos(
+                        Authentication authentication,
+                        @Valid @ModelAttribute FiltroProductosRequest filtros) {
+                return productoService.consultarProductosParaClientes(authentication.getName(), filtros);
         }
+
+
 }

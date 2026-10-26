@@ -1,5 +1,7 @@
 package es.uclm.esibuy.backend.services;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -14,10 +16,13 @@ import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
 import es.uclm.esibuy.backend.dto.DatosProductoRequest;
+import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
 import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
+import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
+import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
@@ -55,16 +60,87 @@ public class ProductoService {
                 .toList();
     }
 
-    public List<ConsultarProductosResponse> consultarProductosParaClientes(String emailCliente) {
-        clienteDAO.findByEmail(emailCliente)
+    public List<ProductoCatalogoResponse> consultarProductosParaClientes(
+            String emailCliente,
+            FiltroProductosRequest filtros) {
+        Cliente cliente = obtenerClienteActivo(emailCliente);
+        validarFiltros(filtros);
+
+        String nombre = filtros.nombre() == null ? "" : filtros.nombre().trim().toLowerCase(java.util.Locale.ROOT);
+        return productoDAO.findByEsVisibleTrue().stream()
+                .filter(producto -> nombre.isEmpty()
+                        || producto.getNombre().toLowerCase(java.util.Locale.ROOT).contains(nombre))
+                .filter(producto -> filtros.categoria() == null || filtros.categoria().isBlank()
+                        || producto.getCategoria().equalsIgnoreCase(filtros.categoria().trim()))
+                .map(producto -> aProductoCatalogoResponse(producto, cliente.isEsPremium()))
+                .filter(producto -> filtros.precioMinimo() == null
+                        || (producto.precio() != null && producto.precio() >= filtros.precioMinimo()))
+                .filter(producto -> filtros.precioMaximo() == null
+                        || (producto.precio() != null && producto.precio() <= filtros.precioMaximo()))
+                .filter(producto -> filtros.disponible() == null
+                        || (filtros.disponible() ? producto.stock() > 0 : producto.stock() <= 0))
+                .toList();
+    }
+
+    private Cliente obtenerClienteActivo(String emailCliente) {
+        return clienteDAO.findByEmail(emailCliente)
                 .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
                 .orElseThrow(() -> new AccessDeniedException(
                         "Solo un cliente activo puede consultar los productos."));
+    }
 
-        // Los productos desactivados no se muestran a los clientes.
-        return productoDAO.findByEsVisibleTrue().stream()
-                .map(this::aConsultarProductosResponse)
-                .toList();
+    private static void validarFiltros(FiltroProductosRequest filtros) {
+        if (filtros == null) {
+            throw new IllegalArgumentException("Los filtros de productos son obligatorios.");
+        }
+        boolean minimoInvalido = filtros.precioMinimo() != null
+                && (!Double.isFinite(filtros.precioMinimo()) || filtros.precioMinimo() < 0);
+        boolean maximoInvalido = filtros.precioMaximo() != null
+                && (!Double.isFinite(filtros.precioMaximo()) || filtros.precioMaximo() < 0);
+        if (minimoInvalido || maximoInvalido) {
+            throw new IllegalArgumentException("Los filtros de precio deben ser valores positivos válidos.");
+        }
+        if (filtros.precioMinimo() != null
+                && filtros.precioMaximo() != null
+                && filtros.precioMinimo() > filtros.precioMaximo()) {
+            throw new IllegalArgumentException("El precio mínimo no puede superar el precio máximo.");
+        }
+    }
+
+    private ProductoCatalogoResponse aProductoCatalogoResponse(Producto producto, boolean clientePremium) {
+        int descuentoAplicado = obtenerDescuentoAplicable(producto, clientePremium);
+        return new ProductoCatalogoResponse(
+                producto.getId(),
+                producto.getNombre(),
+                producto.getCategoria(),
+                producto.getStock(),
+                calcularPrecioFinal(producto.getPrecio(), descuentoAplicado),
+                producto.getPrecio(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                descuentoAplicado,
+                !producto.isSoloPremium() || clientePremium ? producto.getDescripcion() : null,
+                producto.getImagen(),
+                producto.getVendedor(),
+                producto.isEsVisible(),
+                producto.isSoloPremium(),
+                !producto.isSoloPremium() || clientePremium);
+    }
+
+    private static int obtenerDescuentoAplicable(Producto producto, boolean clientePremium) {
+        return clientePremium && producto.getDescuentoPremium() > 0
+                ? producto.getDescuentoPremium()
+                : producto.getDescuento();
+    }
+
+    private static Double calcularPrecioFinal(Double precio, int descuento) {
+        if (precio == null) {
+            return null;
+        }
+        return BigDecimal.valueOf(precio)
+                .multiply(BigDecimal.valueOf(100L - descuento))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 
     private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {

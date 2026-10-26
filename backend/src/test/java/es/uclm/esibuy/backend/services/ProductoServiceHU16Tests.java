@@ -26,6 +26,8 @@ import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
+import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
+import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
@@ -208,7 +210,8 @@ class ProductoServiceHU16Tests {
         when(clienteDAO.findByEmail(EMAIL_CLIENTE)).thenReturn(Optional.of(crearCliente(true, false)));
         when(productoDAO.findByEsVisibleTrue()).thenReturn(List.of(crearProducto(true, NOMBRE_COMERCIAL)));
 
-        List<ConsultarProductosResponse> resultado = productoService.consultarProductosParaClientes(EMAIL_CLIENTE);
+        List<ProductoCatalogoResponse> resultado = productoService.consultarProductosParaClientes(
+                EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null));
 
         assertEquals(1, resultado.size());
         assertEquals(ID_PRODUCTO, resultado.get(0).id());
@@ -223,7 +226,8 @@ class ProductoServiceHU16Tests {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> productoService.consultarProductosParaClientes(EMAIL_CLIENTE));
+                () -> productoService.consultarProductosParaClientes(
+                        EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null)));
 
         verifyNoInteractions(productoDAO);
     }
@@ -234,7 +238,8 @@ class ProductoServiceHU16Tests {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> productoService.consultarProductosParaClientes(EMAIL_CLIENTE));
+                () -> productoService.consultarProductosParaClientes(
+                        EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null)));
 
         verifyNoInteractions(productoDAO);
     }
@@ -245,7 +250,8 @@ class ProductoServiceHU16Tests {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> productoService.consultarProductosParaClientes(EMAIL_CLIENTE));
+                () -> productoService.consultarProductosParaClientes(
+                        EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null)));
 
         verifyNoInteractions(productoDAO);
     }
