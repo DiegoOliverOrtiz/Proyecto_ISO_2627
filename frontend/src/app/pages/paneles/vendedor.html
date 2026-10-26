@@ -115,7 +115,6 @@
         </div>
     </div>
 
-    @if (!productoEnEdicion()) {
     <div class="campo">
         <label for="solo-premium-producto">
             <input id="solo-premium-producto" type="checkbox" [formControl]="soloPremium" />
@@ -123,6 +122,7 @@
         </label>
     </div>
 
+    @if (!productoEnEdicion()) {
     <div class="campo">
         <fieldset class="grupo-visibilidad">
             <legend>Visibilidad del producto</legend>
@@ -215,6 +215,9 @@
 
             <p>Descuento: {{ producto.descuento }} %</p>
             <p>Descuento Premium: {{ producto.descuentoPremium }} %</p>
+            @if (producto.soloPremium) {
+            <p>Solo para clientes premium</p>
+            }
             <p>
                 Estado: {{ producto.esVisible ? 'Activo' : 'Desactivado' }}
             </p>

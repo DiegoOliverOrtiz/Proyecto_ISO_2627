@@ -74,7 +74,8 @@ class ProductoControllerHU18Tests {
                         15,
                         20,
                         true,
-                        null));
+                        null,
+                        true));
 
         mockMvc.perform(peticionModificar(JSON_VALIDO)
                         .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
@@ -82,7 +83,8 @@ class ProductoControllerHU18Tests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("producto-1"))
                 .andExpect(jsonPath("$.nombre").value("Teclado mecánico"))
-                .andExpect(jsonPath("$.precio").value(59.99));
+                .andExpect(jsonPath("$.precio").value(59.99))
+                .andExpect(jsonPath("$.soloPremium").value(true));
     }
 
     @Test
@@ -97,6 +99,36 @@ class ProductoControllerHU18Tests {
                 .andExpect(status().isOk());
 
         verify(productoService).modificarProducto(eq(EMAIL_VENDEDOR), eq("producto-1"), eq(REQUEST_VALIDO), notNull());
+    }
+
+    @Test
+    void vendedorPuedeEnviarLaMarcaSoloPremium() throws Exception {
+        mockMvc.perform(peticionModificar(JSON_VALIDO.replace("}", ",\"soloPremium\":true}"))
+                        .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(productoService).modificarProducto(
+                eq(EMAIL_VENDEDOR),
+                eq("producto-1"),
+                eq(new ModificarProductoRequest(
+                        "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20, true)),
+                isNull());
+    }
+
+    @Test
+    void imagenNuevaInvalidaDevuelveBadRequestConMensaje() throws Exception {
+        MockMultipartFile imagen = new MockMultipartFile(
+                "imagen", "falsa.png", MediaType.IMAGE_PNG_VALUE, new byte[] { 1, 2, 3 });
+        when(productoService.modificarProducto(eq(EMAIL_VENDEDOR), eq("producto-1"), any(), notNull()))
+                .thenThrow(new IllegalArgumentException("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
+
+        mockMvc.perform(peticionModificar(JSON_VALIDO)
+                        .file(imagen)
+                        .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
     }
 
     @Test

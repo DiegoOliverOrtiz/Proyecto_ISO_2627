@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -134,6 +135,53 @@ class ProductoServiceHU18Tests {
         assertEquals(100, guardado.getDescuentoPremium());
     }
 
+    @ParameterizedTest
+    @CsvSource({ "false, true", "true, false" })
+    void modificaLaMarcaSoloPremium(boolean actual, boolean nueva) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20, nueva);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        assertEquals(nueva, productoGuardado().isSoloPremium());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void conservaLaMarcaSoloPremiumSiNoSeEnvia(boolean actual) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
+
+        assertEquals(actual, productoGuardado().isSoloPremium());
+    }
+
+    @Test
+    void modificaElDescuentoPremiumSinCambiarLaMarcaSoloPremium() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(true);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 35, null);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        Producto guardado = productoGuardado();
+        assertEquals(35, guardado.getDescuentoPremium());
+        assertTrue(guardado.isSoloPremium());
+    }
+
+    @Test
+    void rechazaDescuentoPremiumInvalidoAunqueSeIndiqueSoloPremium() {
+        assertDatosInvalidos(new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 101, true));
+    }
+
     @Test
     void conservaLaImagenActualSiNoSeEnviaOtra() {
         prepararModificacionValida(crearProducto(NOMBRE_COMERCIAL));
@@ -156,6 +204,26 @@ class ProductoServiceHU18Tests {
         assertEquals(IMAGEN_NUEVA, productoGuardado().getImagen());
         assertEquals(IMAGEN_NUEVA, response.imagen());
         verify(productoImagenService).eliminar(IMAGEN_ACTUAL);
+    }
+
+    @Test
+    void rechazaUnaImagenInvalidaYConservaLaAnterior() {
+        MockMultipartFile imagen = crearImagen();
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
+        IllegalArgumentException imagenInvalida = new IllegalArgumentException("Imagen no válida");
+        when(productoImagenService.guardar(imagen)).thenThrow(imagenInvalida);
+
+        IllegalArgumentException lanzada = assertThrows(
+                IllegalArgumentException.class,
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, imagen));
+
+        assertSame(imagenInvalida, lanzada);
+        verify(productoDAO, never()).save(any());
+        verify(productoImagenService, never()).eliminar(any());
+        assertEquals(IMAGEN_ACTUAL, producto.getImagen());
     }
 
     @Test

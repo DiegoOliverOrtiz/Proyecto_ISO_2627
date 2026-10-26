@@ -24,7 +24,8 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     descuento: 0,
     descuentoPremium: 0,
     esVisible: true,
-    imagen: null
+    imagen: null,
+    soloPremium: false
   };
 
   const productoDesactivado: ProductoPropio = {
@@ -372,6 +373,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
         descuento: 5,
         descuentoPremium: 10
       });
+      expect(component.soloPremium.value).toBe(false);
       const formulario: HTMLElement = fixture.nativeElement.querySelector('form');
       expect(formulario.getAttribute('aria-label')).toBe('Modificar producto');
       expect(formulario.textContent).not.toContain('Visibilidad del producto');
@@ -397,7 +399,8 @@ describe('PanelVendedor - activar/desactivar producto', () => {
           precio: 39.99,
           stock: 0,
           descuento: 5,
-          descuentoPremium: 10
+          descuentoPremium: 10,
+          soloPremium: false
         },
         null
       );
@@ -547,6 +550,99 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     });
   });
 
+  describe('modificar producto: solo premium (HU18)', () => {
+    const productoSoloPremium: ProductoPropio = { ...productoActivo, soloPremium: true, descuentoPremium: 25 };
+
+    function casilla(): HTMLInputElement | null {
+      return fixture.nativeElement.querySelector('#solo-premium-producto');
+    }
+
+    beforeEach(() => {
+      productoServiceMock.modificarProducto.mockReturnValue(of(productoSoloPremium));
+    });
+
+    it('muestra «Solo para clientes premium» solo en los productos marcados', () => {
+      productoServiceMock.consultarProductosPropios.mockReturnValue(
+        of([productoSoloPremium, productoDesactivado])
+      );
+      component.cargarProductos();
+      fixture.detectChanges();
+
+      const tarjetas: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('ul li'));
+      expect(tarjetas[0].textContent).toContain('Solo para clientes premium');
+      expect(tarjetas[1].textContent).not.toContain('Solo para clientes premium');
+    });
+
+    it('muestra la casilla precargada con el valor actual al modificar', () => {
+      component.editarProducto(productoSoloPremium);
+      fixture.detectChanges();
+
+      expect(casilla()).not.toBeNull();
+      expect(casilla()?.checked).toBe(true);
+      expect(component.soloPremium.value).toBe(true);
+    });
+
+    it('precarga la casilla desmarcada si el producto no es solo premium', () => {
+      component.editarProducto(productoActivo);
+      fixture.detectChanges();
+
+      expect(casilla()?.checked).toBe(false);
+    });
+
+    it('envía la nueva marca y conserva el resto de campos', () => {
+      component.editarProducto(productoActivo);
+      component.soloPremium.setValue(true);
+      component.formularioProducto.patchValue({ descuentoPremium: 30 });
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.modificarProducto).toHaveBeenCalledWith(
+        'producto-1',
+        {
+          nombre: 'Teclado',
+          categoria: 'Informática',
+          descripcion: '',
+          precio: 49.99,
+          stock: 4,
+          descuento: 0,
+          descuentoPremium: 30,
+          soloPremium: true
+        },
+        null
+      );
+    });
+
+    it('envía soloPremium false al desmarcar la casilla', () => {
+      component.editarProducto(productoSoloPremium);
+      component.soloPremium.setValue(false);
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.modificarProducto).toHaveBeenCalledWith(
+        'producto-1',
+        expect.objectContaining({ soloPremium: false }),
+        null
+      );
+    });
+
+    it('no envía la petición si el descuento premium supera 100', () => {
+      component.editarProducto(productoSoloPremium);
+      component.formularioProducto.patchValue({ descuentoPremium: 101 });
+
+      component.guardarProducto();
+
+      expect(productoServiceMock.modificarProducto).not.toHaveBeenCalled();
+    });
+
+    it('la casilla de un producto no afecta al siguiente producto que se modifica', () => {
+      component.editarProducto(productoSoloPremium);
+      component.alternarFormulario();
+      component.editarProducto(productoActivo);
+
+      expect(component.soloPremium.value).toBe(false);
+    });
+  });
+
   describe('crear producto: solo premium y stock (HU17)', () => {
     function rellenarFormulario(valores: Record<string, unknown> = {}): void {
       component.formularioProducto.patchValue({
@@ -635,12 +731,11 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(component.formularioProducto.valid).toBe(true);
     });
 
-    it('al modificar oculta la casilla y se admite stock 0', () => {
+    it('al modificar se admite stock 0', () => {
       component.editarProducto(productoActivo);
       fixture.detectChanges();
       component.formularioProducto.patchValue({ stock: 0 });
 
-      expect(casilla()).toBeNull();
       expect(component.formularioProducto.controls.stock.valid).toBe(true);
     });
 
