@@ -9,5 +9,6 @@ public record ModificarUsuarioRequest(
         String imagenPerfil,
         String dniNif,
         LocalDate fechaNacimiento,
-        String sede) {
+        String sede,
+        String categoriaId) {
 }

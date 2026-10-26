@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
+import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
@@ -36,6 +37,7 @@ public class AdministradorService {
 			"No se ha podido identificar al solicitante.";
 
 	private final AdministradorDAO administradorDAO;
+	private final CategoriaDAO categoriaDAO;
 	private final UsuarioDAO usuarioDAO;
 	private final PasswordEncoder passwordEncoder;
 	private final PasswordPolicy passwordPolicy;
@@ -44,6 +46,7 @@ public class AdministradorService {
 
 	public AdministradorService(
 			AdministradorDAO administradorDAO,
+			CategoriaDAO categoriaDAO,
 			UsuarioDAO usuarioDAO,
 			PasswordEncoder passwordEncoder,
 			PasswordPolicy passwordPolicy,
@@ -51,6 +54,7 @@ public class AdministradorService {
 			SesionService sesionService) {
 
 		this.administradorDAO = administradorDAO;
+		this.categoriaDAO = categoriaDAO;
 		this.usuarioDAO = usuarioDAO;
 		this.passwordEncoder = passwordEncoder;
 		this.passwordPolicy = passwordPolicy;
@@ -123,6 +127,8 @@ public class AdministradorService {
 					"Los apellidos son obligatorios.");
 		}
 
+		validarTelefono(request.telefono());
+
 		usuario.setNombre(
 				request.nombre().trim());
 
@@ -143,7 +149,20 @@ public class AdministradorService {
 
 			case Cliente cliente -> modificarDatosCliente(cliente, request);
 
-			case Vendedor vendedor -> vendedor.setDniNif(request.dniNif());
+            case Vendedor vendedor -> {
+                if (request.dniNif() != null) {
+                    validarDniNif(request.dniNif());
+                    vendedor.setDniNif(request.dniNif());
+                }
+
+				if (request.categoriaId() != null) {
+					String categoriaId = request.categoriaId().trim();
+					if (categoriaId.isBlank() || !categoriaDAO.existsById(categoriaId)) {
+						throw new IllegalArgumentException("La categoría seleccionada no existe.");
+					}
+					vendedor.setCategoriaId(categoriaId);
+				}
+            }
 
 			case Administrador administrador -> administrador.setSede(request.sede());
 
@@ -180,11 +199,26 @@ public class AdministradorService {
 					"El cliente debe ser mayor de edad.");
 		}
 
-		cliente.setDniNif(
-				request.dniNif());
+        if (request.dniNif() != null) {
+            validarDniNif(request.dniNif());
+            cliente.setDniNif(request.dniNif());
+        }
 
 		cliente.setFechaNacimiento(
 				request.fechaNacimiento());
+	}
+
+	private void validarDniNif(String dniNif) {
+		if (!dniNif.matches("^[0-9]{8}[A-Za-z]$")) {
+			throw new IllegalArgumentException("El DNI/NIF debe tener 8 números y una letra.");
+		}
+	}
+
+	private void validarTelefono(String telefono) {
+		if (telefono != null && !telefono.isBlank()
+				&& !telefono.matches("^\\+?[0-9\\s().-]{7,20}$")) {
+			throw new IllegalArgumentException("Introduce un teléfono válido o deja el campo vacío.");
+		}
 	}
 
 	public RegistroUsuarioResponse registrar(

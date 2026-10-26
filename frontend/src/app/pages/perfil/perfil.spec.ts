@@ -19,13 +19,17 @@ const perfilVendedor: PerfilResponse = {
   email: 'luis@esibuy.com', telefono: null, imagenPerfil: null,
   dniNif: '45*******', fechaNacimiento: null, esPremium: null,
   nombreComercial: 'UrbanStyle', categoria: 'Tecnología', sede: null,
-  fechaIncorporacion: null, rol: null,
+  fechaIncorporacion: null, rol: null, categoriaId: 'cat-1',
 };
 
 describe('Perfil', () => {
   let fixture: ComponentFixture<Perfil>;
   let componente: Perfil;
-  let perfilServiceMock: { consultarPerfil: ReturnType<typeof vi.fn> };
+  let perfilServiceMock: {
+    consultarPerfil: ReturnType<typeof vi.fn>;
+    obtenerCategorias: ReturnType<typeof vi.fn>;
+    modificarPerfil: ReturnType<typeof vi.fn>;
+  };
 
   function crearComponente(respuesta: Observable<PerfilResponse>) {
     perfilServiceMock.consultarPerfil.mockReturnValue(respuesta);
@@ -35,7 +39,11 @@ describe('Perfil', () => {
   }
 
   beforeEach(async () => {
-    perfilServiceMock = { consultarPerfil: vi.fn() };
+    perfilServiceMock = {
+      consultarPerfil: vi.fn(),
+      obtenerCategorias: vi.fn(() => of([])),
+      modificarPerfil: vi.fn(),
+    };
     await TestBed.configureTestingModule({
       imports: [Perfil],
       providers: [
@@ -85,5 +93,76 @@ describe('Perfil', () => {
     crearComponente(throwError(() => new HttpErrorResponse({ status: 401 })));
 
     expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+  });
+  it('permite editar y guardar los campos autorizados de un cliente', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    componente.formulario.patchValue({
+      nombre: 'Ana Nueva', apellidos: 'García López', telefono: '600123123',
+      dniNif: '12345678A', fechaNacimiento: '2000-01-01', imagenPerfil: '',
+    });
+    const perfilActualizado = { ...perfilCliente, nombre: 'Ana Nueva' };
+    perfilServiceMock.modificarPerfil.mockReturnValue(of(perfilActualizado));
+
+    componente.guardarCambios();
+
+    expect(perfilServiceMock.modificarPerfil).toHaveBeenCalledWith({
+      nombre: 'Ana Nueva', apellidos: 'García López', telefono: '600123123',
+      imagenPerfil: null, dniNif: '12345678A', fechaNacimiento: '2000-01-01',
+    });
+    expect(componente.perfil()).toEqual(perfilActualizado);
+    expect(componente.mensajeExito()).toContain('actualizado');
+    expect(componente.editando()).toBe(false);
+  });
+
+  it('permite al vendedor seleccionar una categoría', () => {
+    perfilServiceMock.obtenerCategorias.mockReturnValue(of([
+      { id: 'cat-1', nombre: 'Tecnología' }, { id: 'cat-2', nombre: 'Hogar' },
+    ]));
+    crearComponente(of(perfilVendedor));
+    componente.iniciarEdicion();
+    componente.formulario.patchValue({ nombre: 'Luis', apellidos: 'Martín', categoriaId: 'cat-2' });
+    const perfilActualizado = { ...perfilVendedor, categoria: 'Hogar', categoriaId: 'cat-2' };
+    perfilServiceMock.modificarPerfil.mockReturnValue(of(perfilActualizado));
+
+    componente.guardarCambios();
+
+    expect(perfilServiceMock.modificarPerfil).toHaveBeenCalledWith(expect.objectContaining({ categoriaId: 'cat-2' }));
+    expect(componente.perfil()).toEqual(perfilActualizado);
+  });
+
+  it('rechaza DNI y teléfono con formato incorrecto antes de enviar', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    componente.formulario.patchValue({ nombre: 'Ana', apellidos: 'García', telefono: 'telefono-invalido', dniNif: '123' });
+
+    componente.guardarCambios();
+
+    expect(perfilServiceMock.modificarPerfil).not.toHaveBeenCalled();
+    expect(componente.mensajeFormulario()).toContain('Revisa');
+  });
+
+  it('no incluye contraseña ni direcciones en el formulario de edición', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+
+    expect(fixture.nativeElement.querySelector('[formcontrolname="password"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[formcontrolname="contrasena"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[formcontrolname="direccion"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[formcontrolname="direcciones"]')).toBeNull();
+  });
+
+  it('muestra el error del backend y mantiene el modo edición', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    componente.formulario.patchValue({ nombre: 'Ana', apellidos: 'García', telefono: '600123123', dniNif: '12345678A' });
+    perfilServiceMock.modificarPerfil.mockReturnValue(throwError(() =>
+      new HttpErrorResponse({ status: 400, error: { message: 'Datos inválidos' } })));
+
+    componente.guardarCambios();
+
+    expect(componente.mensajeFormulario()).toContain('Datos inválidos');
+    expect(componente.guardando()).toBe(false);
+    expect(componente.editando()).toBe(true);
   });
 });

@@ -3,22 +3,29 @@
     <div>
       <p class="eyebrow">Cuenta</p>
       <h1>Mi perfil</h1>
-      <p>Consulta los datos asociados a tu cuenta.</p>
+      <p>Consulta y actualiza los datos asociados a tu cuenta.</p>
     </div>
 
-    <button class="secondary-button" type="button" (click)="volverAlPanel()">
-      Volver al panel
-    </button>
+    <div class="header-actions">
+      @if (perfil() && !editando()) {
+        <button class="primary-button" type="button" (click)="iniciarEdicion()">Editar perfil</button>
+      }
+      <button class="secondary-button" type="button" (click)="volverAlPanel()">
+        Volver al panel
+      </button>
+    </div>
   </header>
 
   @if (cargando()) {
     <output class="status-message">Cargando perfil...</output>
   } @else if (mensajeError()) {
     <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
-    <button class="secondary-button" type="button" (click)="cargarPerfil()">
-      Reintentar
-    </button>
+    <button class="secondary-button" type="button" (click)="cargarPerfil()">Reintentar</button>
   } @else if (perfil(); as datos) {
+    @if (mensajeExito()) {
+      <p class="status-message success-message" role="status">{{ mensajeExito() }}</p>
+    }
+
     <section class="profile-card" aria-labelledby="datos-personales">
       <div class="profile-card-heading">
         @if (datos.imagenPerfil) {
@@ -33,10 +40,7 @@
       </div>
 
       <dl class="profile-data">
-        <div>
-          <dt>Correo electrónico</dt>
-          <dd>{{ datos.email }}</dd>
-        </div>
+        <div><dt>Correo electrónico</dt><dd>{{ datos.email }}</dd></div>
         @if (datos.telefono && datos.tipoUsuario !== 'ADMIN') {
           <div><dt>Teléfono</dt><dd>{{ datos.telefono }}</dd></div>
         }
@@ -53,25 +57,110 @@
           <div><dt>Nombre comercial</dt><dd>{{ datos.nombreComercial }}</dd></div>
         }
         @if (datos.tipoUsuario === 'VENDEDOR') {
-          <div>
-            <dt>Categoría</dt>
-            <dd>{{ datos.categoria ?? 'No hay una categoría asociada' }}</dd>
-          </div>
-        }
-        @if (datos.sede && datos.tipoUsuario !== 'ADMIN') {
-          <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div>
-        }
-        @if (datos.fechaIncorporacion && datos.tipoUsuario !== 'ADMIN') {
-          <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion }}</dd></div>
-        }
-        @if (datos.rol) {
-          <div><dt>Rol</dt><dd>{{ datos.rol }}</dd></div>
+          <div><dt>Categoría</dt><dd>{{ datos.categoria ?? 'No hay una categoría asociada' }}</dd></div>
         }
         @if (datos.tipoUsuario === 'ADMIN') {
           <div><dt>Sede</dt><dd>{{ datos.sede ?? 'No disponible' }}</dd></div>
           <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion ?? 'No disponible' }}</dd></div>
         }
       </dl>
+
+      @if (editando()) {
+        <form class="edit-form" [formGroup]="formulario" (ngSubmit)="guardarCambios()">
+          <div class="form-grid">
+            <label>
+              Nombre
+              <input type="text" formControlName="nombre" autocomplete="given-name" />
+              @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+                <span class="field-error">El nombre es obligatorio.</span>
+              }
+            </label>
+
+            <label>
+              Apellidos
+              <input type="text" formControlName="apellidos" autocomplete="family-name" />
+              @if (formulario.controls.apellidos.touched && formulario.controls.apellidos.invalid) {
+                <span class="field-error">Los apellidos son obligatorios.</span>
+              }
+            </label>
+
+            @if (datos.tipoUsuario !== 'ADMIN') {
+              <label>
+                Teléfono
+                <input type="tel" formControlName="telefono" autocomplete="tel" />
+                @if (formulario.controls.telefono.touched && formulario.controls.telefono.hasError('pattern')) {
+                  <span class="field-error">Introduce un teléfono válido o deja el campo vacío.</span>
+                }
+              </label>
+            }
+
+            <label>
+              Imagen de perfil
+              <input type="url" formControlName="imagenPerfil" placeholder="https://..." />
+            </label>
+
+            @if (datos.tipoUsuario === 'CLIENTE' || datos.tipoUsuario === 'VENDEDOR') {
+              <label>
+                DNI/NIF
+                <input type="text" formControlName="dniNif" placeholder="Déjalo vacío para conservar el actual" />
+                <span class="field-help">El valor actual se muestra protegido en la consulta.</span>
+                @if (formulario.controls.dniNif.touched && formulario.controls.dniNif.hasError('pattern')) {
+                  <span class="field-error">El DNI/NIF debe tener 8 números y una letra.</span>
+                }
+              </label>
+            }
+
+            @if (datos.tipoUsuario === 'VENDEDOR') {
+              <label>
+                Categoría
+                <select formControlName="categoriaId">
+                  <option value="">Conservar la categoría actual</option>
+                  @for (categoria of categorias(); track categoria.id) {
+                    <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                  }
+                </select>
+                <span class="field-help">Solo se pueden seleccionar categorías existentes.</span>
+              </label>
+            }
+
+            @if (datos.tipoUsuario === 'CLIENTE') {
+              <label>
+                Fecha de nacimiento
+                <input type="date" formControlName="fechaNacimiento" [max]="fechaMaximaNacimiento" />
+                @if (formulario.controls.fechaNacimiento.touched && formulario.controls.fechaNacimiento.hasError('menorDeEdad')) {
+                  <span class="field-error">Debes ser mayor de edad.</span>
+                }
+              </label>
+            }
+
+            @if (datos.tipoUsuario === 'ADMIN') {
+              <label>
+                Sede
+                <input type="text" formControlName="sede" />
+              </label>
+            }
+          </div>
+
+          <div class="protected-fields">
+            <p><strong>Correo electrónico:</strong> {{ datos.email }} (no modificable)</p>
+            @if (datos.tipoUsuario === 'ADMIN') {
+              <p><strong>Fecha de incorporación:</strong> {{ datos.fechaIncorporacion ?? 'No disponible' }} (no modificable)</p>
+            }
+            <p class="field-help">La contraseña y las direcciones se gestionan fuera de esta pantalla.</p>
+          </div>
+
+          @if (mensajeFormulario()) {
+            <p class="form-message" role="alert">{{ mensajeFormulario() }}</p>
+          }
+
+          <div class="form-actions">
+            <button class="secondary-button" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="primary-button" type="submit" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      }
     </section>
   }
 </main>
