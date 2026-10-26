@@ -255,6 +255,26 @@ class ProductoControllerHU16Tests {
     }
 
     @Test
+    void unClienteNormalNoPuedeConsultarElDetallePremiumPorApi() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-premium"))
+                .thenThrow(new AccessDeniedException("Este producto solo está disponible para clientes Premium."));
+
+        mockMvc.perform(get("/cliente/productos/producto-premium")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void detalleDeProductoInexistenteODesactivadoDevuelve404() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-inactivo"))
+                .thenThrow(new ProductoNoEncontradoException());
+
+        mockMvc.perform(get("/cliente/productos/producto-inactivo")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void vendedorNoPuedeUsarLaConsultaDeClientes() throws Exception {
         mockMvc.perform(get("/cliente/productos")
                         .with(user(EMAIL_VENDEDOR).roles("VENDEDOR")))

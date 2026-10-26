@@ -82,6 +82,19 @@ public class ProductoService {
                 .toList();
     }
 
+    public ProductoCatalogoResponse consultarDetalleParaCliente(String emailCliente, String idProducto) {
+        Cliente cliente = obtenerClienteActivo(emailCliente);
+        Producto producto = productoDAO.findById(idProducto)
+                .filter(Producto::isEsVisible)
+                .orElseThrow(ProductoNoEncontradoException::new);
+
+        if (producto.isSoloPremium() && !cliente.isEsPremium()) {
+            throw new AccessDeniedException("Este producto solo está disponible para clientes Premium.");
+        }
+
+        return aProductoCatalogoResponse(producto, cliente.isEsPremium());
+    }
+
     private Cliente obtenerClienteActivo(String emailCliente) {
         return clienteDAO.findByEmail(emailCliente)
                 .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
