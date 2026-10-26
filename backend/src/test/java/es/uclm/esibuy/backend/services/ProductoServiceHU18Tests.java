@@ -159,6 +159,26 @@ class ProductoServiceHU18Tests {
     }
 
     @Test
+    void rechazaUnaImagenInvalidaYConservaLaAnterior() {
+        MockMultipartFile imagen = crearImagen();
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
+        IllegalArgumentException imagenInvalida = new IllegalArgumentException("Imagen no válida");
+        when(productoImagenService.guardar(imagen)).thenThrow(imagenInvalida);
+
+        IllegalArgumentException lanzada = assertThrows(
+                IllegalArgumentException.class,
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, imagen));
+
+        assertSame(imagenInvalida, lanzada);
+        verify(productoDAO, never()).save(any());
+        verify(productoImagenService, never()).eliminar(any());
+        assertEquals(IMAGEN_ACTUAL, producto.getImagen());
+    }
+
+    @Test
     void eliminaLaImagenNuevaYConservaLaAnteriorSiFallaElGuardado() {
         MockMultipartFile imagen = crearImagen();
         RuntimeException errorGuardado = new IllegalStateException("Fallo de base de datos");

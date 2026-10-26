@@ -100,6 +100,21 @@ class ProductoControllerHU18Tests {
     }
 
     @Test
+    void imagenNuevaInvalidaDevuelveBadRequestConMensaje() throws Exception {
+        MockMultipartFile imagen = new MockMultipartFile(
+                "imagen", "falsa.png", MediaType.IMAGE_PNG_VALUE, new byte[] { 1, 2, 3 });
+        when(productoService.modificarProducto(eq(EMAIL_VENDEDOR), eq("producto-1"), any(), notNull()))
+                .thenThrow(new IllegalArgumentException("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
+
+        mockMvc.perform(peticionModificar(JSON_VALIDO)
+                        .file(imagen)
+                        .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
+    }
+
+    @Test
     void precioNoPositivoDevuelveBadRequestSinLlamarAlServicio() throws Exception {
         mockMvc.perform(peticionModificar(JSON_VALIDO.replace("59.99", "0"))
                         .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
