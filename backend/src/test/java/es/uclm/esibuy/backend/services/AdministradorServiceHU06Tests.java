@@ -34,6 +34,9 @@ class AdministradorServiceHU06Tests {
         private AdministradorDAO administradorDAO;
 
         @Mock
+        private es.uclm.esibuy.backend.dao.CategoriaDAO categoriaDAO;
+
+        @Mock
         private UsuarioDAO usuarioDAO;
 
         @Mock
@@ -54,6 +57,7 @@ class AdministradorServiceHU06Tests {
         void setUp() {
                 servicio = new AdministradorService(
                                 administradorDAO,
+                                categoriaDAO,
                                 usuarioDAO,
                                 passwordEncoder,
                                 passwordPolicy,

@@ -24,6 +24,15 @@ input:focus { border-color: #255B4D; }
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear, input[type="password"]::-webkit-credentials-auto-fill-button { display: none !important; }
 .field-error { color: #A63C28; font-size: .8rem; margin-top: 4px; font-weight: 500; }
 
+/* Requisitos de la contraseña (importado del registro) */
+.password-requirements { padding: 12px 14px; border: 1px solid #d36b50; border-radius: 12px; color: #d36b50; background: #e9f0f3; font-family: "Trebuchet MS", "Segoe UI", sans-serif; font-size: 14px; margin-top: 8px; }
+.password-requirements > strong { display: block; margin-bottom: 8px; font-size: 16px; }
+.password-requirements ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.password-requirements li { display: flex; align-items: center; gap: 9px; color: #d92727; }
+.password-requirements li.met { color: #18833b; }
+.requirement-status { display: inline-grid; width: 25px; height: 25px; flex: 0 0 25px; place-items: center; border-radius: 50%; color: #d92727; background: #f4e5e7; font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
+.password-requirements li.met .requirement-status { color: #18833b; background: #dcefe4; }
+
 .submit-button { width: 100%; min-height: 46px; margin-top: 2rem; border: none; background: #D36B54; color: white; font-weight: 700; font-size: 1rem; border-radius: 4px; cursor: pointer; }
 .submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
 

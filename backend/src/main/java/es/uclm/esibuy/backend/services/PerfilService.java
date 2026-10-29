@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
+import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
 import es.uclm.esibuy.backend.dto.PerfilResponse;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
@@ -20,21 +21,43 @@ public class PerfilService {
 
     private final UsuarioDAO usuarioDAO;
     private final MongoTemplate mongoTemplate;
+    private final AdministradorService administradorService;
 
-    public PerfilService(UsuarioDAO usuarioDAO, MongoTemplate mongoTemplate) {
+    public PerfilService(
+            UsuarioDAO usuarioDAO,
+            MongoTemplate mongoTemplate,
+            AdministradorService administradorService) {
         this.usuarioDAO = usuarioDAO;
         this.mongoTemplate = mongoTemplate;
+        this.administradorService = administradorService;
     }
 
     public PerfilResponse consultarPerfil(String emailAutenticado) {
+        return construirRespuesta(buscarUsuarioAutenticado(emailAutenticado));
+    }
+
+    /**
+     * HU-23: modifica únicamente el perfil asociado a la identidad autenticada.
+     * Las reglas y la lista de campos permitidos se reutilizan de HU-07.
+     */
+    public PerfilResponse modificarPerfil(
+            String emailAutenticado,
+            ModificarUsuarioRequest request) {
+
+        Usuario usuario = buscarUsuarioAutenticado(emailAutenticado);
+
+        administradorService.modificarUsuario(usuario.getId(), request);
+
+        return consultarPerfil(emailAutenticado);
+    }
+
+    private Usuario buscarUsuarioAutenticado(String emailAutenticado) {
         if (emailAutenticado == null || emailAutenticado.isBlank()) {
             throw new UsuarioNoEncontradoException();
         }
 
-        Usuario usuario = usuarioDAO.findByEmail(emailAutenticado)
+        return usuarioDAO.findByEmail(emailAutenticado)
                 .orElseThrow(UsuarioNoEncontradoException::new);
-
-        return construirRespuesta(usuario);
     }
 
     private PerfilResponse construirRespuesta(Usuario usuario) {
@@ -44,6 +67,7 @@ public class PerfilService {
         Boolean esPremium = null;
         String nombreComercial = null;
         String categoria = null;
+        String categoriaId = null;
         String sede = null;
         java.time.LocalDate fechaIncorporacion = null;
         String rol = null;
@@ -58,6 +82,7 @@ public class PerfilService {
             dniNif = enmascararDniNif(vendedor.getDniNif());
             nombreComercial = vendedor.getNombreComercial();
             categoria = buscarNombreCategoria(vendedor.getCategoriaId());
+            categoriaId = vendedor.getCategoriaId();
         } else if (usuario instanceof Administrador administrador) {
             tipoUsuario = "ADMIN";
             sede = administrador.getSede();
@@ -79,6 +104,7 @@ public class PerfilService {
                 esPremium,
                 nombreComercial,
                 categoria,
+                categoriaId,
                 sede,
                 fechaIncorporacion,
                 rol);

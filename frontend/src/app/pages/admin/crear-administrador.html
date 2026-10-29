@@ -23,16 +23,25 @@
           <label class="field">
             <span>Nombre</span>
             <input type="text" formControlName="nombre" autocomplete="off" />
+            @if (controlError('nombre'); as error) {
+              <small class="field-error">{{ error }}</small>
+            }
           </label>
 
           <label class="field">
             <span>Apellidos</span>
             <input type="text" formControlName="apellidos" autocomplete="off" />
+            @if (controlError('apellidos'); as error) {
+              <small class="field-error">{{ error }}</small>
+            }
           </label>
 
           <label class="field field-wide">
             <span>Correo electrónico (Será su acceso)</span>
             <input type="email" formControlName="email" autocomplete="off" />
+            @if (controlError('email'); as error) {
+              <small class="field-error">{{ error }}</small>
+            }
           </label>
 
           <label class="field">
@@ -48,17 +57,47 @@
           <div class="field-wide" ></div>
 
           <label class="field">
-            <span>Contraseña (Mínimo 8 caracteres)</span>
+            <span>Contraseña</span>
             <div class="password-container">
               @if (hidePassword) {
-                <input type="password" formControlName="contrasena" autocomplete="new-password" />
+                <input 
+                  type="password" 
+                  formControlName="contrasena" 
+                  autocomplete="new-password"
+                  (focus)="passwordFocused = true"
+                  (blur)="passwordFocused = !!form.controls.contrasena.value"
+                />
               } @else {
-                <input type="text" formControlName="contrasena" autocomplete="off" />
+                <input 
+                  type="text" 
+                  formControlName="contrasena" 
+                  autocomplete="off"
+                  (focus)="passwordFocused = true"
+                  (blur)="passwordFocused = !!form.controls.contrasena.value"
+                />
               }
               <button type="button" (click)="togglePassword()" class="eye-button">
                 {{ hidePassword ? '👁️' : '🙈' }}
               </button>
             </div>
+            
+            @if (passwordFocused) {
+              <div class="password-requirements" aria-live="polite">
+                <strong>Requisitos:</strong>
+                <ul>
+                  @for (requirement of passwordRequirements(); track requirement.label) {
+                    <li [class.met]="requirement.met">
+                      <span class="requirement-status" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
+                      <span>{{ requirement.label }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (controlError('contrasena'); as error) {
+              <small class="field-error">{{ error }}</small>
+            }
           </label>
 
           <label class="field">
@@ -73,6 +112,10 @@
                 {{ hideRepeatPassword ? '👁️' : '🙈' }}
               </button>
             </div>
+            
+            @if (controlError('repetirContrasena'); as error) {
+              <small class="field-error">{{ error }}</small>
+            }
             @if (passwordMismatch()) {
               <small class="field-error">Las contraseñas no coinciden.</small>
             }
