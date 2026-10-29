@@ -22,6 +22,14 @@ const perfilVendedor: PerfilResponse = {
   fechaIncorporacion: null, rol: null, categoriaId: 'cat-1',
 };
 
+const perfilAdministrador: PerfilResponse = {
+  tipoUsuario: 'ADMIN', nombre: 'Ada', apellidos: 'Admin',
+  email: 'admin@esibuy.com', telefono: null, imagenPerfil: null,
+  dniNif: null, fechaNacimiento: null, esPremium: null,
+  nombreComercial: null, categoria: null, sede: 'Central',
+  fechaIncorporacion: '2026-01-01', rol: 'ADMIN',
+};
+
 describe('Perfil', () => {
   let fixture: ComponentFixture<Perfil>;
   let componente: Perfil;
@@ -29,6 +37,7 @@ describe('Perfil', () => {
     consultarPerfil: ReturnType<typeof vi.fn>;
     obtenerCategorias: ReturnType<typeof vi.fn>;
     modificarPerfil: ReturnType<typeof vi.fn>;
+    cambiarTipoCliente: ReturnType<typeof vi.fn>;
   };
 
   function crearComponente(respuesta: Observable<PerfilResponse>) {
@@ -43,6 +52,7 @@ describe('Perfil', () => {
       consultarPerfil: vi.fn(),
       obtenerCategorias: vi.fn(() => of([])),
       modificarPerfil: vi.fn(),
+      cambiarTipoCliente: vi.fn(),
     };
     await TestBed.configureTestingModule({
       imports: [Perfil],
@@ -65,6 +75,23 @@ describe('Perfil', () => {
     expect(fixture.nativeElement.textContent).toContain('CLIENTE');
     expect(fixture.nativeElement.textContent).toContain('Ana García');
     expect(fixture.nativeElement.textContent).toContain('12*******');
+  });
+
+  it('muestra la tarjeta de tipo y el boton Premium para un cliente normal', () => {
+    crearComponente(of({ ...perfilCliente, esPremium: false }));
+
+    expect(fixture.nativeElement.querySelector('.account-type-card')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Hacerme cliente Premium');
+    expect(fixture.nativeElement.textContent).toContain('Ventajas Premium');
+  });
+
+  it('no muestra el cambio de tipo para vendedor ni administrador', () => {
+    crearComponente(of(perfilVendedor));
+    expect(fixture.nativeElement.querySelector('.account-type-card')).toBeNull();
+
+    fixture.destroy();
+    crearComponente(of(perfilAdministrador));
+    expect(fixture.nativeElement.querySelector('.account-type-card')).toBeNull();
   });
 
   it('muestra la categoría del vendedor cuando está asociada', () => {
@@ -164,5 +191,56 @@ describe('Perfil', () => {
     expect(componente.mensajeFormulario()).toContain('Datos inválidos');
     expect(componente.guardando()).toBe(false);
     expect(componente.editando()).toBe(true);
+  });
+
+  it('pide confirmacion antes de cambiar a cliente premium', () => {
+    const perfilNormal = { ...perfilCliente, esPremium: false };
+    crearComponente(of(perfilNormal));
+    const perfilActualizado = { ...perfilNormal, esPremium: true };
+    perfilServiceMock.cambiarTipoCliente.mockReturnValue(of(perfilActualizado));
+
+    componente.cambiarTipoCliente();
+    expect(componente.mostrandoConfirmacionTipo()).toBe(true);
+    componente.confirmarCambioTipoCliente();
+
+    expect(perfilServiceMock.cambiarTipoCliente).toHaveBeenCalledWith(true);
+    expect(componente.perfil()).toEqual(perfilActualizado);
+  });
+
+  it('cancela el cambio de tipo si el cliente rechaza la confirmacion', () => {
+    crearComponente(of({ ...perfilCliente, esPremium: false }));
+
+    componente.cambiarTipoCliente();
+    expect(componente.mostrandoConfirmacionTipo()).toBe(true);
+    componente.cancelarCambioTipoCliente();
+
+    expect(perfilServiceMock.modificarPerfil).not.toHaveBeenCalled();
+    expect(perfilServiceMock.cambiarTipoCliente).not.toHaveBeenCalled();
+    expect(componente.mostrandoConfirmacionTipo()).toBe(false);
+  });
+
+  it('confirma el cambio de premium a normal mediante el servicio especifico', () => {
+    crearComponente(of(perfilCliente));
+    const perfilActualizado = { ...perfilCliente, esPremium: false };
+    perfilServiceMock.cambiarTipoCliente.mockReturnValue(of(perfilActualizado));
+
+    componente.cambiarTipoCliente();
+    componente.confirmarCambioTipoCliente();
+
+    expect(perfilServiceMock.cambiarTipoCliente).toHaveBeenCalledWith(false);
+    expect(componente.perfil()).toEqual(perfilActualizado);
+  });
+
+  it('muestra el error y conserva el tipo anterior si falla el cambio', () => {
+    crearComponente(of({ ...perfilCliente, esPremium: false }));
+    perfilServiceMock.cambiarTipoCliente.mockReturnValue(throwError(() =>
+      new HttpErrorResponse({ status: 400, error: { message: 'No se pudo actualizar' } })));
+
+    componente.cambiarTipoCliente();
+    componente.confirmarCambioTipoCliente();
+
+    expect(componente.perfil()?.esPremium).toBe(false);
+    expect(componente.mensajeFormulario()).toContain('No se pudo actualizar');
+    expect(componente.guardando()).toBe(false);
   });
 });

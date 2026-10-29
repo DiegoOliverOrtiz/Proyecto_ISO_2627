@@ -65,6 +65,53 @@
         }
       </dl>
 
+      @if (datos.tipoUsuario === 'CLIENTE' && !editando()) {
+        <section class="account-type-card" [class.account-type-premium]="datos.esPremium === true" aria-labelledby="tipo-cuenta">
+          <div class="account-type-icon" aria-hidden="true">★</div>
+          <div class="account-type-content">
+            <p class="account-type-kicker">Tipo de cuenta</p>
+            <h3 id="tipo-cuenta">Cliente {{ datos.esPremium ? 'Premium' : 'Normal' }}</h3>
+            @if (datos.esPremium) {
+              <p>Disfrutas de las ventajas Premium y del acceso que corresponda a este tipo de cuenta.</p>
+              <button class="account-type-button account-type-button-light" type="button" (click)="cambiarTipoCliente()" [disabled]="guardando()">
+                Volver a cliente normal
+              </button>
+            } @else {
+              <p>Hazte Premium para acceder a sus ventajas y a los productos que te correspondan.</p>
+              <button class="account-type-button" type="button" (click)="cambiarTipoCliente()" [disabled]="guardando()">
+                Hacerme cliente Premium
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="account-benefits" aria-labelledby="informacion-premium">
+          <div class="account-benefits-heading">
+            <p class="account-type-kicker">Información de la cuenta</p>
+            <h3 id="informacion-premium">¿Qué cambia con Premium?</h3>
+            <p>Consulta las consecuencias antes de cambiar tu tipo de cliente.</p>
+          </div>
+          <div class="account-benefits-grid">
+            <article class="benefit-item benefit-positive">
+              <span class="benefit-mark" aria-hidden="true">✓</span>
+              <div>
+                <h4>Ventajas Premium</h4>
+                <p>Acceso a los productos disponibles exclusivamente para clientes Premium.</p>
+                <p>Aplicación de las ventajas y descuentos Premium definidos en el catálogo.</p>
+              </div>
+            </article>
+            <article class="benefit-item benefit-warning">
+              <span class="benefit-mark" aria-hidden="true">!</span>
+              <div>
+                <h4>Si vuelves a Normal</h4>
+                <p>Perderás las ventajas asociadas a Premium.</p>
+                <p>No podrás comprar productos exclusivos para clientes Premium.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      }
+
       @if (editando()) {
         <form class="edit-form" [formGroup]="formulario" (ngSubmit)="guardarCambios()">
           <div class="form-grid">
@@ -131,6 +178,7 @@
                   <span class="field-error">Debes ser mayor de edad.</span>
                 }
               </label>
+
             }
 
             @if (datos.tipoUsuario === 'ADMIN') {
@@ -162,5 +210,28 @@
         </form>
       }
     </section>
+
+    @if (mostrandoConfirmacionTipo()) {
+      <div class="confirmation-backdrop" role="presentation" (click)="cancelarCambioTipoCliente()">
+        <section class="confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmacion-tipo-titulo" (click)="$event.stopPropagation()">
+          <div class="confirmation-icon" aria-hidden="true">★</div>
+          <p class="account-type-kicker">Cambio de cuenta</p>
+          <h2 id="confirmacion-tipo-titulo">
+            {{ tipoPremiumPendiente() ? '¿Quieres hacerte cliente Premium?' : '¿Quieres volver a cliente normal?' }}
+          </h2>
+          @if (tipoPremiumPendiente()) {
+            <p>Disfrutarás de las ventajas Premium y del acceso a los productos que te correspondan.</p>
+          } @else {
+            <p>Al volver a cliente normal perderás las ventajas asociadas a Premium.</p>
+          }
+          <div class="confirmation-actions">
+            <button class="secondary-button" type="button" (click)="cancelarCambioTipoCliente()">Cancelar</button>
+            <button class="primary-button" type="button" (click)="confirmarCambioTipoCliente()">
+              {{ tipoPremiumPendiente() ? 'Sí, hacerme Premium' : 'Sí, volver a Normal' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
   }
 </main>

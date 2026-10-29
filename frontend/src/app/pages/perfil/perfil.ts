@@ -44,6 +44,8 @@ export class Perfil {
   readonly mensajeError = signal('');
   readonly mensajeFormulario = signal('');
   readonly mensajeExito = signal('');
+  readonly mostrandoConfirmacionTipo = signal(false);
+  readonly tipoPremiumPendiente = signal(false);
   readonly fechaMaximaNacimiento = this.calcularFechaMaximaNacimiento();
   readonly categorias = signal<CategoriaPerfil[]>([]);
 
@@ -163,6 +165,51 @@ export class Perfil {
       error: (error: HttpErrorResponse) => {
         this.guardando.set(false);
         this.mensajeFormulario.set(this.obtenerMensajeError(error, 'No se pudieron guardar los cambios.'));
+
+        if (error.status === 401) {
+          void this.enrutador.navigate(['/login'], {
+            queryParams: { motivo: 'sesion-expirada' }
+          });
+        }
+      }
+    });
+  }
+
+  cambiarTipoCliente(): void {
+    const datos = this.perfil();
+    if (!datos || datos.tipoUsuario !== 'CLIENTE' || this.guardando()) {
+      return;
+    }
+
+    const nuevoTipoPremium = datos.esPremium !== true;
+    this.tipoPremiumPendiente.set(nuevoTipoPremium);
+    this.mostrandoConfirmacionTipo.set(true);
+  }
+
+  cancelarCambioTipoCliente(): void {
+    this.mostrandoConfirmacionTipo.set(false);
+  }
+
+  confirmarCambioTipoCliente(): void {
+    if (!this.mostrandoConfirmacionTipo() || this.guardando()) {
+      return;
+    }
+
+    const nuevoTipoPremium = this.tipoPremiumPendiente();
+    this.mostrandoConfirmacionTipo.set(false);
+    this.guardando.set(true);
+    this.mensajeFormulario.set('');
+    this.mensajeExito.set('');
+
+    this.servicioPerfil.cambiarTipoCliente(nuevoTipoPremium).subscribe({
+      next: (perfilActualizado) => {
+        this.perfil.set(perfilActualizado);
+        this.guardando.set(false);
+        this.mensajeExito.set('El tipo de cliente se ha actualizado correctamente.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.guardando.set(false);
+        this.mensajeFormulario.set(this.obtenerMensajeError(error, 'No se pudo actualizar el tipo de cliente.'));
 
         if (error.status === 401) {
           void this.enrutador.navigate(['/login'], {
