@@ -157,12 +157,16 @@ public class ProductoService {
     }
 
     private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {
+        return aConsultarProductosResponse(producto, true);
+    }
+
+    private ConsultarProductosResponse aConsultarProductosResponse(Producto producto, boolean incluirDescripcion) {
         return new ConsultarProductosResponse(
                 producto.getId(),
                 producto.getNombre(),
                 producto.getCategoria(),
                 producto.getStock(),
-                producto.getDescripcion(),
+                incluirDescripcion ? producto.getDescripcion() : null,
                 producto.getPrecio(),
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),

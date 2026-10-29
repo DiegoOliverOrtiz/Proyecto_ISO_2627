@@ -255,6 +255,16 @@ class ProductoControllerHU16Tests {
     }
 
     @Test
+    void clienteInactivoRecibeForbiddenAlConsultarElDetalle() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-1"))
+                .thenThrow(new AccessDeniedException("Solo un cliente activo puede consultar los productos."));
+
+        mockMvc.perform(get("/cliente/productos/producto-1")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void unClienteNormalNoPuedeConsultarElDetallePremiumPorApi() throws Exception {
         when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-premium"))
                 .thenThrow(new AccessDeniedException("Este producto solo está disponible para clientes Premium."));
