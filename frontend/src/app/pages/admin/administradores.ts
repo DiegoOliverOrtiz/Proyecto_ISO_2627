@@ -1,7 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -16,7 +15,7 @@ import { AuthService } from '../login/auth.service';
 @Component({
   selector: 'app-administradores',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './administradores.html',
   styleUrl: '../usuarios/usuarios.css'
 })
