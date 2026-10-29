@@ -6,6 +6,7 @@ import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
+import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 
 @Service
@@ -42,5 +43,19 @@ public class ClienteService {
 
 		Cliente guardado = soporteRegistro.guardarRegistro(() -> clienteDAO.save(cliente));
 		return new RegistroUsuarioResponse(guardado.getId(), "cliente");
+	}
+
+	public Cliente cambiarTipoCliente(String emailAutenticado, Boolean esPremium) {
+		if (emailAutenticado == null || emailAutenticado.isBlank()) {
+			throw new UsuarioNoEncontradoException();
+		}
+		if (esPremium == null) {
+			throw new IllegalArgumentException("El tipo de cliente es obligatorio.");
+		}
+
+		Cliente cliente = clienteDAO.findByEmail(emailAutenticado)
+				.orElseThrow(UsuarioNoEncontradoException::new);
+		cliente.setEsPremium(esPremium);
+		return clienteDAO.save(cliente);
 	}
 }

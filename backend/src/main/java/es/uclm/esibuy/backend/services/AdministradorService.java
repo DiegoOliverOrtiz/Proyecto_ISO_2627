@@ -206,6 +206,10 @@ public class AdministradorService {
 
 		cliente.setFechaNacimiento(
 				request.fechaNacimiento());
+
+		if (request.esPremium() != null) {
+			cliente.setEsPremium(request.esPremium());
+		}
 	}
 
 	private void validarDniNif(String dniNif) {
