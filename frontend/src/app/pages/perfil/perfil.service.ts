@@ -84,4 +84,26 @@ export class PerfilService {
         )
       );
   }
+
+  cambiarTipoCliente(esPremium: boolean): Observable<PerfilResponse> {
+    return this.http
+      .get<RespuestaTokenCsrf>(
+        `${environment.apiUrl}/usuarios/csrf`,
+        { withCredentials: true }
+      )
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.put<PerfilResponse>(
+            `${environment.apiUrl}/cliente/tipo`,
+            { esPremium },
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
+  }
 }

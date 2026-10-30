@@ -27,6 +27,7 @@ import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.services.ClienteService;
+import es.uclm.esibuy.backend.services.PerfilService;
 import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.SesionService;
 import es.uclm.esibuy.backend.services.VendedorService;
@@ -52,6 +53,9 @@ class ProductoControllerHU16Tests {
 
     @MockitoBean
     private ClienteService clienteService;
+
+    @MockitoBean
+    private PerfilService perfilService;
 
     @MockitoBean
     private SesionService sesionService;

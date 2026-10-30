@@ -181,4 +181,27 @@ class AdministradorServiceTests {
 		assertEquals("87654321B", cliente.getDniNif());
 		assertEquals(LocalDate.of(2000, 2, 2), cliente.getFechaNacimiento());
 	}
+
+	@Test
+	void permiteCambiarElTipoDeCuentaDelCliente() {
+		Cliente cliente = new Cliente();
+		cliente.setId("cliente-premium");
+		cliente.setNombre("Ana");
+		cliente.setApellidos("García");
+		cliente.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+		cliente.setEsPremium(false);
+		when(usuarioDAO.findById("cliente-premium")).thenReturn(Optional.of(cliente));
+		when(usuarioDAO.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		AdministradorService service = new AdministradorService(
+				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
+				new PasswordPolicy(), VALIDATOR, sesionService);
+		ModificarUsuarioRequest request = new ModificarUsuarioRequest(
+				"Ana", "García", null, null, null,
+				LocalDate.of(1990, 1, 1), null, null, true);
+
+		service.modificarUsuario("cliente-premium", request);
+
+		assertEquals(true, cliente.isEsPremium());
+	}
 }
