@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -6,10 +7,6 @@ import { environment } from '../../../environments/environment';
 export interface RespuestaInicioSesion {
   email: string;
   role: 'ADMIN' | 'CLIENTE' | 'VENDEDOR';
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({ providedIn: 'root' })

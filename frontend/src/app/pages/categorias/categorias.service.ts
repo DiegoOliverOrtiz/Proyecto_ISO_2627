@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -18,10 +19,6 @@ export interface CrearCategoriaRequest {
 export interface ModificarCategoriaRequest {
   nombre: string;
   descripcion: string;
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({

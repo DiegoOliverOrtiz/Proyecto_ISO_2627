@@ -4,6 +4,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../login/auth.service';
+import { CarritoService } from '../carrito/carrito.service';
 import { FiltrosCatalogo, ProductoCatalogo, ProductoService } from './producto.service';
 
 @Component({
@@ -18,6 +19,13 @@ export class PanelCliente implements OnInit {
   private readonly servicioAutenticacion = inject(AuthService);
   private readonly enrutador = inject(Router);
   private readonly servicioProductos = inject(ProductoService);
+  private readonly servicioCarrito = inject(CarritoService);
+
+  readonly anadiendoProducto = signal<string | null>(null);
+  readonly productoConMensaje = signal<string | null>(null);
+  readonly exitoCarrito = signal('');
+  readonly errorCarrito = signal('');
+  readonly importeCarrito = signal<number | null>(null);
 
   readonly cerrandoSesion = signal(false);
   readonly mensajeError = signal('');
@@ -363,6 +371,81 @@ export class PanelCliente implements OnInit {
   /* =========================================================
      SELECTOR DE CANTIDAD
      ========================================================= */
+
+  anadirAlCarrito(producto: ProductoCatalogo, cantidad: number): void {
+    if (this.anadiendoProducto() !== null) return;
+    this.productoConMensaje.set(producto.id);
+    this.exitoCarrito.set('');
+    this.errorCarrito.set('');
+    this.importeCarrito.set(null);
+
+    if (!Number.isSafeInteger(cantidad) || cantidad <= 0) {
+      this.errorCarrito.set('La cantidad debe ser un número entero mayor que cero.');
+      return;
+    }
+    if (!this.puedeConsultarDetalle(producto)) {
+      this.errorCarrito.set('Este producto solo está disponible para clientes Premium.');
+      return;
+    }
+    if (!producto.esVisible) {
+      this.errorCarrito.set('El producto ya no está disponible.');
+      return;
+    }
+    if (cantidad > producto.stock) {
+      this.errorCarrito.set('No hay stock suficiente para la cantidad solicitada.');
+      return;
+    }
+
+    this.anadiendoProducto.set(producto.id);
+    this.servicioCarrito.anadirProducto(producto.id, cantidad).subscribe({
+      next: (carrito) => {
+        this.anadiendoProducto.set(null);
+        this.exitoCarrito.set('Producto añadido al carrito.');
+        this.importeCarrito.set(carrito.importe);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.anadiendoProducto.set(null);
+        this.errorCarrito.set(this.mensajeErrorCarrito(error));
+        if (error.status === 401) this.irALogin();
+        if (error.status === 403) {
+          // La seguridad actual también responde 403 cuando no hay sesión.
+          this.servicioAutenticacion.obtenerSesionActual().subscribe({
+            next: () => {},
+            error: (sesion: HttpErrorResponse) => {
+              if (sesion.status === 401 || sesion.status === 403) this.irALogin();
+            }
+          });
+        }
+      }
+    });
+  }
+
+  private irALogin(): void {
+    void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+  }
+
+  private mensajeErrorCarrito(error: HttpErrorResponse): string {
+    if (error.status === 0) return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
+    if (error.status === 401) return 'Tu sesión ha caducado. Inicia sesión de nuevo.';
+    // Solo se muestran mensajes funcionales conocidos, nunca detalles internos.
+    const mensajesPermitidos = new Set([
+      'La cantidad debe ser mayor que cero.',
+      'El producto ya no está disponible.',
+      'Un producto del carrito ya no está disponible.',
+      'No hay stock suficiente para la cantidad total solicitada.',
+      'No hay stock suficiente para un producto del carrito.',
+      'Este producto solo está disponible para clientes Premium.',
+      'Un producto del carrito solo está disponible para clientes Premium.',
+      'Un producto del carrito no tiene un precio disponible.'
+    ]);
+    const mensaje = error.error?.error;
+    if ([400, 403, 404].includes(error.status) && mensajesPermitidos.has(mensaje)) return mensaje;
+    if (error.status === 404) return 'El producto ya no está disponible o ha sido eliminado.';
+    if (error.status === 403) return 'No tienes permiso para añadir el producto. Comprueba tu sesión e inténtalo de nuevo.';
+    if (error.status === 400) return 'No se pudo añadir el producto. Revisa la cantidad y la disponibilidad.';
+    if (error.status === 409) return 'El carrito se ha modificado. Inténtalo de nuevo.';
+    return 'No se pudo añadir el producto al carrito. Inténtalo de nuevo.';
+  }
 
   reducirCantidad(): void {
 

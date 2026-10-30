@@ -55,7 +55,8 @@
   text-decoration: none;
 }
 
-.profile-icon {
+.profile-icon,
+.cart-icon {
   width: 1.15rem;
   height: 1.15rem;
   fill: none;
@@ -121,6 +122,29 @@
   background: #fff;
 }
 
+.product-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.product-actions .secondary-button {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-actions button {
+  min-height: 2.75rem;
+}
+
+.catalog-cart-button {
+  display: grid;
+  flex: 0 0 2.75rem;
+  padding: 0;
+  place-items: center;
+}
+
 .status-message {
   display: block;
   margin: 1rem 0;
@@ -171,6 +195,10 @@
 }
 
 .product-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 1rem;
   box-shadow: 0 3px 12px rgba(23, 48, 66, .05);
 }

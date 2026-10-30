@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -38,10 +39,6 @@ export interface ModificarPerfilRequest {
   fechaNacimiento?: string | null;
   sede?: string | null;
   categoriaId?: string | null;
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({ providedIn: 'root' })

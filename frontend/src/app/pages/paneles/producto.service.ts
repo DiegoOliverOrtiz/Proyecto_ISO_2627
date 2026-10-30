@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -66,10 +67,6 @@ export interface CrearProductoResponse {
   descuento: number;
   descuentoPremium: number;
   imagen: string | null;
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({ providedIn: 'root' })

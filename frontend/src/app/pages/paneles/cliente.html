@@ -366,17 +366,42 @@
             }
 
 
-            <button
-              class="secondary-button"
-              type="button"
-              [disabled]="
-                !puedeConsultarDetalle(producto) ||
-                cargandoDetalle()
-              "
-              (click)="verDetalle(producto)"
-            >
-              Ver detalle
-            </button>
+            @if (productoConMensaje() === producto.id) {
+              @if (errorCarrito()) {
+                <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
+              }
+              @if (exitoCarrito()) {
+                <output class="status-message" role="status">
+                  {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
+                </output>
+              }
+            }
+
+            <div class="product-actions">
+              <button
+                class="secondary-button"
+                type="button"
+                [disabled]="!puedeConsultarDetalle(producto) || cargandoDetalle()"
+                (click)="verDetalle(producto)"
+              >
+                Ver detalle
+              </button>
+              <button
+                class="primary-button catalog-cart-button"
+                type="button"
+                aria-label="Añadir al carrito"
+                title="Añadir al carrito"
+                [disabled]="!puedeConsultarDetalle(producto) || !producto.esVisible || producto.stock <= 0 || anadiendoProducto() !== null"
+                [attr.aria-busy]="anadiendoProducto() === producto.id"
+                (click)="anadirAlCarrito(producto, 1)"
+              >
+                <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 3h2l3 12h11l2-8H6"></path>
+                  <circle cx="9" cy="20" r="1"></circle>
+                  <circle cx="18" cy="20" r="1"></circle>
+                </svg>
+              </button>
+            </div>
 
           </li>
 
@@ -646,7 +671,7 @@
               <button
                 type="button"
                 aria-label="Reducir cantidad"
-                [disabled]="cantidadDetalle() <= 1"
+                [disabled]="cantidadDetalle() <= 1 || anadiendoProducto() !== null"
                 (click)="reducirCantidad()"
               >
                 −
@@ -669,7 +694,7 @@
                 aria-label="Aumentar cantidad"
                 [disabled]="
                   cantidadDetalle() >=
-                  producto.stock
+                  producto.stock || anadiendoProducto() !== null
                 "
                 (click)="
                   aumentarCantidad(
@@ -683,26 +708,17 @@
             </div>
 
 
-            <!--
-              La funcionalidad de carrito todavía
-              no está conectada porque en los archivos
-              proporcionados no existe el servicio
-              correspondiente.
-            -->
-
             <button
               class="
                 primary-button
                 detail-cart-button
               "
               type="button"
-              disabled
-              title="
-                La integración con la cesta
-                todavía no está implementada
-              "
+              [disabled]="anadiendoProducto() !== null || !puedeConsultarDetalle(producto) || !producto.esVisible"
+              [attr.aria-busy]="anadiendoProducto() === producto.id"
+              (click)="anadirAlCarrito(producto, cantidadDetalle())"
             >
-              Añadir al carrito
+              {{ anadiendoProducto() === producto.id ? 'Añadiendo...' : 'Añadir al carrito' }}
             </button>
 
           </div>
@@ -718,6 +734,17 @@
 
         }
 
+
+        @if (productoConMensaje() === producto.id) {
+          @if (errorCarrito()) {
+            <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
+          }
+          @if (exitoCarrito()) {
+            <output class="status-message" role="status">
+              {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
+            </output>
+          }
+        }
 
         <!-- =================================================
              STOCK BAJO
