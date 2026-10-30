@@ -49,4 +49,12 @@ public class Carrito {
         actualizado.productos.put(idProducto, cantidad);
         return actualizado;
     }
+
+    public Carrito sinProducto(String idProducto) {
+        Carrito actualizado = new Carrito(id);
+        actualizado.version = version;
+        actualizado.productos = new LinkedHashMap<>(productos);
+        actualizado.productos.remove(idProducto);
+        return actualizado;
+    }
 }

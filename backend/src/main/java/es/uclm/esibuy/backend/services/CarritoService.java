@@ -41,6 +41,118 @@ public class CarritoService {
         return actualizarCarrito(idProducto, cantidad).respuesta();
     }
 
+    public CarritoResponse consultarCarrito() {
+        Cliente cliente = obtenerClienteAutenticado();
+        return presentarCarrito(carritoDAO.findById(cliente.getId())
+                .orElseGet(() -> new Carrito(cliente.getId())), cliente);
+    }
+
+    public CarritoResponse modificarCantidad(String idProducto, int cantidad) {
+        return modificarLinea(idProducto, cantidad);
+    }
+
+    public CarritoResponse eliminarProducto(String idProducto) {
+        return modificarLinea(idProducto, null);
+    }
+
+    private CarritoResponse modificarLinea(String idProducto, Integer cantidad) {
+        Cliente cliente = obtenerClienteAutenticado();
+        if (idProducto == null || idProducto.isBlank()) {
+            throw new IllegalArgumentException("El producto es obligatorio.");
+        }
+        if (cantidad != null && cantidad <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
+        }
+        for (int intento = 0; intento < 3; intento++) {
+            Carrito carrito = carritoDAO.findById(cliente.getId())
+                    .orElseThrow(ProductoNoEncontradoException::new);
+            if (!carrito.getProductos().containsKey(idProducto)) {
+                throw new ProductoNoEncontradoException();
+            }
+            Producto productoModificado = null;
+            if (cantidad != null) {
+                productoModificado = productoDAO.findById(idProducto)
+                        .orElseThrow(ProductoNoEncontradoException::new);
+                if (productoModificado.isSoloPremium() && !cliente.isEsPremium()) {
+                    throw new AccessDeniedException("Este producto solo está disponible para clientes Premium.");
+                }
+                String aviso = comprobarDisponibilidad(productoModificado, cantidad, cliente);
+                if (aviso != null) {
+                    throw new IllegalArgumentException(aviso);
+                }
+            }
+            Carrito actualizado = cantidad == null ? carrito.sinProducto(idProducto)
+                    : carrito.conCantidad(idProducto, cantidad);
+            CarritoResponse respuesta = presentarCarrito(actualizado, cliente, productoModificado);
+            try {
+                carritoDAO.save(actualizado);
+                return respuesta;
+            } catch (OptimisticLockingFailureException | DuplicateKeyException exception) {
+                if (intento == 2) {
+                    throw exception;
+                }
+            }
+        }
+        throw new IllegalStateException("No se ha podido actualizar el carrito.");
+    }
+
+    private CarritoResponse presentarCarrito(Carrito carrito, Cliente cliente) {
+        return presentarCarrito(carrito, cliente, null);
+    }
+
+    private CarritoResponse presentarCarrito(Carrito carrito, Cliente cliente, Producto productoModificado) {
+        List<LineaCarritoResponse> lineas = new ArrayList<>();
+        BigDecimal importe = BigDecimal.ZERO.setScale(2);
+        for (var entrada : carrito.getProductos().entrySet()) {
+            Producto producto = productoModificado != null && entrada.getKey().equals(productoModificado.getId())
+                    ? productoModificado : productoDAO.findById(entrada.getKey()).orElse(null);
+            String aviso = comprobarDisponibilidad(producto, entrada.getValue(), cliente);
+            LineaCarritoResponse linea;
+            if (aviso == null) {
+                linea = calcularLinea(producto, entrada.getValue(), cliente);
+                importe = importe.add(linea.subtotal());
+            } else {
+                linea = new LineaCarritoResponse(entrada.getKey(), entrada.getValue(), null, null,
+                        producto == null ? "Producto eliminado" : producto.getNombre(),
+                        producto == null ? null : producto.getStock(), false, aviso);
+            }
+            lineas.add(linea);
+        }
+        return new CarritoResponse(List.copyOf(lineas), importe);
+    }
+
+    private String comprobarDisponibilidad(Producto producto, int cantidad, Cliente cliente) {
+        if (producto == null) return "El producto ha sido eliminado.";
+        if (!producto.isEsVisible()) return "El producto ya no está disponible.";
+        if (producto.isSoloPremium() && !cliente.isEsPremium()) {
+            return "Este producto solo está disponible para clientes Premium.";
+        }
+        if (producto.getStock() <= 0) return "El producto está agotado.";
+        if (cantidad <= 0 || cantidad > producto.getStock()) {
+            return "No hay stock suficiente para la cantidad solicitada.";
+        }
+        Double precio = producto.getPrecio();
+        if (precio == null || !Double.isFinite(precio) || precio < 0) {
+            return "Un producto del carrito no tiene un precio disponible.";
+        }
+        Double precioAplicable = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
+        if (precioAplicable == null || !Double.isFinite(precioAplicable) || precioAplicable < 0) {
+            return "Un producto del carrito no tiene un precio disponible.";
+        }
+        return null;
+    }
+
+    private LineaCarritoResponse calcularLinea(Producto producto, int cantidad, Cliente cliente) {
+        Double precio = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
+        if (precio == null || !Double.isFinite(precio) || precio < 0) {
+            throw new IllegalArgumentException("Un producto del carrito no tiene un precio disponible.");
+        }
+        BigDecimal precioUnitario = BigDecimal.valueOf(precio).setScale(2);
+        BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
+        return new LineaCarritoResponse(producto.getId(), cantidad, precioUnitario, subtotal,
+                producto.getNombre(), producto.getStock(), true, null);
+    }
+
     private Resultado actualizarCarrito(String idProducto, int cantidad) {
         Cliente cliente = obtenerClienteAutenticado();
         if (cantidad <= 0) {
@@ -100,14 +212,9 @@ public class CarritoService {
             if (entrada.getValue() <= 0 || entrada.getValue() > producto.getStock()) {
                 throw new IllegalArgumentException("No hay stock suficiente para un producto del carrito.");
             }
-            Double precio = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
-            if (precio == null || !Double.isFinite(precio) || precio < 0) {
-                throw new IllegalArgumentException("Un producto del carrito no tiene un precio disponible.");
-            }
-            BigDecimal precioUnitario = BigDecimal.valueOf(precio).setScale(2);
-            BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(entrada.getValue()));
-            lineas.add(new LineaCarritoResponse(producto.getId(), entrada.getValue(), precioUnitario, subtotal));
-            importe = importe.add(subtotal);
+            LineaCarritoResponse linea = calcularLinea(producto, entrada.getValue(), cliente);
+            lineas.add(linea);
+            importe = importe.add(linea.subtotal());
         }
         return new CarritoResponse(List.copyOf(lineas), importe);
     }
