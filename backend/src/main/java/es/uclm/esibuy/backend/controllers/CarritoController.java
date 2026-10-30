@@ -44,4 +44,9 @@ public class CarritoController {
     public CarritoResponse eliminarProducto(@PathVariable String productoId) {
         return carritoService.eliminarProducto(productoId);
     }
+
+    @DeleteMapping
+    public CarritoResponse descartarCarrito() {
+        return carritoService.descartarCarrito();
+    }
 }

@@ -55,6 +55,26 @@ public class CarritoService {
         return modificarLinea(idProducto, null);
     }
 
+    public CarritoResponse descartarCarrito() {
+        Cliente cliente = obtenerClienteAutenticado();
+        for (int intento = 0; intento < 3; intento++) {
+            Carrito carrito = carritoDAO.findById(cliente.getId()).orElse(null);
+            if (carrito == null) {
+                return presentarCarrito(new Carrito(cliente.getId()), cliente);
+            }
+            Carrito vacio = carrito.vacio();
+            try {
+                carritoDAO.save(vacio);
+                return presentarCarrito(vacio, cliente);
+            } catch (OptimisticLockingFailureException | DuplicateKeyException exception) {
+                if (intento == 2) {
+                    throw exception;
+                }
+            }
+        }
+        throw new IllegalStateException("No se ha podido actualizar el carrito.");
+    }
+
     private CarritoResponse modificarLinea(String idProducto, Integer cantidad) {
         Cliente cliente = obtenerClienteAutenticado();
         if (idProducto == null || idProducto.isBlank()) {

@@ -57,4 +57,10 @@ public class Carrito {
         actualizado.productos.remove(idProducto);
         return actualizado;
     }
+
+    public Carrito vacio() {
+        Carrito actualizado = new Carrito(id);
+        actualizado.version = version;
+        return actualizado;
+    }
 }
