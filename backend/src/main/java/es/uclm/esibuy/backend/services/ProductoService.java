@@ -127,7 +127,7 @@ public class ProductoService {
                 producto.getNombre(),
                 producto.getCategoria(),
                 producto.getStock(),
-                calcularPrecioFinal(producto.getPrecio(), descuentoAplicado),
+                calcularPrecioParaCliente(producto, clientePremium),
                 producto.getPrecio(),
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
@@ -138,6 +138,10 @@ public class ProductoService {
                 producto.isEsVisible(),
                 producto.isSoloPremium(),
                 !producto.isSoloPremium() || clientePremium);
+    }
+
+    static Double calcularPrecioParaCliente(Producto producto, boolean clientePremium) {
+        return calcularPrecioFinal(producto.getPrecio(), obtenerDescuentoAplicable(producto, clientePremium));
     }
 
     private static int obtenerDescuentoAplicable(Producto producto, boolean clientePremium) {
