@@ -22,7 +22,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
-import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
+import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
+import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.services.ClienteService;
@@ -157,27 +158,134 @@ class ProductoControllerHU16Tests {
 
     @Test
     void clienteConsultaLosProductosActivosConElEmailDeLaSesion() throws Exception {
-        when(productoService.consultarProductosParaClientes(EMAIL_CLIENTE))
-                .thenReturn(List.of(new ConsultarProductosResponse(
+        when(productoService.consultarProductosParaClientes(
+                EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null)))
+                .thenReturn(List.of(new ProductoCatalogoResponse(
                         "producto-1",
                         "Teclado",
                         "Informática",
                         4,
-                        null,
+                        49.99,
                         49.99,
                         0,
                         0,
-                        true,
+                        0,
+                        "Descripción",
                         null,
-                        false)));
+                        "Tienda",
+                        true,
+                        false,
+                        true)));
 
         mockMvc.perform(get("/cliente/productos")
                         .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("producto-1"))
-                .andExpect(jsonPath("$[0].esVisible").value(true));
+                .andExpect(jsonPath("$[0].esVisible").value(true))
+                .andExpect(jsonPath("$[0].precio").value(49.99));
 
-        verify(productoService).consultarProductosParaClientes(EMAIL_CLIENTE);
+        verify(productoService).consultarProductosParaClientes(
+                EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null));
+    }
+
+    @Test
+    void catalogoAceptaFiltrosCombinadosEnElEndpointDeProductos() throws Exception {
+        FiltroProductosRequest filtros = new FiltroProductosRequest("teclado.*", "Informática", 10.0, 50.0, true);
+        when(productoService.consultarProductosParaClientes(EMAIL_CLIENTE, filtros))
+                .thenReturn(List.of(new ProductoCatalogoResponse(
+                        "producto-premium",
+                        "Teclado",
+                        "Informática",
+                        4,
+                        40.0,
+                        50.0,
+                        0,
+                        20,
+                        20,
+                        null,
+                        null,
+                        "Tienda",
+                        true,
+                        true,
+                        false)));
+
+        mockMvc.perform(get("/cliente/productos")
+                        .param("nombre", "teclado.*")
+                        .param("categoria", "Informática")
+                        .param("precioMinimo", "10.0")
+                        .param("precioMaximo", "50.0")
+                        .param("disponible", "true")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].soloPremium").value(true))
+                .andExpect(jsonPath("$[0].puedeConsultarDetalle").value(false))
+                .andExpect(jsonPath("$[0].precio").value(40.0));
+
+        verify(productoService).consultarProductosParaClientes(EMAIL_CLIENTE, filtros);
+    }
+
+    @Test
+    void rechazaPreciosNegativosSinConsultarElServicio() throws Exception {
+        mockMvc.perform(get("/cliente/productos")
+                        .param("precioMinimo", "-1")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(productoService);
+    }
+
+    @Test
+    void rechazaRangoDePrecioInvertido() throws Exception {
+        when(productoService.consultarProductosParaClientes(
+                EMAIL_CLIENTE, new FiltroProductosRequest(null, null, 20.0, 10.0, null)))
+                .thenThrow(new IllegalArgumentException("El precio mínimo no puede superar el precio máximo."));
+
+        mockMvc.perform(get("/cliente/productos")
+                        .param("precioMinimo", "20")
+                        .param("precioMaximo", "10")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void clienteInactivoRecibeForbiddenAlConsultarElCatalogo() throws Exception {
+        when(productoService.consultarProductosParaClientes(
+                EMAIL_CLIENTE, new FiltroProductosRequest(null, null, null, null, null)))
+                .thenThrow(new AccessDeniedException("Solo un cliente activo puede consultar los productos."));
+
+        mockMvc.perform(get("/cliente/productos")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void clienteInactivoRecibeForbiddenAlConsultarElDetalle() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-1"))
+                .thenThrow(new AccessDeniedException("Solo un cliente activo puede consultar los productos."));
+
+        mockMvc.perform(get("/cliente/productos/producto-1")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unClienteNormalNoPuedeConsultarElDetallePremiumPorApi() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-premium"))
+                .thenThrow(new AccessDeniedException("Este producto solo está disponible para clientes Premium."));
+
+        mockMvc.perform(get("/cliente/productos/producto-premium")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void detalleDeProductoInexistenteODesactivadoDevuelve404() throws Exception {
+        when(productoService.consultarDetalleParaCliente(EMAIL_CLIENTE, "producto-inactivo"))
+                .thenThrow(new ProductoNoEncontradoException());
+
+        mockMvc.perform(get("/cliente/productos/producto-inactivo")
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isNotFound());
     }
 
     @Test

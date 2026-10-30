@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -15,6 +15,32 @@ export interface ProductoPropio {
   esVisible: boolean;
   imagen: string | null;
   soloPremium: boolean;
+}
+
+export interface FiltrosCatalogo {
+  nombre?: string;
+  categoria?: string;
+  precioMinimo?: number;
+  precioMaximo?: number;
+  disponible?: boolean;
+}
+
+export interface ProductoCatalogo {
+  id: string;
+  nombre: string;
+  categoria: string;
+  stock: number;
+  precio: number | null;
+  precioOriginal: number | null;
+  descuento: number;
+  descuentoPremium: number;
+  descuentoAplicado: number;
+  descripcion: string | null;
+  imagen: string | null;
+  vendedor: string | null;
+  esVisible: boolean;
+  soloPremium: boolean;
+  puedeConsultarDetalle?: boolean;
 }
 
 export interface CrearProductoRequest {
@@ -49,6 +75,32 @@ interface RespuestaTokenCsrf {
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
   private readonly http = inject(HttpClient);
+
+  consultarCatalogo(filtros: FiltrosCatalogo = {}): Observable<ProductoCatalogo[]> {
+    let params = new HttpParams();
+    if (filtros.nombre) params = params.set('nombre', filtros.nombre);
+    if (filtros.categoria) params = params.set('categoria', filtros.categoria);
+    if (filtros.precioMinimo !== undefined) {
+      params = params.set('precioMinimo', filtros.precioMinimo);
+    }
+    if (filtros.precioMaximo !== undefined) {
+      params = params.set('precioMaximo', filtros.precioMaximo);
+    }
+    if (filtros.disponible !== undefined) {
+      params = params.set('disponible', filtros.disponible);
+    }
+    return this.http.get<ProductoCatalogo[]>(`${environment.apiUrl}/cliente/productos`, {
+      params,
+      withCredentials: true
+    });
+  }
+
+  consultarDetalleProducto(id: string): Observable<ProductoCatalogo> {
+    return this.http.get<ProductoCatalogo>(
+      `${environment.apiUrl}/cliente/productos/${encodeURIComponent(id)}`,
+      { withCredentials: true }
+    );
+  }
 
   consultarProductosPropios(): Observable<ProductoPropio[]> {
     return this.http.get<ProductoPropio[]>(

@@ -1,0 +1,747 @@
+<header class="client-header">
+  <h1>ESIBuy</h1>
+
+  <h2>Catálogo de productos</h2>
+
+  <nav
+    class="client-actions"
+    aria-label="Cuenta"
+  >
+    <a
+      class="profile-link"
+      routerLink="/perfil"
+      aria-label="Abrir mi perfil"
+    >
+      <svg
+        class="profile-icon"
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        focusable="false"
+      >
+        <circle
+          cx="12"
+          cy="8"
+          r="3.5"
+        ></circle>
+
+        <path
+          d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"
+        ></path>
+      </svg>
+
+      Mi perfil
+    </a>
+
+    <button
+      class="logout-button"
+      type="button"
+      [disabled]="cerrandoSesion()"
+      (click)="cerrarSesion()"
+    >
+      {{
+        cerrandoSesion()
+          ? 'Cerrando sesión...'
+          : 'Cerrar sesión'
+      }}
+    </button>
+  </nav>
+</header>
+
+
+<main class="client-content">
+
+  <!-- =====================================================
+       MENSAJE DE ERROR GENERAL
+       ===================================================== -->
+
+  @if (mensajeError()) {
+    <p
+      class="error-message"
+      role="alert"
+    >
+      {{ mensajeError() }}
+    </p>
+  }
+
+
+  <!-- =====================================================
+       ESTADO DEL CATÁLOGO
+       ===================================================== -->
+
+  @if (cargandoCatalogo()) {
+
+    <output
+      class="status-message"
+      aria-live="polite"
+    >
+      Cargando productos...
+    </output>
+
+  } @else if (errorCatalogo()) {
+
+    <p
+      class="status-message error-message"
+      role="alert"
+    >
+      {{ errorCatalogo() }}
+    </p>
+
+    <button
+      class="secondary-button"
+      type="button"
+      (click)="cargarProductos()"
+    >
+      Reintentar
+    </button>
+
+  } @else if (
+    productos().length === 0 &&
+    !hayFiltrosActivos()
+  ) {
+
+    <p class="status-message">
+      Todavía no hay productos disponibles.
+    </p>
+
+  } @else {
+
+    <!-- ===================================================
+         FILTROS
+         =================================================== -->
+
+    <form
+      class="catalog-filters"
+      role="search"
+      aria-label="Buscar y filtrar productos"
+      (submit)="aplicarFiltros($event)"
+    >
+
+      <label>
+        Buscar por nombre
+
+        <input
+          type="search"
+          autocomplete="off"
+          [value]="terminoBusqueda()"
+          (input)="actualizarBusqueda($event)"
+        />
+      </label>
+
+
+      <label>
+        Categoría
+
+        <select
+          [value]="categoriaFiltro()"
+          (change)="actualizarCategoria($event)"
+        >
+          <option value="">
+            Todas
+          </option>
+
+          @for (
+            categoria of categoriasDisponibles();
+            track categoria
+          ) {
+            <option [value]="categoria">
+              {{ categoria }}
+            </option>
+          }
+        </select>
+      </label>
+
+
+      <label>
+        Precio mínimo (€)
+
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          [value]="precioMinimo()"
+          (input)="actualizarPrecioMinimo($event)"
+        />
+      </label>
+
+
+      <label>
+        Precio máximo (€)
+
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          [value]="precioMaximo()"
+          (input)="actualizarPrecioMaximo($event)"
+        />
+      </label>
+
+
+      <label>
+        Disponibilidad
+
+        <select
+          [value]="disponibilidadFiltro()"
+          (change)="actualizarDisponibilidad($event)"
+        >
+          <option value="todos">
+            Todos
+          </option>
+
+          <option value="disponibles">
+            Con stock
+          </option>
+
+          <option value="agotados">
+            Agotados
+          </option>
+        </select>
+      </label>
+
+
+      <button
+        class="secondary-button"
+        type="submit"
+        [disabled]="cargandoCatalogo()"
+      >
+        Aplicar filtros
+      </button>
+
+
+      <button
+        class="secondary-button"
+        type="button"
+        [disabled]="!hayFiltrosActivos()"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+
+    </form>
+
+
+    <!-- ===================================================
+         RESULTADO DEL CATÁLOGO
+         =================================================== -->
+
+    @if (productos().length === 0) {
+
+      <p class="status-message">
+        No se encontraron productos con esos filtros.
+      </p>
+
+    } @else {
+
+      <ul
+        class="product-grid"
+        aria-label="Productos"
+      >
+
+        @for (
+          producto of productos();
+          track producto.id
+        ) {
+
+          <li
+            class="product-card"
+            [class.product-blocked]="
+              !puedeConsultarDetalle(producto)
+            "
+          >
+
+            @if (producto.imagen) {
+
+              <img
+                class="product-image"
+                [src]="urlImagen(producto.imagen)"
+                [alt]="producto.nombre"
+                width="320"
+                height="180"
+              />
+
+            }
+
+            <div class="product-heading">
+
+              <h3>{{ producto.nombre }}</h3>
+
+              @if (producto.soloPremium) {
+
+                <span class="premium-badge">
+                  Premium
+                </span>
+
+              }
+
+            </div>
+
+
+            <p class="product-category">
+              {{ producto.categoria }}
+            </p>
+
+
+            <p class="product-seller">
+              Vendedor:
+              {{ producto.vendedor }}
+            </p>
+
+
+            @if (
+              producto.precioOriginal !== null &&
+              producto.precio !== null &&
+              producto.precioOriginal > producto.precio
+            ) {
+
+              <p class="original-price">
+                Antes:
+                {{
+                  producto.precioOriginal
+                    | number:'1.2-2'
+                }}
+                €
+              </p>
+
+            }
+
+
+            <p class="product-price">
+              {{
+                producto.precio
+                  | number:'1.2-2'
+              }}
+              €
+            </p>
+
+
+            @if (producto.descuento > 0) {
+
+              <p>
+                Descuento:
+                {{ producto.descuento }}
+                %
+              </p>
+
+            }
+
+
+            @if (
+              producto.descuentoPremium > 0
+            ) {
+
+              <p>
+                Descuento Premium:
+                {{ producto.descuentoPremium }}
+                %
+              </p>
+
+            }
+
+
+            <p class="product-stock">
+              {{
+                producto.stock > 0
+                  ? 'Disponible'
+                  : 'Agotado'
+              }}
+              · Stock:
+              {{ producto.stock }}
+            </p>
+
+
+            @if (
+              !puedeConsultarDetalle(producto)
+            ) {
+
+              <p
+                class="premium-message"
+                role="status"
+              >
+                Solo clientes Premium pueden consultar
+                este producto. Hazte Premium para acceder
+                a productos exclusivos y ver sus
+                descuentos Premium.
+              </p>
+
+            }
+
+
+            <button
+              class="secondary-button"
+              type="button"
+              [disabled]="
+                !puedeConsultarDetalle(producto) ||
+                cargandoDetalle()
+              "
+              (click)="verDetalle(producto)"
+            >
+              Ver detalle
+            </button>
+
+          </li>
+
+        }
+
+      </ul>
+
+    }
+
+  }
+
+
+  <!-- =====================================================
+       CARGA DEL DETALLE
+       ===================================================== -->
+
+  @if (cargandoDetalle()) {
+
+    <output
+      class="status-message"
+      aria-live="polite"
+    >
+      Cargando detalle...
+    </output>
+
+  }
+
+
+  <!-- =====================================================
+       ERROR DEL DETALLE
+       ===================================================== -->
+
+  @if (errorDetalle()) {
+
+    <p
+      class="status-message error-message"
+      role="alert"
+    >
+      {{ errorDetalle() }}
+    </p>
+
+  }
+
+
+  <!-- =====================================================
+       MODAL DE DETALLE
+       ===================================================== -->
+
+  @if (detalle(); as producto) {
+
+    <section
+      class="product-detail"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-title"
+    >
+
+      <!-- ===================================================
+           CABECERA DEL MODAL
+           =================================================== -->
+
+      <div class="detail-heading">
+
+        <div class="detail-title-block">
+
+          <h2 id="detail-title">
+            {{ producto.nombre }}
+          </h2>
+
+
+          @if (producto.descripcion) {
+
+            <p class="detail-description">
+              {{ producto.descripcion }}
+            </p>
+
+          }
+
+        </div>
+
+
+        <button
+          class="detail-close"
+          type="button"
+          aria-label="Cerrar detalle"
+          (click)="cerrarDetalle()"
+        >
+          <span aria-hidden="true">
+            ×
+          </span>
+        </button>
+
+      </div>
+
+
+      <!-- ===================================================
+           COLUMNA IZQUIERDA
+           =================================================== -->
+
+      <div class="detail-product-visual">
+
+        @if (producto.imagen) {
+
+          <div class="detail-image-frame">
+
+            <img
+              class="detail-image"
+              [src]="urlImagen(producto.imagen)"
+              [alt]="producto.nombre"
+              width="520"
+              height="320"
+            />
+
+          </div>
+
+        }
+
+
+        <!-- PRECIO -->
+
+        <div class="detail-price-under-image">
+
+          @if (
+            producto.precioOriginal !== null &&
+            producto.precio !== null &&
+            producto.precioOriginal > producto.precio
+          ) {
+
+            <p class="detail-price-original">
+              Antes:
+              {{
+                producto.precioOriginal
+                  | number:'1.2-2'
+              }}
+              €
+            </p>
+
+          }
+
+
+          <p class="detail-price">
+            {{
+              producto.precio
+                | number:'1.2-2'
+            }}
+            €
+          </p>
+
+
+          @if (
+            producto.descuentoAplicado > 0
+          ) {
+
+            <span class="detail-discount-badge">
+              -{{ producto.descuentoAplicado }}
+              % aplicado
+            </span>
+
+          }
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================
+           COLUMNA DERECHA
+           =================================================== -->
+
+      <div class="detail-side">
+
+        <div
+          class="detail-info"
+          aria-label="Información del producto"
+        >
+
+          <div class="detail-data-card">
+
+            <span class="detail-data-label">
+              Categoría
+            </span>
+
+            <strong>
+              {{ producto.categoria }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-data-card">
+
+            <span class="detail-data-label">
+              Vendedor
+            </span>
+
+            <strong>
+              {{ producto.vendedor }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-data-card">
+
+            <span class="detail-data-label">
+              Descuento
+            </span>
+
+            <strong>
+              {{ producto.descuento }}
+              %
+            </strong>
+
+          </div>
+
+
+          <div class="detail-data-card">
+
+            <span class="detail-data-label">
+              Descuento Premium
+            </span>
+
+            <strong>
+              {{ producto.descuentoPremium }}
+              %
+            </strong>
+
+          </div>
+
+
+          <div class="detail-data-card">
+
+            <span class="detail-data-label">
+              Stock disponible
+            </span>
+
+            <strong>
+              {{ producto.stock }}
+
+              {{
+                producto.stock === 1
+                  ? 'unidad'
+                  : 'unidades'
+              }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ZONA DE COMPRA
+             ================================================= -->
+
+        @if (producto.stock > 0) {
+
+          <div
+            class="detail-purchase"
+            aria-label="Seleccionar cantidad"
+          >
+
+            <!-- SELECTOR DE CANTIDAD -->
+
+            <div class="quantity-selector">
+
+              <button
+                type="button"
+                aria-label="Reducir cantidad"
+                [disabled]="cantidadDetalle() <= 1"
+                (click)="reducirCantidad()"
+              >
+                −
+              </button>
+
+
+              <output
+                aria-live="polite"
+                [attr.aria-label]="
+                  'Cantidad seleccionada: ' +
+                  cantidadDetalle()
+                "
+              >
+                {{ cantidadDetalle() }}
+              </output>
+
+
+              <button
+                type="button"
+                aria-label="Aumentar cantidad"
+                [disabled]="
+                  cantidadDetalle() >=
+                  producto.stock
+                "
+                (click)="
+                  aumentarCantidad(
+                    producto.stock
+                  )
+                "
+              >
+                +
+              </button>
+
+            </div>
+
+
+            <!--
+              La funcionalidad de carrito todavía
+              no está conectada porque en los archivos
+              proporcionados no existe el servicio
+              correspondiente.
+            -->
+
+            <button
+              class="
+                primary-button
+                detail-cart-button
+              "
+              type="button"
+              disabled
+              title="
+                La integración con la cesta
+                todavía no está implementada
+              "
+            >
+              Añadir al carrito
+            </button>
+
+          </div>
+
+        } @else {
+
+          <p
+            class="detail-out-of-stock"
+            role="status"
+          >
+            Producto agotado
+          </p>
+
+        }
+
+
+        <!-- =================================================
+             STOCK BAJO
+             ================================================= -->
+
+        @if (
+          producto.stock > 0 &&
+          producto.stock < 5
+        ) {
+
+          <p
+            class="low-stock-notice"
+            role="status"
+          >
+            Aviso: quedan pocas unidades
+            ({{ producto.stock }}).
+          </p>
+
+        }
+
+      </div>
+
+    </section>
+
+  }
+
+</main>
