@@ -16,6 +16,7 @@ import { Administradores } from './pages/admin/administradores';
 import { CrearAdministrador } from './pages/admin/crear-administrador';
 import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
+import { Carrito } from './pages/carrito/carrito';
 
 export const routes: Routes = [
   {
@@ -78,6 +79,12 @@ export const routes: Routes = [
     data: { rol: 'ADMIN' }
   },
   
+  {
+    path: 'cliente/carrito',
+    component: Carrito,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
   {
     path: 'cliente',
     component: PanelCliente,

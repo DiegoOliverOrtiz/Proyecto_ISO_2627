@@ -1,0 +1,94 @@
+<header class="client-header">
+  <h1>ESIBuy</h1>
+  <h2>Mi carrito</h2>
+  <nav class="client-actions" aria-label="Navegación del cliente">
+    <a class="profile-link" routerLink="/cliente">Volver al catálogo</a>
+    <a class="profile-link" routerLink="/perfil">Mi perfil</a>
+  </nav>
+</header>
+
+<main class="client-content" [attr.aria-busy]="cargando() || operacion() !== null">
+  @if (error()) {
+    <p class="status-message error-message" role="alert">{{ error() }}</p>
+  }
+  @if (exito()) {
+    <output class="status-message" role="status">{{ exito() }}</output>
+  }
+  @if (cargando()) {
+    <p class="status-message" role="status">Cargando carrito...</p>
+  } @else {
+    @if (!carrito() && error()) {
+      <button class="secondary-button" type="button" (click)="cargarCarrito()">Reintentar</button>
+    }
+    @if (carrito(); as datos) {
+      @if (datos.productos.length === 0) {
+        <section class="status-message" aria-label="Carrito vacío">
+          <h3>Tu carrito está vacío</h3>
+          <p>Encuentra productos en el catálogo para preparar tu compra.</p>
+          <a class="profile-link" routerLink="/cliente">Explorar productos</a>
+        </section>
+      } @else {
+        @if (hayAvisos()) {
+          <p class="premium-message" role="status">
+            Hay productos no disponibles o cantidades que debes revisar. El total incluye únicamente las líneas disponibles.
+          </p>
+        }
+        <ul class="cart-list" aria-label="Productos del carrito">
+          @for (linea of datos.productos; track linea.productoId) {
+            <li class="product-card" [class.product-blocked]="!linea.disponible">
+              <div class="cart-product">
+                <h3>{{ linea.nombre || 'Producto ' + linea.productoId }}</h3>
+                <p>Cantidad en el carrito: {{ linea.cantidad }}</p>
+                @if (linea.stock !== null) {
+                  <p>Stock disponible: {{ linea.stock }}</p>
+                }
+                @if (!linea.disponible) {
+                  <p class="premium-message" role="status">{{ linea.aviso || 'Producto no disponible.' }}</p>
+                }
+              </div>
+              <div class="cart-prices">
+                <p>Precio por unidad:
+                  @if (linea.precioUnitario !== null) { <strong>{{ linea.precioUnitario | number:'1.2-2' }} €</strong> }
+                  @else { <span>No disponible</span> }
+                </p>
+                <p>Subtotal:
+                  @if (linea.subtotal !== null) { <strong>{{ linea.subtotal | number:'1.2-2' }} €</strong> }
+                  @else { <span>Excluido del total</span> }
+                </p>
+              </div>
+              <div class="cart-line-actions">
+                <label [for]="'cantidad-' + linea.productoId">Nueva cantidad</label>
+                <div class="quantity-selector">
+                  <button type="button" [attr.aria-label]="'Reducir cantidad de ' + (linea.nombre || linea.productoId)"
+                    [disabled]="operacion() !== null || !puedeModificar(linea) || (cantidades()[linea.productoId] ?? 0) <= 1"
+                    (click)="ajustarCantidad(linea, -1)">−</button>
+                  <input type="number" [id]="'cantidad-' + linea.productoId" min="1" [max]="linea.stock" step="1"
+                    [ngModel]="cantidades()[linea.productoId]" (ngModelChange)="cambiarCantidad(linea, $event)"
+                    (blur)="guardarCantidad(linea)" (keydown.enter)="guardarCantidad(linea)"
+                    [disabled]="operacion() !== null || !puedeModificar(linea)" />
+                  <button type="button" [attr.aria-label]="'Aumentar cantidad de ' + (linea.nombre || linea.productoId)"
+                    [disabled]="operacion() !== null || !puedeModificar(linea) || (cantidades()[linea.productoId] ?? 0) >= (linea.stock ?? 0)"
+                    (click)="ajustarCantidad(linea, 1)">+</button>
+                </div>
+                <div class="cart-actions">
+                  <button class="logout-button" type="button" [disabled]="operacion() !== null"
+                    [attr.aria-label]="'Eliminar ' + (linea.nombre || linea.productoId)"
+                    (click)="eliminarProducto(linea)">Eliminar</button>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+        <section class="cart-summary" aria-label="Resumen del carrito">
+          <p class="product-price" aria-live="polite">Total: {{ datos.importe | number:'1.2-2' }} €</p>
+          <button class="logout-button" type="button" [disabled]="operacion() !== null" (click)="descartarCarrito()">
+            {{ operacion() === 'descarte' ? 'Descartando...' : 'Descartar carrito' }}
+          </button>
+        </section>
+      }
+    }
+  }
+  @if (operacion() !== null) {
+    <p class="status-message" role="status">Actualizando carrito...</p>
+  }
+</main>

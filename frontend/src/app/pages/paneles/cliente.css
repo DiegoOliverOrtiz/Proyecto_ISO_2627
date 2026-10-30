@@ -25,15 +25,13 @@
   color: #255b4d;
 }
 
-.client-header h2 {
-  color: #173042;
-}
-
 .client-actions {
   display: flex;
   align-items: center;
   gap: .75rem;
 }
+
+.cart-access { justify-content: end; margin: 1rem 2rem; }
 
 .profile-link,
 .logout-button,
