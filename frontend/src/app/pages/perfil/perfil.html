@@ -7,6 +7,9 @@
     </div>
 
     <div class="header-actions">
+      @if (perfil()?.tipoUsuario === 'CLIENTE' && !editando()) {
+        <a class="secondary-button" routerLink="/perfil/direcciones" style="text-decoration: none;">Mis direcciones</a>
+      }
       @if (perfil() && !editando()) {
         <button class="primary-button" type="button" (click)="iniciarEdicion()">Editar perfil</button>
       }

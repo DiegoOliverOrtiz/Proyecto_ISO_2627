@@ -18,6 +18,8 @@ import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
 
+import { Direcciones } from './pages/direcciones/direcciones';
+
 export const routes: Routes = [
   {
     path: '',
@@ -39,6 +41,13 @@ export const routes: Routes = [
     path: 'perfil',
     component: Perfil,
     canActivate: [autenticadoGuard]
+  },
+  // Nueva ruta de direcciones exclusiva para clientes
+  {
+    path: 'perfil/direcciones',
+    component: Direcciones,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
   },
   {
     path: 'admin',
