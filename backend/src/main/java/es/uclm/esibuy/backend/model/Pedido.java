@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceCreator;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -31,6 +32,14 @@ public class Pedido {
     public Pedido(String clienteId, List<LineaPedido> lineas, EstadoPedido estado,
             BigDecimal importe, Instant fechaCreacion, Instant fechaPago,
             Direccion direccionEnvio, String metodoPagoId) {
+        this(null, clienteId, lineas, estado, importe, fechaCreacion, fechaPago, direccionEnvio, metodoPagoId);
+    }
+
+    @PersistenceCreator
+    public Pedido(String id, String clienteId, List<LineaPedido> lineas, EstadoPedido estado,
+            BigDecimal importe, Instant fechaCreacion, Instant fechaPago,
+            Direccion direccionEnvio, String metodoPagoId) {
+        this.id = id;
         this.clienteId = clienteId;
         this.lineas = List.copyOf(lineas);
         this.estado = estado;
@@ -43,6 +52,14 @@ public class Pedido {
 
     public String getId() {
         return id;
+    }
+
+    public Pedido pagado(Instant fechaPago) {
+        if (estado != EstadoPedido.EN_PROCESO) {
+            throw new IllegalStateException("Solo se puede pagar un pedido en proceso.");
+        }
+        return new Pedido(id, clienteId, lineas, EstadoPedido.PAGADO_COMPLETADO,
+                importe, fechaCreacion, fechaPago, direccionEnvio, metodoPagoId);
     }
 
     public String getClienteId() {

@@ -239,7 +239,13 @@ public class CarritoService {
         return new CarritoResponse(List.copyOf(lineas), importe);
     }
 
-    private Cliente obtenerClienteAutenticado() {
+    LineaCarritoResponse validarLineaParaCompra(Producto producto, int cantidad, Cliente cliente) {
+        String aviso = comprobarDisponibilidad(producto, cantidad, cliente);
+        if (aviso != null) throw new IllegalArgumentException(aviso);
+        return calcularLinea(producto, cantidad, cliente);
+    }
+
+    Cliente obtenerClienteAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication.getAuthorities().stream()
