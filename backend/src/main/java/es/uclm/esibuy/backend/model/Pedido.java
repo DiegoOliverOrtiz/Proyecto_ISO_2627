@@ -19,6 +19,8 @@ public class Pedido {
     private String clienteId;
     private List<LineaPedido> lineas;
     private EstadoPedido estado;
+    private Direccion direccionEnvio;
+    private String metodoPagoId;
 
     @Field(targetType = FieldType.DECIMAL128)
     private BigDecimal importe;
@@ -27,13 +29,16 @@ public class Pedido {
     private Instant fechaPago;
 
     public Pedido(String clienteId, List<LineaPedido> lineas, EstadoPedido estado,
-            BigDecimal importe, Instant fechaCreacion, Instant fechaPago) {
+            BigDecimal importe, Instant fechaCreacion, Instant fechaPago,
+            Direccion direccionEnvio, String metodoPagoId) {
         this.clienteId = clienteId;
         this.lineas = List.copyOf(lineas);
         this.estado = estado;
         this.importe = importe;
         this.fechaCreacion = fechaCreacion;
         this.fechaPago = fechaPago;
+        this.direccionEnvio = copiarDireccion(direccionEnvio);
+        this.metodoPagoId = metodoPagoId;
     }
 
     public String getId() {
@@ -62,5 +67,30 @@ public class Pedido {
 
     public Instant getFechaPago() {
         return fechaPago;
+    }
+
+    public Direccion getDireccionEnvio() {
+        return copiarDireccion(direccionEnvio);
+    }
+
+    public String getMetodoPagoId() {
+        return metodoPagoId;
+    }
+
+    private static Direccion copiarDireccion(Direccion origen) {
+        if (origen == null) {
+            return null;
+        }
+        Direccion copia = new Direccion();
+        copia.setId(origen.getId());
+        copia.setNombre(origen.getNombre());
+        copia.setCalle(origen.getCalle());
+        copia.setNumero(origen.getNumero());
+        copia.setPortal(origen.getPortal());
+        copia.setPiso(origen.getPiso());
+        copia.setCodigoPostal(origen.getCodigoPostal());
+        copia.setCiudad(origen.getCiudad());
+        copia.setProvincia(origen.getProvincia());
+        return copia;
     }
 }
