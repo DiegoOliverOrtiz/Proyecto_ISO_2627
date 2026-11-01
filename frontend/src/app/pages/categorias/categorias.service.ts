@@ -27,12 +27,34 @@ export interface ModificarCategoriaRequest {
 export class CategoriasService {
   private readonly http = inject(HttpClient);
 
-  obtenerCategorias(): Observable<Categoria[]> {
-    return this.http.get<Categoria[]>(
-      `${environment.apiUrl}/categorias`,
-      { withCredentials: true }
-    );
+
+  obtenerCategorias(
+    nombre = '',
+    orden = ''
+  ): Observable<Categoria[]> {
+    let url = `${environment.apiUrl}/categorias`;
+
+    const parametros = new URLSearchParams();
+
+    if (nombre.trim()) {
+      parametros.set('nombre', nombre.trim());
+    }
+
+    if (orden) {
+      parametros.set('orden', orden);
+    }
+
+    const query = parametros.toString();
+
+    if (query) {
+      url += `?${query}`;
+    }
+
+    return this.http.get<Categoria[]>(url, {
+      withCredentials: true
+    });
   }
+
 
   obtenerCategoriaPorId(id: string): Observable<Categoria> {
     return this.http.get<Categoria>(

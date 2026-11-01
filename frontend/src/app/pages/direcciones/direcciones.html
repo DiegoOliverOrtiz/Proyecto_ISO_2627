@@ -1,0 +1,125 @@
+<main class="profile-page">
+  <header class="profile-header">
+    <div>
+      <p class="eyebrow">Direcciones</p>
+      <h1>Mis direcciones</h1>
+      <p>Gestiona los lugares donde quieres recibir tus pedidos.</p>
+    </div>
+    <div class="header-actions">
+      <a class="secondary-button" routerLink="/perfil">Volver al perfil</a>
+      @if (!editando()) {
+        <button class="primary-button" (click)="iniciarCreacion()">Añadir dirección</button>
+      }
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <output class="status-message">Cargando direcciones...</output>
+  } @else if (mensajeError()) {
+    <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
+  } @else {
+    
+    @if (mensajeExito() && !editando()) {
+      <p class="status-message success-message" role="status">{{ mensajeExito() }}</p>
+    }
+
+    @if (editando()) {
+      <section class="edit-form" aria-labelledby="form-titulo">
+        <h2 id="form-titulo">{{ direccionIdActiva() ? 'Editar dirección' : 'Nueva dirección' }}</h2>
+        
+        <form [formGroup]="formulario" (ngSubmit)="guardarDireccion()">
+          <div class="form-grid">
+            <label>
+              Nombre (ej. Mi casa)
+              <input type="text" formControlName="nombre" />
+              @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+                <span class="field-error">El nombre es obligatorio y debe tener máximo 50 caracteres.</span>
+              }
+            </label>
+
+            <label>
+              Código Postal
+              <input type="text" formControlName="codigoPostal" maxlength="5" />
+              @if (formulario.controls.codigoPostal.touched && formulario.controls.codigoPostal.hasError('pattern')) {
+                <span class="field-error">El código postal debe tener exactamente 5 dígitos.</span>
+              }
+            </label>
+
+            <label class="full-width">
+              Calle
+              <input type="text" formControlName="calle" />
+              @if (formulario.controls.calle.touched && formulario.controls.calle.invalid) {
+                <span class="field-error">La calle es obligatoria.</span>
+              }
+            </label>
+
+            <label>
+              Número
+              <input type="text" formControlName="numero" />
+              @if (formulario.controls.numero.touched && formulario.controls.numero.invalid) {
+                <span class="field-error">El número es obligatorio.</span>
+              }
+            </label>
+
+            <label>
+              Portal (Opcional)
+              <input type="text" formControlName="portal" />
+            </label>
+
+            <label>
+              Piso (Opcional)
+              <input type="text" formControlName="piso" />
+            </label>
+
+            <label>
+              Ciudad
+              <input type="text" formControlName="ciudad" />
+              @if (formulario.controls.ciudad.touched && formulario.controls.ciudad.invalid) {
+                <span class="field-error">La ciudad es obligatoria.</span>
+              }
+            </label>
+
+            <label>
+              Provincia
+              <input type="text" formControlName="provincia" />
+              @if (formulario.controls.provincia.touched && formulario.controls.provincia.invalid) {
+                <span class="field-error">La provincia es obligatoria.</span>
+              }
+            </label>
+          </div>
+
+          @if (mensajeFormulario()) {
+            <p class="form-message" role="alert">{{ mensajeFormulario() }}</p>
+          }
+
+          <div class="form-actions">
+            <button class="secondary-button" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="primary-button" type="submit" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar dirección' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    } @else {
+      <div class="direcciones-grid">
+        @for (dir of direcciones(); track dir.id) {
+          <article class="direccion-card">
+            <h3>{{ dir.nombre }}</h3>
+            <p>{{ dir.calle }}, {{ dir.numero }}</p>
+            <p>
+              @if (dir.portal) { Portal {{ dir.portal }} }
+              @if (dir.piso) { Piso {{ dir.piso }} }
+            </p>
+            <p>{{ dir.codigoPostal }} {{ dir.ciudad }} ({{ dir.provincia }})</p>
+            <div class="card-actions">
+              <button class="secondary-button action-btn" (click)="iniciarEdicion(dir)">Editar</button>
+              <button class="secondary-button danger action-btn" (click)="eliminarDireccion(dir.id)">Eliminar</button>
+            </div>
+          </article>
+        } @empty {
+          <p class="status-message">No tienes ninguna dirección de envío guardada.</p>
+        }
+      </div>
+    }
+  }
+</main>

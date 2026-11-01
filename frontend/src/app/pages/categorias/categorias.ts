@@ -39,6 +39,15 @@ export class Categorias implements OnInit {
   readonly mensajeResultado = signal('');
   readonly errorFormulario = signal('');
 
+  readonly filtros = this.formBuilder.nonNullable.group({
+    nombre: [''],
+    orden: ['']
+  });
+
+  readonly busquedaAplicada = signal('');
+  readonly ordenAplicado = signal('');
+
+
   readonly formularioCategoria = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
     descripcion: ['', Validators.required]
@@ -48,11 +57,15 @@ export class Categorias implements OnInit {
     this.cargarCategorias();
   }
 
+
   cargarCategorias(): void {
     this.cargando.set(true);
     this.error.set(false);
 
-    this.categoriasService.obtenerCategorias().subscribe({
+    this.categoriasService.obtenerCategorias(
+      this.busquedaAplicada(),
+      this.ordenAplicado()
+    ).subscribe({
       next: (categorias) => {
         this.categorias.set(categorias);
         this.cargando.set(false);
@@ -61,9 +74,35 @@ export class Categorias implements OnInit {
         this.categorias.set([]);
         this.error.set(true);
         this.cargando.set(false);
-      },
+      }
     });
   }
+
+
+  aplicarFiltros(): void {
+    const valores = this.filtros.getRawValue();
+
+    this.busquedaAplicada.set(valores.nombre.trim());
+    this.ordenAplicado.set(valores.orden);
+
+    this.cargarCategorias();
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.reset();
+
+    this.busquedaAplicada.set('');
+    this.ordenAplicado.set('');
+
+    this.cargarCategorias();
+  }
+
+  hayFiltrosAplicados(): boolean {
+    return Boolean(
+      this.busquedaAplicada() || this.ordenAplicado()
+    );
+  }
+
 
   abrirFormulario(): void {
     this.categoriaEnEdicion.set(null);
