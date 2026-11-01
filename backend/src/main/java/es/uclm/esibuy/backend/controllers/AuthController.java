@@ -40,7 +40,8 @@ public class AuthController {
     private static final String PREFIJO_ROL = "ROLE_";
     static final String SESION_EMAIL_2FA_PENDIENTE = "ESIBUY_2FA_EMAIL_PENDIENTE";
     static final String SESION_2FA_CADUCIDAD = "ESIBUY_2FA_CADUCIDAD";
-    static final String SESION_2FA_SECRETO = "ESIBUY_2FA_SECRETO";
+    // Nombre de un atributo de sesión; su valor no es una credencial.
+    static final String SESION_2FA_SECRETO = "ESIBUY_2FA_SECRETO"; // gitleaks:allow
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;

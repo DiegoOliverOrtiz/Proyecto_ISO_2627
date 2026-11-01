@@ -110,11 +110,11 @@ class AdministradorEliminacionSeguridadTests {
 	@Test
 	void preflightDeDelete_desdeElOrigenDelFrontend_estaPermitido() throws Exception {
 		mockMvc.perform(options("/administrador/{id}", "id-1")
-						.header("Origin", "http://localhost:4200")
+						.header("Origin", "https://localhost:4200")
 						.header("Access-Control-Request-Method", "DELETE")
 						.header("Access-Control-Request-Headers", "x-xsrf-token"))
 				.andExpect(status().isOk())
-				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+				.andExpect(header().string("Access-Control-Allow-Origin", "https://localhost:4200"))
 				.andExpect(header().string("Access-Control-Allow-Methods",
 						Matchers.containsString("DELETE")));
 	}

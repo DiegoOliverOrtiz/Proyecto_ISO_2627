@@ -42,7 +42,8 @@ import es.uclm.esibuy.backend.services.TotpService;
 class PerfilTotpIntegrationTests {
 
     private static final String EMAIL = "cliente@example.com";
-    private static final String SECRETO_RFC = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+    // Vector público de pruebas TOTP; no pertenece a ninguna cuenta real.
+    private static final String SECRETO_RFC = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"; // gitleaks:allow
 
     private Cliente usuario;
     private TotpService totpService;

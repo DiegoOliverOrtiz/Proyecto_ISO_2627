@@ -7,6 +7,7 @@ import com.mongodb.client.MongoClient;
 
 @SpringBootTest(properties = {
 		"TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+		"server.ssl.enabled=false",
 		"TOTP_MIGRATE_KEY=false"
 })
 class BackendApplicationTests {

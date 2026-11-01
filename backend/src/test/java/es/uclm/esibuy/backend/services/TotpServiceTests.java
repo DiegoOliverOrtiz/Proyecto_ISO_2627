@@ -30,7 +30,8 @@ import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 
 class TotpServiceTests {
-    private static final String SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+    // Vector público de pruebas TOTP; no pertenece a ninguna cuenta real.
+    private static final String SECRET = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"; // gitleaks:allow
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(4);
     private TotpSecurityStore store;
     private MongoTemplate mongo;
