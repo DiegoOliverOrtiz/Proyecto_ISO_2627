@@ -1,0 +1,46 @@
+:host { display: block; min-height: 100vh; color: #173042; background: linear-gradient(135deg, #f4f7f8 0%, #e8f0ed 55%, #f9f3ef 100%); }
+.profile-page { width: min(920px, calc(100% - 4rem)); margin: 0 auto; padding: 3rem 0 4rem; }
+.profile-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
+.eyebrow { margin: 0 0 .4rem; color: #c65339; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 0 0 .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.05; letter-spacing: -.03em; }
+.profile-header p:not(.eyebrow) { margin: 0; color: #536a75; font-size: 1.05rem; }
+.header-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+
+.direcciones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.direccion-card { padding: 1.5rem; border: 1px solid rgba(37, 91, 77, .18); border-radius: 14px; background: rgba(255, 255, 255, .9); box-shadow: 0 10px 25px rgba(23, 48, 66, .05); transition: transform .18s ease, box-shadow .18s ease; }
+.direccion-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(23, 48, 66, .08); }
+.direccion-card h3 { margin: 0 0 .75rem; color: #173042; font-size: 1.2rem; border-bottom: 1px solid #d9e3e6; padding-bottom: .5rem; }
+.direccion-card p { margin: 0 0 .35rem; color: #536a75; font-size: .95rem; line-height: 1.4; }
+.card-actions { display: flex; gap: .75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #d9e3e6; }
+
+.primary-button, .secondary-button { padding: .75rem 1rem; border-radius: 7px; font: inherit; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; text-decoration: none; display: inline-block; text-align: center; }
+.primary-button { border: 1px solid #c65339; color: #fff; background: #c65339; }
+.primary-button:hover { background: #a9412d; transform: translateY(-1px); }
+.primary-button:disabled, .secondary-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.secondary-button { border: 1px solid #255b4d; color: #255b4d; background: rgba(255, 255, 255, .9); }
+.secondary-button:hover { color: #fff; background: #255b4d; transform: translateY(-1px); }
+.secondary-button.danger { border-color: #e5a499; color: #a63120; }
+.secondary-button.danger:hover { background: #fff0eb; color: #8a281a; border-color: #a63120; }
+.action-btn { padding: .5rem .85rem; font-size: .85rem; flex: 1; }
+
+.edit-form { padding: 2rem; border: 1px solid rgba(37, 91, 77, .18); border-radius: 14px; background: rgba(255, 255, 255, .9); box-shadow: 0 18px 45px rgba(23, 48, 66, .11); }
+.edit-form h2 { margin: 0 0 1.5rem; color: #173042; font-size: 1.6rem; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.form-grid label { display: flex; flex-direction: column; gap: .45rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.form-grid .full-width { grid-column: 1 / -1; }
+.form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid #b8ccca; border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; }
+.form-grid input:focus, .form-grid select:focus { outline: 2px solid rgba(198, 83, 57, .25); border-color: #c65339; }
+.field-error, .form-message { color: #a63120; font-size: .82rem; font-weight: 600; text-transform: none; letter-spacing: normal; margin-top: 2px; }
+.form-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid #d9e3e6; }
+
+.status-message { display: block; padding: 1.25rem; border: 1px solid #d9e3e6; border-radius: 10px; color: #536a75; background: rgba(255, 255, 255, .9); margin-bottom: 1.5rem; }
+.error-message { color: #a63120; border-color: #e5a499; background: #fff0eb; }
+.success-message { color: #205b49; border-color: #a8d1c1; background: #edf8f3; }
+
+@media (max-width: 700px) {
+  .profile-page { width: calc(100% - 2rem); padding: 2rem 0; }
+  .profile-header { flex-direction: column; }
+  .form-grid { grid-template-columns: 1fr; }
+  .header-actions { width: 100%; }
+  .header-actions > button, .header-actions > a { flex: 1; text-align: center; }
+}

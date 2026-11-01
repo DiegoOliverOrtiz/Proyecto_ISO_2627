@@ -9,6 +9,7 @@
     <div class="header-actions">
       @if (perfil()?.tipoUsuario === 'CLIENTE' && !editando()) {
         <a class="secondary-button" routerLink="/perfil/direcciones" style="text-decoration: none;">Mis direcciones</a>
+        <a class="secondary-button" routerLink="/perfil/pagos" style="text-decoration: none;">Mis métodos de pago</a>
       }
       @if (perfil() && !editando()) {
         <button class="primary-button" type="button" (click)="iniciarEdicion()">Editar perfil</button>
@@ -245,7 +246,7 @@
             @if (datos.tipoUsuario === 'ADMIN') {
               <p><strong>Fecha de incorporación:</strong> {{ datos.fechaIncorporacion ?? 'No disponible' }} (no modificable)</p>
             }
-            <p class="field-help">La contraseña y las direcciones se gestionan fuera de esta pantalla.</p>
+            <p class="field-help">La contraseña, direcciones y pagos se gestionan fuera de esta pantalla.</p>
           </div>
 
           @if (mensajeFormulario()) {
