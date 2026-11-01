@@ -9,15 +9,21 @@ import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 
 import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.mongodb.client.result.UpdateResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -73,14 +79,27 @@ class TotpServiceTests {
         assertFalse(service.verificar(secret, "invalido"));
     }
 
-    @Test
-    void elQrContieneLaUriDeAltaCompleta() throws Exception {
-        String uri = service.crearUriAlta("cliente@example.com", service.generarSecreto());
+    private static Stream<String> secretosQr() {
+        var datosPrueba = new Random(0);
+        return Stream.concat(Stream.of(SECRET), Stream.generate(() -> {
+            var secreto = new StringBuilder(32);
+            for (int i = 0; i < 32; i++) {
+                secreto.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".charAt(datosPrueba.nextInt(32)));
+            }
+            return secreto.toString();
+        }).limit(64));
+    }
+
+    @ParameterizedTest(name = "QR {index}")
+    @MethodSource("secretosQr")
+    void elQrContieneLaUriDeAltaCompleta(String secreto) throws Exception {
+        String uri = service.crearUriAlta("cliente@example.com", secreto);
         String dataUrl = service.generarQrDataUrl(uri);
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(Base64.getDecoder()
                 .decode(dataUrl.substring("data:image/png;base64,".length()))));
+        // El PNG es un QR monocromo y sin perspectiva, generado directamente por el servicio.
         String decoded = new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(
-                new BufferedImageLuminanceSource(image)))).getText();
+                new BufferedImageLuminanceSource(image))), Map.of(DecodeHintType.PURE_BARCODE, true)).getText();
         assertEquals(uri, decoded);
     }
 

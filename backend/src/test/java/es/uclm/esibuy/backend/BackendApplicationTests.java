@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.mongodb.client.MongoClient;
+import es.uclm.esibuy.backend.dao.TipoMetodoPagoDAO;
 
 @SpringBootTest(properties = {
 		"TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
@@ -14,6 +15,9 @@ class BackendApplicationTests {
 
 	@MockitoBean
 	private MongoClient mongoClient;
+
+	@MockitoBean
+	private TipoMetodoPagoDAO tipoMetodoPagoDAO;
 
 	@Test
 	void contextLoads() {

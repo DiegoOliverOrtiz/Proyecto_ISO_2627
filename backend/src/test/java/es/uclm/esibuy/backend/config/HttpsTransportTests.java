@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import es.uclm.esibuy.backend.dao.TipoMetodoPagoDAO;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.services.AuthService;
 
@@ -44,6 +45,8 @@ class HttpsTransportTests {
 
     @MockitoBean
     private MongoClient mongoClient;
+    @MockitoBean
+    private TipoMetodoPagoDAO tipoMetodoPagoDAO;
     @MockitoBean
     private AuthService authService;
     @Value("${local.server.port}")
