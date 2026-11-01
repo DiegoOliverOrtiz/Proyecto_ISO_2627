@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.services;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -18,7 +19,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -124,6 +130,102 @@ class PedidoMongoIntegrationTests {
     }
 
     @Test
+    void anadirModificarYConsultarNoDescuentaStockHastaPagar() {
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")),
+                new Update().set("stock", 10), Producto.class);
+        CarritoService carritoService = new CarritoService(carritos, clientes, productos);
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "a@example.com", null, List.of(new SimpleGrantedAuthority("ROLE_CLIENTE"))));
+
+        carritoService.anadirProducto("producto", 1);
+        assertEquals(2, carritos.findById("a").orElseThrow().cantidadDe("producto"));
+        assertEquals(10, productos.findById("producto").orElseThrow().getStock());
+        carritoService.modificarCantidad("producto", 3);
+        assertEquals(3, carritos.findById("a").orElseThrow().cantidadDe("producto"));
+        assertEquals(10, productos.findById("producto").orElseThrow().getStock());
+        carritoService.modificarCantidad("producto", 2);
+        assertEquals(2, carritoService.consultarCarrito().productos().getFirst().cantidad());
+        assertEquals(10, productos.findById("producto").orElseThrow().getStock());
+        assertEquals(0, pedidos.count());
+
+        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        assertEquals(EstadoPedido.PAGADO_COMPLETADO, pedido.getEstado());
+        assertEquals(8, productos.findById("producto").orElseThrow().getStock());
+        assertTrue(carritos.findById("a").orElseThrow().getProductos().isEmpty());
+    }
+
+    @Test
+    void stockInsuficienteConservaExistenciasCarritoYSinPedido() {
+        carritos.save(carritos.findById("a").orElseThrow().conCantidad("producto", 2));
+        Carrito anterior = carritos.findById("a").orElseThrow();
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertEquals(1, productos.findById("producto").orElseThrow().getStock());
+        assertEquals(0, pedidos.count());
+        Carrito conservado = carritos.findById("a").orElseThrow();
+        assertEquals(anterior.getProductos(), conservado.getProductos());
+        assertEquals(anterior.getVersion(), conservado.getVersion());
+    }
+
+    @Test
+    void compraVariosProductosDescuentaCadaCantidadExacta() {
+        prepararDosProductos();
+        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        assertEquals(8, productos.findById("producto").orElseThrow().getStock());
+        assertEquals(2, productos.findById("producto-2").orElseThrow().getStock());
+        assertEquals(new BigDecimal("260.00"), pedido.getImporte());
+        assertEquals(2, pedido.getLineas().size());
+        assertEquals(1, pedidos.count());
+        assertTrue(carritos.findById("a").orElseThrow().getProductos().isEmpty());
+    }
+
+    @Test
+    void falloSegundaLineaReviertePrimerDescuentoYPedido() {
+        prepararDosProductos();
+        Carrito anterior = carritos.findById("a").orElseThrow();
+        // Fallo determinista entre validación y descuento: se ejecutan las escrituras
+        // Mongo reales, incluida la primera línea, y la transacción debe revertirlas.
+        ProductoActualizacionDAOImpl fragmento = new ProductoActualizacionDAOImpl(template) {
+            @Override
+            public void descontarStock(Producto producto, int cantidad) {
+                if (producto.getId().equals("producto-2")) {
+                    assertEquals(8, productos.findById("producto").orElseThrow().getStock());
+                    assertEquals(1, pedidos.count());
+                    template.updateFirst(Query.query(Criteria.where("id").is("producto-2")),
+                            new Update().set("stock", 0), Producto.class);
+                }
+                super.descontarStock(producto, cantidad);
+            }
+        };
+        MongoRepositoryFactory factory = new MongoRepositoryFactory(template);
+        ProductoDAO daoConFallo = factory.getRepository(ProductoDAO.class, fragmento);
+        servicio = new PedidoService(new CarritoService(carritos, clientes, daoConFallo), carritos, daoConFallo,
+                metodos, factory.getRepository(VendedorDAO.class), pedidos, manager);
+
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertEquals(10, productos.findById("producto").orElseThrow().getStock());
+        assertEquals(5, productos.findById("producto-2").orElseThrow().getStock());
+        assertEquals(0, pedidos.count());
+        Carrito conservado = carritos.findById("a").orElseThrow();
+        assertEquals(anterior.getProductos(), conservado.getProductos());
+        assertEquals(anterior.getVersion(), conservado.getVersion());
+    }
+
+    private void prepararDosProductos() {
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")),
+                new Update().set("stock", 10), Producto.class);
+        Producto segundo = new Producto();
+        segundo.setId("producto-2");
+        segundo.setNombre("Segundo");
+        segundo.setPrecio(20.0);
+        segundo.setStock(5);
+        segundo.setEsVisible(true);
+        segundo.setVendedor("Tienda");
+        productos.save(segundo);
+        carritos.save(carritos.findById("a").orElseThrow()
+                .conCantidad("producto", 2).conCantidad("producto-2", 3));
+    }
+
+    @Test
     void dosClientesNoPuedenComprarLaUltimaUnidad() throws Exception {
         CountDownLatch salida = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(2)) {
@@ -149,20 +251,59 @@ class PedidoMongoIntegrationTests {
         }
     }
 
-    @Test
-    void pagoRepetidoYSnapshotTrasEliminarProductoYVendedor() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void pagoRepetidoYSnapshotTrasCambiosYEliminaciones(boolean premium) {
+        Producto producto = productos.findById("producto").orElseThrow();
+        producto.setPrecio(123.45);
+        producto.setDescuento(10);
+        producto.setDescuentoPremium(25);
+        producto.setStock(5);
+        productos.save(producto);
+        Cliente cliente = clientes.findById("a").orElseThrow();
+        cliente.setEsPremium(premium);
+        clientes.save(cliente);
+        carritos.save(carritos.findById("a").orElseThrow().conCantidad("producto", 2));
+
         String operacion = UUID.randomUUID().toString();
         Pedido pedido = pagar("a", operacion);
+        BigDecimal precioEsperado = new BigDecimal(premium ? "92.59" : "111.11");
+        BigDecimal importeEsperado = new BigDecimal(premium ? "185.18" : "222.22");
+        String vendedorId = pedido.getLineas().getFirst().vendedorId();
+        assertNotNull(vendedorId);
+        assertTrue(template.exists(Query.query(Criteria.where("id").is(vendedorId)), Vendedor.class));
+        LineaPedido lineaEsperada = new LineaPedido("producto", "Original", precioEsperado,
+                2, vendedorId, "Tienda");
+        comprobarHistorico(pedido.getId(), lineaEsperada, importeEsperado);
+
         assertEquals(pedido.getId(), pagar("a", operacion).getId());
+        assertEquals(3, productos.findById("producto").orElseThrow().getStock());
+
+        producto = productos.findById("producto").orElseThrow();
+        producto.setNombre("Nombre cambiado");
+        producto.setPrecio(1.0);
+        producto.setDescuento(0);
+        producto.setDescuentoPremium(0);
+        productos.save(producto);
+        assertEquals(1, template.updateFirst(Query.query(Criteria.where("id").is(vendedorId)),
+                new Update().set("nombreComercial", "Tienda cambiada"), Vendedor.class).getModifiedCount());
+        assertEquals("Nombre cambiado", productos.findById("producto").orElseThrow().getNombre());
+        assertEquals(1.0, productos.findById("producto").orElseThrow().getPrecio());
+        comprobarHistorico(pedido.getId(), lineaEsperada, importeEsperado);
+
         productos.deleteById("producto");
-        template.remove(org.springframework.data.mongodb.core.query.Query.query(
-                org.springframework.data.mongodb.core.query.Criteria.where("id")
-                        .is(pedido.getLineas().getFirst().vendedorId())), Vendedor.class);
-        Pedido historico = pedidos.findById(pedido.getId()).orElseThrow();
-        assertEquals("Original", historico.getLineas().getFirst().nombreProducto());
-        assertEquals(new java.math.BigDecimal("100.00"), historico.getLineas().getFirst().precioCompra());
-        assertEquals("Tienda", historico.getLineas().getFirst().nombreVendedor());
+        template.remove(Query.query(Criteria.where("id").is(vendedorId)), Vendedor.class);
+        assertFalse(productos.existsById("producto"));
+        assertFalse(template.exists(Query.query(Criteria.where("id").is(vendedorId)), Vendedor.class));
+        comprobarHistorico(pedido.getId(), lineaEsperada, importeEsperado);
         assertEquals(1, pedidos.count());
+    }
+
+    private void comprobarHistorico(String pedidoId, LineaPedido lineaEsperada, BigDecimal importeEsperado) {
+        Pedido historico = pedidos.findById(pedidoId).orElseThrow();
+        assertEquals(List.of(lineaEsperada), historico.getLineas());
+        assertEquals(importeEsperado, historico.getImporte());
+        assertEquals(EstadoPedido.PAGADO_COMPLETADO, historico.getEstado());
     }
 
     @Test
