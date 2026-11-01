@@ -3,6 +3,7 @@ package es.uclm.esibuy.backend.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -42,6 +43,20 @@ public abstract class Usuario {
 	private boolean bloqueada;
 
 	private boolean activada;
+
+	@JsonIgnore
+	private String secretoTotpCifrado;
+
+	@JsonIgnore
+	private String secretoTotpPendienteCifrado;
+
+	@JsonIgnore
+	private Instant caducidadTotpPendiente;
+
+	private boolean totpActivado;
+
+	@JsonIgnore
+	private List<String> codigosRespaldoTotp = new ArrayList<>();
 
 	protected Usuario() {
 	}
@@ -133,5 +148,51 @@ public abstract class Usuario {
 
 	public void setActivada(boolean activada) {
 		this.activada = activada;
+	}
+
+	@JsonIgnore
+	public String getSecretoTotpCifrado() {
+		return secretoTotpCifrado;
+	}
+
+	public void setSecretoTotpCifrado(String secretoTotpCifrado) {
+		this.secretoTotpCifrado = secretoTotpCifrado;
+	}
+
+	@JsonIgnore
+	public String getSecretoTotpPendienteCifrado() {
+		return secretoTotpPendienteCifrado;
+	}
+
+	public void setSecretoTotpPendienteCifrado(String secretoTotpPendienteCifrado) {
+		this.secretoTotpPendienteCifrado = secretoTotpPendienteCifrado;
+	}
+
+	@JsonIgnore
+	public Instant getCaducidadTotpPendiente() {
+		return caducidadTotpPendiente;
+	}
+
+	public void setCaducidadTotpPendiente(Instant caducidadTotpPendiente) {
+		this.caducidadTotpPendiente = caducidadTotpPendiente;
+	}
+
+	public boolean isTotpActivado() {
+		return totpActivado;
+	}
+
+	public void setTotpActivado(boolean totpActivado) {
+		this.totpActivado = totpActivado;
+	}
+
+	@JsonIgnore
+	public List<String> getCodigosRespaldoTotp() {
+		return codigosRespaldoTotp == null ? List.of() : List.copyOf(codigosRespaldoTotp);
+	}
+
+	public void setCodigosRespaldoTotp(List<String> codigosRespaldoTotp) {
+		this.codigosRespaldoTotp = codigosRespaldoTotp == null
+				? new ArrayList<>()
+				: new ArrayList<>(codigosRespaldoTotp);
 	}
 }

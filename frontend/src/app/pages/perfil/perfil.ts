@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { CategoriaPerfil, ModificarPerfilRequest, PerfilResponse, PerfilService } from './perfil.service';
@@ -28,7 +28,7 @@ const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | 
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [FormsModule, ReactiveFormsModule, RouterLink],
   styleUrl: './perfil.css',
   templateUrl: './perfil.html'
 })
@@ -48,6 +48,12 @@ export class Perfil {
   readonly tipoPremiumPendiente = signal(false);
   readonly fechaMaximaNacimiento = this.calcularFechaMaximaNacimiento();
   readonly categorias = signal<CategoriaPerfil[]>([]);
+  readonly configuracionTOTP = signal<{ otpauthUri: string | null; qrDataUrl: string | null } | null>(null);
+  readonly codigosRespaldo = signal<string[]>([]);
+  readonly codigoTOTP = signal('');
+  readonly mensajeTOTP = signal('');
+  readonly errorTOTP = signal('');
+  readonly cargandoTOTP = signal(false);
 
   readonly formulario = this.constructorFormularios.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
@@ -231,6 +237,80 @@ export class Perfil {
     void this.enrutador.navigateByUrl(ruta);
   }
 
+  configurarTOTP(): void {
+    this.cargandoTOTP.set(true);
+    this.errorTOTP.set('');
+    this.codigoTOTP.set('');
+    this.mensajeTOTP.set('');
+    this.servicioPerfil.configurarSegundoFactor().subscribe({
+      next: (respuesta) => {
+        this.cargandoTOTP.set(false);
+        if (respuesta.enabled) {
+          this.mensajeTOTP.set('El segundo factor ya está activado.');
+          return;
+        }
+        this.configuracionTOTP.set({ otpauthUri: respuesta.otpauthUri, qrDataUrl: respuesta.qrDataUrl });
+        this.mensajeTOTP.set('Escanea el QR con Google Authenticator o Authy y confirma el código.');
+      },
+      error: () => {
+        this.cargandoTOTP.set(false);
+        this.errorTOTP.set('No se pudo iniciar la configuración del segundo factor.');
+      }
+    });
+  }
+
+  confirmarTOTP(): void {
+    const codigo = this.codigoTOTP().replace(/[\s-]/g, '');
+    if (!/^\d{6}$/.test(codigo)) {
+      this.errorTOTP.set('Introduce un código TOTP de 6 cifras.');
+      return;
+    }
+    this.cargandoTOTP.set(true);
+    this.errorTOTP.set('');
+    this.servicioPerfil.confirmarSegundoFactor(codigo).subscribe({
+      next: (respuesta) => {
+        this.cargandoTOTP.set(false);
+        this.codigosRespaldo.set(respuesta.backupCodes);
+        this.configuracionTOTP.set(null);
+        this.codigoTOTP.set('');
+        this.mensajeTOTP.set('TOTP activado. Guarda estos códigos de respaldo en un lugar seguro.');
+        this.perfil.update((valor) => valor ? { ...valor, totpActivado: true } : valor);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargandoTOTP.set(false);
+        this.errorTOTP.set(this.obtenerMensajeError(error, 'No se pudo activar el segundo factor. Inténtalo de nuevo.'));
+      }
+    });
+  }
+
+  desactivarTOTP(): void {
+    const codigo = this.codigoTOTP().replace(/[\s-]/g, '').toUpperCase();
+    if (!/^(\d{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
+      this.errorTOTP.set('Introduce un código actual de la aplicación o un código de respaldo para desactivar TOTP.');
+      return;
+    }
+    if (!confirm('¿Quieres desactivar el segundo factor de autenticación?')) {
+      return;
+    }
+    this.cargandoTOTP.set(true);
+    this.errorTOTP.set('');
+    this.mensajeTOTP.set('');
+    this.servicioPerfil.desactivarSegundoFactor(codigo).subscribe({
+      next: () => {
+        this.cargandoTOTP.set(false);
+        this.perfil.update((valor) => valor ? { ...valor, totpActivado: false } : valor);
+        this.codigoTOTP.set('');
+        this.codigosRespaldo.set([]);
+        this.configuracionTOTP.set(null);
+        this.mensajeTOTP.set('Segundo factor desactivado.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargandoTOTP.set(false);
+        this.errorTOTP.set(this.obtenerMensajeError(error, 'No se pudo desactivar el segundo factor.'));
+      }
+    });
+  }
+
   private valorNulo(valor: string): string | null {
     const limpio = valor.trim();
     return limpio.length > 0 ? limpio : null;
@@ -252,6 +332,10 @@ export class Perfil {
     if (error.status === 0) {
       return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
     }
-    return error.error?.message ?? mensajeGenerico;
+    if (error.status >= 500) {
+      return mensajeGenerico;
+    }
+    const mensaje = error.error?.error ?? error.error?.message;
+    return typeof mensaje === 'string' ? mensaje : mensajeGenerico;
   }
 }

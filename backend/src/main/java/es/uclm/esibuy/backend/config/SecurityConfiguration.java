@@ -103,6 +103,7 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/usuarios/login",
+                                                                "/usuarios/login/2fa",
                                                                 "/cliente/register",
                                                                 "/vendedor/register")
                                                 .permitAll()

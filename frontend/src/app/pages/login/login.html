@@ -18,6 +18,7 @@
         <h2>Iniciar sesión</h2>
       </div>
       
+      @if (!requiereSegundoFactor()) {
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         @if (mensajeError()) {
           <p class="error-text" role="alert">{{ mensajeError() }}</p>
@@ -75,6 +76,29 @@
           ¿No tienes cuenta? <a routerLink="/registro">Regístrate</a>
         </div>
       </form>
+      } @else {
+        <form (ngSubmit)="onSubmit()" class="login-form two-factor-form">
+          @if (mensajeError()) {
+            <p class="error-text" role="alert">{{ mensajeError() }}</p>
+          }
+          @if (mensajeExito()) {
+            <output class="success-text">{{ mensajeExito() }}</output>
+          }
+          <div class="form-group">
+            <label for="two-factor-code">Código de autenticación</label>
+            <input id="two-factor-code" name="two-factor-code" type="text"
+                   maxlength="32" autocomplete="one-time-code"
+                   [(ngModel)]="codigoSegundoFactor">
+            <small>También puedes usar uno de tus códigos de respaldo.</small>
+          </div>
+          <button type="submit" class="primary-button" [disabled]="isLoading()">
+            {{ isLoading() ? 'Verificando...' : 'Verificar código' }}
+          </button>
+          <button type="button" class="secondary-button" [disabled]="isLoading()" (click)="volverAlInicioSesion()">
+            Volver al inicio de sesión
+          </button>
+        </form>
+      }
     </div>
   </section>
 </main>

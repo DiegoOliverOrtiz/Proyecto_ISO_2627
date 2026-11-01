@@ -31,6 +31,9 @@ import es.uclm.esibuy.backend.services.SesionService;
 @Import({ SecurityConfiguration.class, SesionService.class })
 class AdministradorEliminacionSeguridadTests {
 
+    @MockitoBean
+    private es.uclm.esibuy.backend.services.TotpService totpService;
+
 	private static final String EMAIL = "admin.eliminado@esibuy.es";
 	private static final String PASSWORD = "Clave-Segura-1";
 

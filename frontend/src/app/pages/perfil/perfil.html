@@ -68,6 +68,54 @@
         }
       </dl>
 
+      <section class="two-factor-card" aria-labelledby="segundo-factor-titulo">
+        <div class="two-factor-heading">
+          <p class="account-type-kicker">Seguridad</p>
+          <h3 id="segundo-factor-titulo">Segundo factor de autenticación</h3>
+          @if (datos.totpActivado) {
+            <p>El acceso con contraseña está protegido con un código adicional.</p>
+            <label class="totp-code-label" for="totp-disable-code">Código actual o de respaldo</label>
+            <input id="totp-disable-code" class="totp-code-input" type="text" maxlength="32"
+                   autocomplete="one-time-code" [disabled]="cargandoTOTP()"
+                   [ngModel]="codigoTOTP()" (ngModelChange)="codigoTOTP.set($event)" />
+            <small>Usa un código distinto del que utilizaste para iniciar sesión.</small>
+            <button class="secondary-button" type="button" (click)="desactivarTOTP()" [disabled]="cargandoTOTP()">
+              Desactivar TOTP
+            </button>
+          } @else if (!configuracionTOTP()) {
+            <p>Protege tu cuenta con Google Authenticator, Authy u otra aplicación compatible.</p>
+            <button class="primary-button" type="button" (click)="configurarTOTP()" [disabled]="cargandoTOTP()">
+              Configurar segundo factor
+            </button>
+          } @else {
+            <p>{{ mensajeTOTP() }}</p>
+            @if (configuracionTOTP()?.qrDataUrl) {
+              <img class="totp-qr" [src]="configuracionTOTP()?.qrDataUrl" alt="Código QR para configurar TOTP" />
+            }
+            <label class="totp-code-label" for="totp-confirmation-code">Código de la aplicación</label>
+            <input id="totp-confirmation-code" class="totp-code-input" type="text" maxlength="6"
+                   inputmode="numeric" autocomplete="one-time-code"
+                   [ngModel]="codigoTOTP()" (ngModelChange)="codigoTOTP.set($event)" />
+            <button class="primary-button" type="button" (click)="confirmarTOTP()" [disabled]="cargandoTOTP()">
+              Confirmar activación
+            </button>
+          }
+          @if (mensajeTOTP() && !configuracionTOTP()) {
+            <p class="two-factor-success" role="status">{{ mensajeTOTP() }}</p>
+          }
+          @if (errorTOTP()) {
+            <p class="field-error" role="alert">{{ errorTOTP() }}</p>
+          }
+          @if (codigosRespaldo().length > 0) {
+            <div class="backup-codes">
+              <strong>Códigos de respaldo</strong>
+              <p>Guárdalos ahora. Solo se muestran después de activar TOTP.</p>
+              <code>{{ codigosRespaldo().join(' · ') }}</code>
+            </div>
+          }
+        </div>
+      </section>
+
       @if (datos.tipoUsuario === 'CLIENTE' && !editando()) {
         <section class="account-type-card" [class.account-type-premium]="datos.esPremium === true" aria-labelledby="tipo-cuenta">
           <div class="account-type-icon" aria-hidden="true">★</div>

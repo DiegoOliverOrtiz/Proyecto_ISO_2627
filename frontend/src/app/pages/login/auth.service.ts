@@ -7,6 +7,8 @@ import { environment } from '../../../environments/environment';
 export interface RespuestaInicioSesion {
   email: string;
   role: 'ADMIN' | 'CLIENTE' | 'VENDEDOR';
+  requiresTwoFactor?: boolean;
+  twoFactorToken?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -23,6 +25,27 @@ export class AuthService {
           this.http.post<RespuestaInicioSesion>(
             `${environment.apiUrl}/usuarios/login`,
             { email: correo, password: contrasena },
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': respuestaCsrf.token
+              })
+            }
+          )
+        )
+      );
+  }
+
+  verificarSegundoFactor(codigo: string): Observable<RespuestaInicioSesion> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.post<RespuestaInicioSesion>(
+            `${environment.apiUrl}/usuarios/login/2fa`,
+            { code: codigo },
             {
               withCredentials: true,
               headers: new HttpHeaders({

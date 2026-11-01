@@ -28,6 +28,18 @@ export interface PerfilResponse {
   sede: string | null;
   fechaIncorporacion: string | null;
   rol: string | null;
+  totpActivado: boolean;
+}
+
+export interface TwoFactorSetupResponse {
+  otpauthUri: string | null;
+  qrDataUrl: string | null;
+  enabled: boolean;
+}
+
+export interface TwoFactorConfirmationResponse {
+  enabled: boolean;
+  backupCodes: string[];
 }
 
 export interface ModificarPerfilRequest {
@@ -102,5 +114,27 @@ export class PerfilService {
           )
         )
       );
+  }
+
+  configurarSegundoFactor(): Observable<TwoFactorSetupResponse> {
+    return this.peticionConCsrf<TwoFactorSetupResponse>('POST', '/usuarios/2fa/configurar');
+  }
+
+  confirmarSegundoFactor(code: string): Observable<TwoFactorConfirmationResponse> {
+    return this.peticionConCsrf<TwoFactorConfirmationResponse>('POST', '/usuarios/2fa/confirmar', { code });
+  }
+
+  desactivarSegundoFactor(code: string): Observable<void> {
+    return this.peticionConCsrf<void>('DELETE', '/usuarios/2fa', { code });
+  }
+
+  private peticionConCsrf<T>(method: 'POST' | 'DELETE', ruta: string, body?: unknown): Observable<T> {
+    return this.http.get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true }).pipe(
+      switchMap((respuestaCsrf) => this.http.request<T>(method, `${environment.apiUrl}${ruta}`, {
+        body,
+        withCredentials: true,
+        headers: new HttpHeaders({ 'X-XSRF-TOKEN': respuestaCsrf.token })
+      }))
+    );
   }
 }
