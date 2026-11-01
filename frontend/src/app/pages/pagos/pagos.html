@@ -1,0 +1,118 @@
+<main class="profile-page">
+  <header class="profile-header">
+    <div>
+      <p class="eyebrow">Pagos</p>
+      <h1>Mis métodos de pago</h1>
+      <p>Añade tarjetas, PayPal o Bizum para tus compras.</p>
+    </div>
+    <div class="header-actions">
+      <a class="secondary-button" routerLink="/perfil">Volver al perfil</a>
+      @if (!editando()) {
+        <button class="primary-button" (click)="iniciarCreacion()">Añadir método</button>
+      }
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <output class="status-message">Cargando...</output>
+  } @else if (mensajeError()) {
+    <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
+  } @else {
+    
+    @if (mensajeExito() && !editando()) {
+      <p class="status-message success-message" role="status">{{ mensajeExito() }}</p>
+    }
+
+    @if (editando()) {
+      <section class="edit-form" aria-labelledby="form-titulo">
+        <h2 id="form-titulo">Nuevo método de pago</h2>
+        
+        <form [formGroup]="formulario" (ngSubmit)="guardarMetodo()">
+          <div class="form-grid">
+            <label class="full-width">
+              Tipo de método
+              <select formControlName="tipo">
+                <option value="">Selecciona el tipo de pago...</option>
+                @for (tipo of tipos(); track tipo.codigo) {
+                  <option [value]="tipo.codigo">{{ tipo.nombre }}</option>
+                }
+              </select>
+            </label>
+
+            @if (tipoSeleccionado()) {
+              <label class="full-width">
+                Nombre identificativo (ej. "Mi Visa Personal")
+                <input type="text" formControlName="nombre" />
+                @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+                  <span class="field-error">El nombre es obligatorio.</span>
+                }
+              </label>
+
+              @if (tipoSeleccionado() === 'TARJETA') {
+                <label>
+                  Número de Tarjeta
+                  <input type="text" formControlName="numeroTarjeta" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" />
+                </label>
+                <label>
+                  Titular
+                  <input type="text" formControlName="titular" />
+                </label>
+                <label>
+                  Caducidad (MM/YY)
+                  <input type="text" formControlName="caducidad" placeholder="12/28" maxlength="5" (input)="formatearCaducidad($event)" />
+                </label>
+                <label>
+                  CVV
+                  <input type="text" formControlName="cvv" maxlength="4" />
+                </label>
+              }
+
+              @if (tipoSeleccionado() === 'PAYPAL') {
+                <label class="full-width">
+                  Correo electrónico de PayPal
+                  <input type="email" formControlName="correoPaypal" />
+                </label>
+              }
+
+              @if (tipoSeleccionado() === 'BIZUM') {
+                <label class="full-width">
+                  Número de teléfono Bizum
+                  <input type="tel" formControlName="telefonoBizum" maxlength="9" />
+                </label>
+              }
+            }
+          </div>
+
+          @if (mensajeFormulario()) {
+            <p class="form-message" role="alert">{{ mensajeFormulario() }}</p>
+          }
+
+          <div class="form-actions">
+            <button class="secondary-button" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="primary-button" type="submit" [disabled]="guardando() || !tipoSeleccionado()">
+              {{ guardando() ? 'Guardando...' : 'Guardar método' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    } @else {
+      <div class="direcciones-grid">
+        @for (metodo of metodosGuardados(); track metodo.id) {
+          <article class="direccion-card">
+            <h3>{{ metodo.nombre }}</h3>
+            <p><strong>Tipo:</strong> {{ metodo.tipo }}</p>
+            <p><strong>Referencia:</strong> {{ metodo.datosEnmascarados }}</p>
+            @if(metodo.titular) { <p><strong>Titular:</strong> {{ metodo.titular }}</p> }
+            @if(metodo.caducidad) { <p><strong>Caduca:</strong> {{ metodo.caducidad }}</p> }
+            
+            <div class="card-actions">
+              <button class="secondary-button danger action-btn" (click)="eliminarMetodo(metodo.id)">Eliminar</button>
+            </div>
+          </article>
+        } @empty {
+          <p class="status-message">No tienes métodos de pago guardados.</p>
+        }
+      </div>
+    }
+  }
+</main>

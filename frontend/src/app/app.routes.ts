@@ -10,8 +10,6 @@ import { rolGuard } from './pages/login/rol.guard';
 import { UsuarioDetalle } from './pages/usuarios/usuario-detalle';
 import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
-
-// 1. Importamos los nuevos componentes desde su carpeta
 import { Administradores } from './pages/admin/administradores';
 import { CrearAdministrador } from './pages/admin/crear-administrador';
 import { Perfil } from './pages/perfil/perfil';
@@ -19,6 +17,7 @@ import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
 
 import { Direcciones } from './pages/direcciones/direcciones';
+import { Pagos } from './pages/pagos/pagos'; // <--- IMPORTACIÓN NUEVA
 
 export const routes: Routes = [
   {
@@ -42,10 +41,16 @@ export const routes: Routes = [
     component: Perfil,
     canActivate: [autenticadoGuard]
   },
-  // Nueva ruta de direcciones exclusiva para clientes
   {
     path: 'perfil/direcciones',
     component: Direcciones,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
+  // ---> NUEVA RUTA DE MÉTODOS DE PAGO <---
+  {
+    path: 'perfil/pagos',
+    component: Pagos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
@@ -73,8 +78,6 @@ export const routes: Routes = [
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
-  
-  // 2. Registramos las nuevas rutas de administradores
   {
     path: 'admin/administradores',
     component: Administradores,
@@ -87,7 +90,6 @@ export const routes: Routes = [
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
-  
   {
     path: 'cliente/carrito',
     component: Carrito,
