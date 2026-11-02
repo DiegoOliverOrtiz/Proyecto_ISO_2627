@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -159,9 +161,10 @@ class MetodoPagoControllerTests {
 		verifyNoInteractions(pagoSimuladoService);
 	}
 
-		@Test
+	@Test
 	void consultaLosMetodosDePagoDelClienteSinExponerElToken() throws Exception {
-		when(pagoSimuladoService.consultarMetodosPago(EMAIL)).thenReturn(List.of(respuesta()));
+		// CAMBIO: consultarMetodos en lugar de consultarMetodosPago + anyString()
+		when(pagoSimuladoService.consultarMetodos(anyString())).thenReturn(List.of(respuesta()));
 
 		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
 				.andExpect(status().isOk())
@@ -170,12 +173,14 @@ class MetodoPagoControllerTests {
 				.andExpect(jsonPath("$[0].datosEnmascarados").value("**** **** **** 4242"))
 				.andExpect(jsonPath("$[0].token").doesNotExist());
 
-		verify(pagoSimuladoService).consultarMetodosPago(EMAIL);
+		// CAMBIO: verificar consultarMetodos
+		verify(pagoSimuladoService).consultarMetodos(eq(EMAIL));
 	}
 
 	@Test
 	void sinMetodosDePago_devuelveUnaListaVaciaConEstado200() throws Exception {
-		when(pagoSimuladoService.consultarMetodosPago(EMAIL)).thenReturn(List.of());
+		// CAMBIO: consultarMetodos en lugar de consultarMetodosPago + anyString()
+		when(pagoSimuladoService.consultarMetodos(anyString())).thenReturn(List.of());
 
 		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
 				.andExpect(status().isOk())
