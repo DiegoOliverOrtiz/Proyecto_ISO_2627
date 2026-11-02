@@ -6,6 +6,10 @@
     <div class="acciones-header">
         <h2 class="vendedor">{{ nombreComercial() }}</h2>
 
+        <a class="perfil-link" routerLink="/vendedor/pedidos">
+            Mis pedidos
+        </a>
+
         <a class="perfil-link" routerLink="/perfil" aria-label="Abrir mi perfil">
             <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
                 <circle cx="12" cy="8" r="3.5"></circle>
@@ -72,10 +76,12 @@
         <small role="alert">{{ errorImagen() }}</small>
         }
         @if (vistaPreviaImagen()) {
-        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa del producto" width="320" height="240"/>
+        <img class="vista-previa-imagen" [src]="vistaPreviaImagen()" alt="Vista previa del producto" width="320"
+            height="240" />
         } @else if (productoEnEdicion()?.imagen; as imagenActual) {
         <small>Si no seleccionas otra imagen, se mantiene la actual.</small>
-        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" width="320" height="240" />
+        <img class="vista-previa-imagen" [src]="urlImagen(imagenActual)" [alt]="productoEnEdicion()?.nombre" width="320"
+            height="240" />
         }
     </div>
 
@@ -90,9 +96,11 @@
 
         <div class="campo">
             <label for="stock-producto">Stock</label>
-            <input id="stock-producto" type="number" [attr.min]="productoEnEdicion() ? 0 : 1" step="1" formControlName="stock" />
+            <input id="stock-producto" type="number" [attr.min]="productoEnEdicion() ? 0 : 1" step="1"
+                formControlName="stock" />
             @if (campoInvalido('stock')) {
-            <small>{{ productoEnEdicion() ? 'El stock no puede ser negativo.' : 'El stock debe ser mayor que 0.' }}</small>
+            <small>{{ productoEnEdicion() ? 'El stock no puede ser negativo.' : 'El stock debe ser mayor que 0.'
+                }}</small>
             }
         </div>
     </div>
@@ -185,8 +193,7 @@
                 <option value="desactivados">Desactivados</option>
             </select>
         </div>
-        <button type="button" class="boton-secundario" [disabled]="!hayFiltrosActivos()"
-            (click)="limpiarFiltros()">
+        <button type="button" class="boton-secundario" [disabled]="!hayFiltrosActivos()" (click)="limpiarFiltros()">
             Limpiar filtros
         </button>
     </form>
@@ -198,7 +205,8 @@
         @for (producto of productosFiltrados(); track producto.id) {
         <li [class.producto-desactivado]="!producto.esVisible">
             @if (producto.imagen) {
-            <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="180"/>
+            <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320"
+                height="180" />
             }
             <h2>{{ producto.nombre }}</h2>
             <p>Categoría: {{ producto.categoria }}</p>

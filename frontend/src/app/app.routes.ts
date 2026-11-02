@@ -20,6 +20,7 @@ import { Favoritos } from './pages/favoritos/favoritos';
 
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
+import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
 
 export const routes: Routes = [
   {
@@ -115,6 +116,12 @@ export const routes: Routes = [
     component: PanelCliente,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'vendedor/pedidos',
+    component: PedidosVendedor,
+    canActivate: [rolGuard],
+    data: { rol: 'VENDEDOR' }
   },
   {
     path: 'vendedor',
