@@ -15,6 +15,16 @@ h1 { margin-bottom: .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem
 h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .profile-data, .account-benefits-grid, .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .profile-data { margin: 0; padding-top: 1.75rem; }
+.two-factor-card { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #b7d8ca; border-radius: 12px; background: #f5fbf8; }
+.two-factor-heading h3 { margin: 0 0 .35rem; color: #173042; font-size: 1.2rem; }
+.two-factor-heading > p:not(.account-type-kicker) { color: #536a75; line-height: 1.45; }
+.totp-qr { display: block; width: 210px; height: 210px; margin: 1rem 0; border: 8px solid #fff; box-shadow: 0 5px 18px rgba(23, 48, 66, .16); }
+.totp-code-label { display: block; margin: 1rem 0 .4rem; color: #55736c; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.totp-code-input { display: block; width: 12rem; box-sizing: border-box; padding: .7rem; border: 1px solid #b8ccca; border-radius: 7px; font: inherit; letter-spacing: .2em; }
+.two-factor-success { color: #205b49 !important; font-weight: 700; }
+.backup-codes { margin-top: 1rem; padding: 1rem; border: 1px solid #e3b24d; border-radius: 8px; background: #fffaf0; color: #6c4b1f; }
+.backup-codes p { margin: .35rem 0 .65rem; color: #775d32; font-size: .9rem; }
+.backup-codes code { display: block; line-height: 1.8; word-break: break-word; }
 .profile-data div { padding: 1rem; border: 1px solid #dce7e5; border-radius: 9px; background: linear-gradient(135deg, #f8fbfa, #f2f7f5); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .profile-data div:hover { border-color: #9ac5b6; box-shadow: 0 6px 16px rgba(37, 91, 77, .08); transform: translateY(-2px); }
 .account-type-card { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e3b24d; border-radius: 12px; color: #fff; background: linear-gradient(120deg, #255b4d, #2f806b); box-shadow: 0 12px 24px rgba(37, 91, 77, .18); }
@@ -48,6 +58,13 @@ h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .confirmation-dialog h2 { margin-bottom: .65rem; }
 .confirmation-dialog > p:not(.account-type-kicker) { color: #536a75; line-height: 1.5; }
 .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.account-deletion-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e4b9b1; border-radius: 12px; background: #fff8f6; }
+.account-deletion-card h3 { margin: 0 0 .35rem; color: #8f3024; }
+.account-deletion-card p:not(.account-type-kicker) { margin: 0; color: #6b504d; }
+.danger-button { padding: .7rem 1rem; border: 1px solid #a63120; border-radius: 7px; color: #fff; background: #a63120; font: inherit; font-weight: 800; cursor: pointer; }
+.danger-button:disabled { opacity: .6; cursor: not-allowed; }
+.confirmation-dialog-danger { border-color: #d98d82; }
+@media (max-width: 620px) { .account-deletion-card { align-items: flex-start; flex-direction: column; } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 dt { margin-bottom: .35rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 dd { margin: 0; color: #173042; font-size: 1.02rem; overflow-wrap: anywhere; }

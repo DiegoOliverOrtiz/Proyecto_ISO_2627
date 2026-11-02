@@ -33,6 +33,9 @@ import es.uclm.esibuy.backend.services.SesionService;
 @TestPropertySource(properties = "app.cors.allowed-origin=https://localhost:4200")
 class AdministradorEliminacionSeguridadTests {
 
+    @MockitoBean
+    private es.uclm.esibuy.backend.services.TotpService totpService;
+
 	private static final String EMAIL = "admin.eliminado@esibuy.es";
 	private static final String PASSWORD = "Clave-Segura-1";
 

@@ -19,13 +19,30 @@ public class VendedorService {
     private final VendedorDAO vendedorDAO;
     private final CategoriaDAO categoriaDAO;
     private final SoporteRegistro soporteRegistro;
+    private final BajaUsuarioService bajaUsuarioService;
     private final FavoritosRegistroService favoritosRegistroService;
 
     public VendedorService(
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             SoporteRegistro soporteRegistro) {
-        this(vendedorDAO, categoriaDAO, soporteRegistro, null);
+        this(vendedorDAO, categoriaDAO, soporteRegistro, null, null);
+    }
+
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro,
+            BajaUsuarioService bajaUsuarioService) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, null, bajaUsuarioService);
+    }
+
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro,
+            FavoritosRegistroService favoritosRegistroService) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, favoritosRegistroService, null);
     }
 
     @Autowired
@@ -33,12 +50,17 @@ public class VendedorService {
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             SoporteRegistro soporteRegistro,
-            FavoritosRegistroService favoritosRegistroService) {
-
+            FavoritosRegistroService favoritosRegistroService,
+            BajaUsuarioService bajaUsuarioService) {
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.soporteRegistro = soporteRegistro;
+        this.bajaUsuarioService = bajaUsuarioService;
         this.favoritosRegistroService = favoritosRegistroService;
+    }
+
+    public void darDeBaja(String emailAutenticado) {
+        bajaUsuarioService.darDeBajaVendedor(emailAutenticado);
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {

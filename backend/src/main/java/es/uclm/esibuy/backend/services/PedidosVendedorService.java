@@ -177,6 +177,9 @@ public class PedidosVendedorService {
 
         return new PedidoVendedorResponse(
                 pedido.getId(),
+                pedido.getClienteNombre() == null || pedido.getClienteNombre().isBlank()
+                        ? "Cliente"
+                        : pedido.getClienteNombre(),
                 pedido.getEstado(),
                 pedido.getFechaCreacion(),
                 pedido.getFechaPago(),

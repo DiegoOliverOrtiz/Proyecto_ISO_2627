@@ -154,6 +154,21 @@ class PedidosVendedorServiceTests {
     }
 
     @Test
+    void muestraElMarcadorCuandoElClienteSeHaDadoDeBaja() {
+        Pedido anonimo = pedido(
+                "pedido-anonimo",
+                EstadoPedido.FINALIZADO,
+                linea("producto-1", VENDEDOR_ID, 1, "20.00"));
+        anonimo.setClienteNombre("cliente eliminado");
+        when(pedidoDAO.findByVendedorId(VENDEDOR_ID)).thenReturn(List.of(anonimo));
+
+        List<PedidoVendedorResponse> resultado = servicio.consultarHistorico(EMAIL);
+
+        assertEquals(1, resultado.size());
+        assertEquals("cliente eliminado", resultado.getFirst().clienteNombre());
+    }
+
+    @Test
     void pedidoMixtoSoloMuestraProductosPropios() {
         Pedido mixto = pedido(
                 "pedido-mixto",

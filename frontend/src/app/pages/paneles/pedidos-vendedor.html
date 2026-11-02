@@ -61,6 +61,7 @@
                         Fecha:
                         {{ (pedido.fechaPago || pedido.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}
                     </p>
+                    <p>Cliente: {{ pedido.clienteNombre }}</p>
                 </div>
 
                 <span class="estado">{{ textoEstado(pedido.estado) }}</span>
@@ -111,6 +112,7 @@
             <strong>Estado:</strong>
             {{ textoEstado(detalle.estado) }}
         </p>
+        <p>Cliente: {{ detalle.clienteNombre }}</p>
 
         <h3>Productos de tu tienda</h3>
 

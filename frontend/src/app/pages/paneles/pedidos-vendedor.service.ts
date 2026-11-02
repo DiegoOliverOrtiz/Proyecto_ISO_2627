@@ -16,6 +16,7 @@ export interface DireccionPedidoVendedor {
 
 export interface PedidoVendedor {
   id: string;
+  clienteNombre: string;
   estado: 'PAGADO_COMPLETADO' | 'TRAMITADO_ENVIADO' | 'FINALIZADO';
   fechaCreacion: string;
   fechaPago: string | null;

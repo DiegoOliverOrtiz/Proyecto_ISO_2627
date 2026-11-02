@@ -107,7 +107,8 @@ public class PerfilService {
                 categoriaId,
                 sede,
                 fechaIncorporacion,
-                rol);
+                rol,
+                usuario.isTotpActivado());
     }
 
     private String enmascararDniNif(String dniNif) {

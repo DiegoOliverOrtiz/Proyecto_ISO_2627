@@ -111,6 +111,12 @@ public class ClienteController {
                 return ResponseEntity.noContent().build();
         }
 
+        @DeleteMapping("/cuenta")
+        public ResponseEntity<Void> darDeBaja(Authentication authentication) {
+                clienteService.darDeBaja(authentication.getName());
+                return ResponseEntity.noContent().build();
+        }
+
         @ExceptionHandler(DireccionNoEncontradaException.class)
         public ResponseEntity<ApiErrorResponse> manejarDireccionNoEncontrada(
                         DireccionNoEncontradaException excepcion) {

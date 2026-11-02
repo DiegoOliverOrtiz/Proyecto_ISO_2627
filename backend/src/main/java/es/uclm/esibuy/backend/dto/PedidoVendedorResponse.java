@@ -8,6 +8,7 @@ import es.uclm.esibuy.backend.model.EstadoPedido;
 
 public record PedidoVendedorResponse(
         String id,
+        String clienteNombre,
         EstadoPedido estado,
         Instant fechaCreacion,
         Instant fechaPago,

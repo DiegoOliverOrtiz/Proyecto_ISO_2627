@@ -30,11 +30,14 @@ class VendedorServiceTests {
     @Mock
     private SoporteRegistro soporteRegistro;
 
+    @Mock
+    private BajaUsuarioService bajaUsuarioService;
+
     private VendedorService vendedorService;
 
     @BeforeEach
     void setUp() {
-        vendedorService = new VendedorService(vendedorDAO, categoriaDAO, soporteRegistro);
+        vendedorService = new VendedorService(vendedorDAO, categoriaDAO, soporteRegistro, bajaUsuarioService);
     }
 
     @Test

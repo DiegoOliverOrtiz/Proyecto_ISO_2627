@@ -23,6 +23,7 @@ describe('PedidosVendedor - HU-35', () => {
 
   const pedido: PedidoVendedor = {
     id: 'pedido-mixto',
+    clienteNombre: 'cliente eliminado',
     estado: 'PAGADO_COMPLETADO',
     fechaCreacion: '2026-11-02T12:00:00Z',
     fechaPago: '2026-11-02T12:05:00Z',
@@ -99,6 +100,7 @@ describe('PedidosVendedor - HU-35', () => {
     expect(componente.pedidos()).toEqual([pedido]);
     expect(componente.pestana()).toBe('activos');
     expect(texto()).toContain('Pedido pedido-mixto');
+    expect(texto()).toContain('Cliente: cliente eliminado');
     expect(texto()).toContain('5.00 €');
   });
 

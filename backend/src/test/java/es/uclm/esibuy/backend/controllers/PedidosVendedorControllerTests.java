@@ -42,6 +42,7 @@ class PedidosVendedorControllerTests {
 
         return new PedidoVendedorResponse(
                 id,
+                "cliente eliminado",
                 estado,
                 Instant.parse("2026-11-02T10:00:00Z"),
                 Instant.parse("2026-11-02T10:05:00Z"),
@@ -67,6 +68,7 @@ class PedidosVendedorControllerTests {
                         .with(user(CORREO).roles("VENDEDOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("pedido-1"))
+                .andExpect(jsonPath("$[0].clienteNombre").value("cliente eliminado"))
                 .andExpect(jsonPath("$[0].estado")
                         .value("PAGADO_COMPLETADO"))
                 .andExpect(jsonPath("$[0].productos[0].productoId")
@@ -107,6 +109,7 @@ class PedidosVendedorControllerTests {
                         .with(user(CORREO).roles("VENDEDOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("pedido-1"))
+                .andExpect(jsonPath("$.clienteNombre").value("cliente eliminado"))
                 .andExpect(jsonPath("$.productos[0].nombreProducto")
                         .value("Producto de prueba"))
                 .andExpect(jsonPath("$.importeProductosPropios")

@@ -117,6 +117,7 @@ public class PedidoService {
         }
         Pedido pedido = new Pedido(pedidoId, cliente.getId(), lineas, EstadoPedido.EN_PROCESO,
                 importe, Instant.now(), null, direccion, metodoPagoId);
+        pedido.setClienteNombre((cliente.getNombre() + " " + cliente.getApellidos()).trim());
         pedidoDAO.insert(pedido);
         for (int i = 0; i < productos.size(); i++) {
             productoDAO.descontarStock(productos.get(i), lineas.get(i).cantidad());
