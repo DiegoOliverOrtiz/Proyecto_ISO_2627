@@ -16,9 +16,11 @@ import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
 import { Checkout } from './pages/checkout/checkout';
+import { Favoritos } from './pages/favoritos/favoritos';
 
 import { Direcciones } from './pages/direcciones/direcciones';
-import { Pagos } from './pages/pagos/pagos'; // <--- IMPORTACIÓN NUEVA
+import { Pagos } from './pages/pagos/pagos';
+import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
 
 export const routes: Routes = [
   {
@@ -48,7 +50,7 @@ export const routes: Routes = [
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
-  // ---> NUEVA RUTA DE MÉTODOS DE PAGO <---
+
   {
     path: 'perfil/pagos',
     component: Pagos,
@@ -92,6 +94,12 @@ export const routes: Routes = [
     data: { rol: 'ADMIN' }
   },
   {
+    path: 'cliente/favoritos',
+    component: Favoritos,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
+  {
     path: 'cliente/carrito',
     component: Carrito,
     canActivate: [rolGuard],
@@ -108,6 +116,12 @@ export const routes: Routes = [
     component: PanelCliente,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'vendedor/pedidos',
+    component: PedidosVendedor,
+    canActivate: [rolGuard],
+    data: { rol: 'VENDEDOR' }
   },
   {
     path: 'vendedor',

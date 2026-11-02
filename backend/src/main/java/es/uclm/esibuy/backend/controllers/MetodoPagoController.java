@@ -47,6 +47,10 @@ public class MetodoPagoController {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.body(new ApiErrorResponse(excepcion.getMessage()));
 	}
+	
+	public List<MetodoPagoResponse> consultarMetodosPago(Authentication authentication) {
+		return pagoSimuladoService.consultarMetodosPago(authentication.getName());
+	}
 
 	@PostMapping
 	public ResponseEntity<MetodoPagoResponse> registrarMetodoPago(

@@ -39,19 +39,34 @@ export class Pagos {
   });
 
   constructor() {
-    this.cargarTipos();
+    this.cargarDatos();
   }
 
-  cargarTipos(): void {
+  cargarDatos(): void {
     this.cargando.set(true);
+    this.mensajeError.set('');
+
     this.servicioPagos.consultarTipos().subscribe({
-      next: (res) => {
-        this.tipos.set(res);
+      next: (tiposRes) => {
+        this.tipos.set(tiposRes);
+        this.cargarMetodos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargando.set(false);
+        this.mensajeError.set(this.obtenerMensajeError(error, 'No se pudieron cargar los tipos de pago disponibles.'));
+      }
+    });
+  }
+
+  cargarMetodos(): void {
+    this.servicioPagos.consultarMetodos().subscribe({
+      next: (metodosRes) => {
+        this.metodosGuardados.set(metodosRes);
         this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
         this.cargando.set(false);
-        this.mensajeError.set('No se pudieron cargar los tipos de pago disponibles.');
+        this.mensajeError.set(this.obtenerMensajeError(error, 'No se pudieron cargar tus métodos de pago.'));
       }
     });
   }
@@ -112,11 +127,11 @@ export class Pagos {
     this.mensajeExito.set('');
 
     this.servicioPagos.registrarMetodo(solicitud).subscribe({
-      next: (metodo) => {
+      next: () => {
         this.guardando.set(false);
         this.editando.set(false);
         this.mensajeExito.set('Método de pago registrado correctamente.');
-        this.metodosGuardados.update(lista => [...lista, metodo]); 
+        this.cargarMetodos();
       },
       error: (error: HttpErrorResponse) => {
         this.guardando.set(false);
@@ -131,13 +146,21 @@ export class Pagos {
   }
 
   eliminarMetodo(id: string): void {
-     if (!window.confirm('¿Eliminar este método de pago?')) return;
-     this.servicioPagos.eliminarMetodo(id).subscribe({
-       next: () => {
-         this.mensajeExito.set('Método eliminado.');
-         this.metodosGuardados.update(lista => lista.filter(m => m.id !== id));
-       }
-     });
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este método de pago?')) {
+      return;
+    }
+
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
+    this.servicioPagos.eliminarMetodo(id).subscribe({
+      next: () => {
+        this.mensajeExito.set('Método de pago eliminado correctamente.');
+        this.cargarMetodos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.mensajeError.set(this.obtenerMensajeError(error, 'No se pudo eliminar el método de pago.'));
+      }
+    });
   }
 
   private valorNulo(valor: string): string | null {
@@ -145,11 +168,14 @@ export class Pagos {
     return limpio.length > 0 ? limpio : null;
   }
 
-  private obtenerMensajeError(error: HttpErrorResponse, gen: string): string {
+  private obtenerMensajeError(error: HttpErrorResponse, mensajeGenerico: string): string {
     if (error.status === 401) {
       void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
-      return 'Sesión expirada.';
+      return 'Tu sesión ya no es válida. Vuelve a iniciar sesión.';
     }
-    return error.error?.message ?? gen;
+    if (error.status === 403) {
+      return 'No tienes permiso para consultar estos métodos de pago.';
+    }
+    return error.error?.message ?? mensajeGenerico;
   }
 }

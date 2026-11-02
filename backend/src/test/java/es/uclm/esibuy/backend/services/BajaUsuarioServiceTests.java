@@ -26,6 +26,7 @@ import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import es.uclm.esibuy.backend.dao.CarritoDAO;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.ListaProductosDAO;
 import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
@@ -47,6 +48,7 @@ class BajaUsuarioServiceTests {
     @Mock private ClienteDAO clientes;
     @Mock private VendedorDAO vendedores;
     @Mock private CarritoDAO carritos;
+    @Mock private ListaProductosDAO listas;
     @Mock private MetodoPagoDAO metodos;
     @Mock private PedidoDAO pedidos;
     @Mock private ProductoDAO productos;
@@ -60,7 +62,7 @@ class BajaUsuarioServiceTests {
     @BeforeEach
     void configurar() {
         when(transacciones.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
-        servicio = new BajaUsuarioService(clientes, vendedores, carritos, metodos, pedidos, productos,
+        servicio = new BajaUsuarioService(clientes, vendedores, carritos, listas, metodos, pedidos, productos,
                 sesiones, imagenes, auditoria, transacciones);
     }
 
@@ -81,7 +83,8 @@ class BajaUsuarioServiceTests {
         assertNull(anonimizado.getDireccionEnvio());
         assertNull(anonimizado.getMetodoPagoId());
         assertEquals(pedido.getLineas(), anonimizado.getLineas());
-        InOrder orden = inOrder(metodos, carritos, clientes, sesiones, auditoria);
+        InOrder orden = inOrder(listas, metodos, carritos, clientes, sesiones, auditoria);
+        orden.verify(listas).deleteByUsuarioId("cliente-1");
         orden.verify(metodos).deleteByClienteId("cliente-1");
         orden.verify(carritos).deleteById("cliente-1");
         orden.verify(clientes).delete(cliente);
@@ -107,7 +110,7 @@ class BajaUsuarioServiceTests {
     void bloqueaLaBajaDelVendedorAntesDeEliminarProductosSiHayUnPedidoNoFinalizado() {
         Vendedor vendedor = vendedor();
         when(vendedores.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(vendedor));
-        when(pedidos.findByLineasVendedorId("vendedor-1"))
+        when(pedidos.findByVendedorId("vendedor-1"))
                 .thenReturn(List.of(pedido(EstadoPedido.PAGADO_COMPLETADO)));
 
         assertThrows(VendedorConPedidosEnCursoException.class,
@@ -127,14 +130,15 @@ class BajaUsuarioServiceTests {
         producto.setId("producto-1");
         producto.setImagen("/product-images/producto.png");
         when(vendedores.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(vendedor));
-        when(pedidos.findByLineasVendedorId("vendedor-1"))
+        when(pedidos.findByVendedorId("vendedor-1"))
                 .thenReturn(List.of(pedido(EstadoPedido.FINALIZADO)));
         when(productos.findByVendedor("Tienda Uno")).thenReturn(List.of(producto));
 
         servicio.darDeBajaVendedor(EMAIL_VENDEDOR);
 
-        InOrder orden = inOrder(productos, vendedores, sesiones, auditoria);
+        InOrder orden = inOrder(productos, listas, vendedores, sesiones, auditoria);
         orden.verify(productos).deleteAll(List.of(producto));
+        orden.verify(listas).deleteByUsuarioId("vendedor-1");
         orden.verify(vendedores).delete(vendedor);
         orden.verify(sesiones).cerrarSesiones(EMAIL_VENDEDOR);
         orden.verify(auditoria).registrarBajaCuenta("VENDEDOR");

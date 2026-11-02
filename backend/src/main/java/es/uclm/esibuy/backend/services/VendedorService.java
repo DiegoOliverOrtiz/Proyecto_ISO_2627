@@ -1,6 +1,7 @@
 
 package es.uclm.esibuy.backend.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -19,17 +20,43 @@ public class VendedorService {
     private final CategoriaDAO categoriaDAO;
     private final SoporteRegistro soporteRegistro;
     private final BajaUsuarioService bajaUsuarioService;
+    private final FavoritosRegistroService favoritosRegistroService;
+
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, null, null);
+    }
 
     public VendedorService(
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             SoporteRegistro soporteRegistro,
             BajaUsuarioService bajaUsuarioService) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, null, bajaUsuarioService);
+    }
 
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro,
+            FavoritosRegistroService favoritosRegistroService) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, favoritosRegistroService, null);
+    }
+
+    @Autowired
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro,
+            FavoritosRegistroService favoritosRegistroService,
+            BajaUsuarioService bajaUsuarioService) {
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.soporteRegistro = soporteRegistro;
         this.bajaUsuarioService = bajaUsuarioService;
+        this.favoritosRegistroService = favoritosRegistroService;
     }
 
     public void darDeBaja(String emailAutenticado) {
@@ -70,6 +97,13 @@ public class VendedorService {
         vendedor.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
         Vendedor guardado = soporteRegistro.guardarRegistro(() -> vendedorDAO.save(vendedor));
+
+        if (favoritosRegistroService != null) {
+            favoritosRegistroService.crearListaPredeterminada(
+                guardado.getId()
+            );
+        }
+
         return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
     }
 

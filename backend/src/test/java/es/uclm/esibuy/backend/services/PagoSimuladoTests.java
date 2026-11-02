@@ -264,4 +264,62 @@ class PagoSimuladoServiceTests {
 				tipos.stream().map(TipoMetodoPagoResponse::codigo).toList());
 		assertEquals("PayPal", tipos.get(1).nombre());
 	}
+
+		private MetodoPago crearMetodo(String nombre, String tipo, String referencia) {
+		MetodoPago metodo = new MetodoPago();
+		metodo.setId("id-" + nombre);
+		metodo.setClienteId(ID_CLIENTE);
+		metodo.setNombre(nombre);
+		metodo.setTipo(tipo);
+		metodo.setToken("tok_sim_secreto");
+		metodo.setReferenciaEnmascarada(referencia);
+		return metodo;
+	}
+
+	@Test
+	void consultarMetodosPago_devuelveSoloLosDelClienteEnmascaradosYOrdenadosPorNombre() {
+		prepararCliente();
+		when(metodoPagoDAO.findByClienteId(ID_CLIENTE)).thenReturn(List.of(
+				crearMetodo("visa trabajo", "TARJETA", "**** **** **** 4242"),
+				crearMetodo("Bizum", "BIZUM", "******789")));
+
+		List<MetodoPagoResponse> respuesta = servicio.consultarMetodosPago(EMAIL);
+
+		assertEquals(List.of("Bizum", "visa trabajo"),
+				respuesta.stream().map(MetodoPagoResponse::nombre).toList());
+		assertEquals(List.of("BIZUM", "TARJETA"),
+				respuesta.stream().map(MetodoPagoResponse::tipo).toList());
+		assertEquals("******789", respuesta.get(0).datosEnmascarados());
+		assertFalse(respuesta.toString().contains("tok_sim_secreto"));
+		verify(metodoPagoDAO).findByClienteId(ID_CLIENTE);
+	}
+
+	@Test
+	void consultarMetodosPago_sinMetodos_devuelveListaVacia() {
+		prepararCliente();
+
+		assertTrue(servicio.consultarMetodosPago(EMAIL).isEmpty());
+	}
+
+	@Test
+	void consultarMetodosPago_usaSiempreElIdDelClienteAutenticado() {
+		Cliente otro = new Cliente();
+		otro.setId("cliente-2");
+		otro.setEmail("otro@example.com");
+		when(clienteDAO.findByEmail("otro@example.com")).thenReturn(Optional.of(otro));
+
+		assertTrue(servicio.consultarMetodosPago("otro@example.com").isEmpty());
+
+		verify(metodoPagoDAO).findByClienteId("cliente-2");
+		verify(metodoPagoDAO, never()).findByClienteId(ID_CLIENTE);
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = "   ")
+	void consultarMetodosPago_sinSolicitanteIdentificado_lanzaUsuarioNoEncontrado(String email) {
+		assertThrows(UsuarioNoEncontradoException.class, () -> servicio.consultarMetodosPago(email));
+
+		verifyNoInteractions(clienteDAO, metodoPagoDAO);
+	}
 }

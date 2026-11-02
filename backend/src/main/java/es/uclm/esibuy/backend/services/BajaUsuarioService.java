@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import es.uclm.esibuy.backend.dao.CarritoDAO;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.ListaProductosDAO;
 import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
@@ -29,6 +30,7 @@ public class BajaUsuarioService {
     private final ClienteDAO clienteDAO;
     private final VendedorDAO vendedorDAO;
     private final CarritoDAO carritoDAO;
+    private final ListaProductosDAO listaProductosDAO;
     private final MetodoPagoDAO metodoPagoDAO;
     private final PedidoDAO pedidoDAO;
     private final ProductoDAO productoDAO;
@@ -41,6 +43,7 @@ public class BajaUsuarioService {
             ClienteDAO clienteDAO,
             VendedorDAO vendedorDAO,
             CarritoDAO carritoDAO,
+            ListaProductosDAO listaProductosDAO,
             MetodoPagoDAO metodoPagoDAO,
             PedidoDAO pedidoDAO,
             ProductoDAO productoDAO,
@@ -51,6 +54,7 @@ public class BajaUsuarioService {
         this.clienteDAO = clienteDAO;
         this.vendedorDAO = vendedorDAO;
         this.carritoDAO = carritoDAO;
+        this.listaProductosDAO = listaProductosDAO;
         this.metodoPagoDAO = metodoPagoDAO;
         this.pedidoDAO = pedidoDAO;
         this.productoDAO = productoDAO;
@@ -67,6 +71,7 @@ public class BajaUsuarioService {
             for (Pedido pedido : pedidoDAO.findByClienteId(cliente.getId())) {
                 pedidoDAO.save(pedido.desvinculadoCliente());
             }
+            listaProductosDAO.deleteByUsuarioId(cliente.getId());
             metodoPagoDAO.deleteByClienteId(cliente.getId());
             carritoDAO.deleteById(cliente.getId());
             clienteDAO.delete(cliente);
@@ -79,7 +84,7 @@ public class BajaUsuarioService {
         String email = normalizarEmail(emailAutenticado);
         List<String> imagenes = transaccion.execute(status -> {
             Vendedor vendedor = vendedorDAO.findByEmail(email).orElseThrow(CuentaNoEncontradaException::new);
-            List<Pedido> pedidos = pedidoDAO.findByLineasVendedorId(vendedor.getId());
+            List<Pedido> pedidos = pedidoDAO.findByVendedorId(vendedor.getId());
             if (pedidos.stream().anyMatch(pedido -> pedido.getEstado() != EstadoPedido.FINALIZADO)) {
                 throw new VendedorConPedidosEnCursoException();
             }
@@ -90,6 +95,7 @@ public class BajaUsuarioService {
                     .filter(ruta -> ruta != null && !ruta.isBlank())
                     .toList();
             productoDAO.deleteAll(productos);
+            listaProductosDAO.deleteByUsuarioId(vendedor.getId());
             vendedorDAO.delete(vendedor);
             return rutasImagenes;
         });

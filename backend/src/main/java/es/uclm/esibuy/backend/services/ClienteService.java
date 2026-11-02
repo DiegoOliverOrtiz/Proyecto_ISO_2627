@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.ClienteDAO;
@@ -23,14 +24,36 @@ public class ClienteService {
 
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
+	private final FavoritosRegistroService favoritosRegistroService;
 	private final BajaUsuarioService bajaUsuarioService;
+
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro) {
+		this(clienteDAO, soporteRegistro, null, null);
+	}
+
+	public ClienteService(ClienteDAO clienteDAO, SoporteRegistro soporteRegistro,
+			FavoritosRegistroService favoritosRegistroService) {
+		this(clienteDAO, soporteRegistro, favoritosRegistroService, null);
+	}
 
 	public ClienteService(
 			ClienteDAO clienteDAO,
 			SoporteRegistro soporteRegistro,
 			BajaUsuarioService bajaUsuarioService) {
+		this(clienteDAO, soporteRegistro, null, bajaUsuarioService);
+	}
+
+	@Autowired
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro,
+			FavoritosRegistroService favoritosRegistroService,
+			BajaUsuarioService bajaUsuarioService) {
 		this.clienteDAO = clienteDAO;
 		this.soporteRegistro = soporteRegistro;
+		this.favoritosRegistroService = favoritosRegistroService;
 		this.bajaUsuarioService = bajaUsuarioService;
 	}
 
@@ -60,6 +83,13 @@ public class ClienteService {
 		cliente.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
 		Cliente guardado = soporteRegistro.guardarRegistro(() -> clienteDAO.save(cliente));
+
+		if (favoritosRegistroService != null) {
+			favoritosRegistroService.crearListaPredeterminada(
+				guardado.getId()
+			);
+		}
+
 		return new RegistroUsuarioResponse(guardado.getId(), "cliente");
 	}
 

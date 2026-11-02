@@ -23,6 +23,17 @@ describe('PanelCliente - catálogo HU-19', () => {
   });
 
   afterEach(() => {
+    const peticionesFavoritos = httpMock.match(
+      'http://localhost:8080/usuarios/favoritos'
+    );
+
+    for (const peticion of peticionesFavoritos) {
+      peticion.flush({
+        ids: [],
+        productos: []
+      });
+    }
+
     httpMock.verify();
     TestBed.resetTestingModule();
   });
@@ -63,7 +74,12 @@ describe('PanelCliente - catálogo HU-19', () => {
     const tarjeta = fixture.nativeElement.querySelector('.product-card');
     expect(tarjeta.classList.contains('product-blocked')).toBe(false);
     expect(tarjeta.querySelector('.premium-message')).toBeNull();
-    expect(tarjeta.querySelector('button').disabled).toBe(false);
+    const botonDetalle = (tarjeta as HTMLElement).querySelector<HTMLButtonElement>(
+      '.product-actions .secondary-button'
+    );
+
+    expect(botonDetalle).not.toBeNull();
+    expect(botonDetalle?.disabled).toBe(false);
   });
 
   it('envía filtros combinados al backend y muestra la respuesta filtrada', () => {
@@ -152,7 +168,9 @@ describe('PanelCliente - catálogo HU-19', () => {
     ]);
     fixture.detectChanges();
 
-    fixture.nativeElement.querySelector('.product-card button').click();
+    fixture.nativeElement
+      .querySelector('.product-card .product-actions .secondary-button')
+      .click();
     const peticionDetalle = httpMock.expectOne(`${environment.apiUrl}/cliente/productos/stock-bajo`);
     expect(peticionDetalle.request.method).toBe('GET');
     peticionDetalle.flush({
@@ -175,7 +193,9 @@ describe('PanelCliente - catálogo HU-19', () => {
     ]);
     fixture.detectChanges();
 
-    fixture.nativeElement.querySelector('.product-card button').click();
+    fixture.nativeElement
+      .querySelector('.product-card .product-actions .secondary-button')
+      .click();
     httpMock.expectOne(`${environment.apiUrl}/cliente/productos/stock-limite`).flush({
       ...crearProducto('stock-limite', false, true, 5),
       precioOriginal: 25,
@@ -207,7 +227,9 @@ describe('PanelCliente - catálogo HU-19', () => {
     expect(tarjeta.querySelector('img[src="x"]')).toBeNull();
     expect(tarjeta.textContent).toContain('Vendedor: <svg onload=alert(1)>');
 
-    tarjeta.querySelector('button').click();
+    tarjeta
+      .querySelector('.product-actions .secondary-button')
+      .click();
     httpMock.expectOne(`${environment.apiUrl}/cliente/productos/xss`).flush({
       ...crearProducto('xss', false, true, 6),
       nombre: '<img src=x onerror=alert(1)>',

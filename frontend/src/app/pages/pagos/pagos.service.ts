@@ -54,8 +54,7 @@ export class PagosService {
       }))
     );
   }
-  
-  // HU-36 Eliminar (por si lo necesitas ya)
+
   eliminarMetodo(id: string): Observable<void> {
     return this.http.get<RespuestaTokenCsrf>(this.csrfUrl, { withCredentials: true }).pipe(
       switchMap(csrf => this.http.delete<void>(`${this.baseUrl}/${id}`, {

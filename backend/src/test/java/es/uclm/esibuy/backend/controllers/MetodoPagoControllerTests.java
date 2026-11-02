@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -155,6 +157,43 @@ class MetodoPagoControllerTests {
 					.andExpect(status().isForbidden());
 		}
 		mockMvc.perform(get(URL + "/tipos")).andExpect(status().isForbidden());
+
+		verifyNoInteractions(pagoSimuladoService);
+	}
+
+	@Test
+	void consultaLosMetodosDePagoDelClienteSinExponerElToken() throws Exception {
+		// CAMBIO: consultarMetodos en lugar de consultarMetodosPago + anyString()
+		when(pagoSimuladoService.consultarMetodos(anyString())).thenReturn(List.of(respuesta()));
+
+		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].nombre").value("Visa personal"))
+				.andExpect(jsonPath("$[0].tipo").value("TARJETA"))
+				.andExpect(jsonPath("$[0].datosEnmascarados").value("**** **** **** 4242"))
+				.andExpect(jsonPath("$[0].token").doesNotExist());
+
+		// CAMBIO: verificar consultarMetodos
+		verify(pagoSimuladoService).consultarMetodos(eq(EMAIL));
+	}
+
+	@Test
+	void sinMetodosDePago_devuelveUnaListaVaciaConEstado200() throws Exception {
+		// CAMBIO: consultarMetodos en lugar de consultarMetodosPago + anyString()
+		when(pagoSimuladoService.consultarMetodos(anyString())).thenReturn(List.of());
+
+		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
+	void vendedoresAdministradoresYAnonimos_noPuedenConsultarMetodosDePago() throws Exception {
+		mockMvc.perform(get(URL).with(user("otro@example.com").roles("VENDEDOR")))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get(URL).with(user("otro@example.com").roles("ADMIN")))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get(URL)).andExpect(status().isForbidden());
 
 		verifyNoInteractions(pagoSimuladoService);
 	}
