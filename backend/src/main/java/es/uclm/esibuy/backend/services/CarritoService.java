@@ -134,6 +134,7 @@ public class CarritoService {
             } else {
                 linea = new LineaCarritoResponse(entrada.getKey(), entrada.getValue(), null, null,
                         producto == null ? "Producto eliminado" : producto.getNombre(),
+                        producto == null ? null : producto.getImagen(),
                         producto == null ? null : producto.getStock(), false, aviso);
             }
             lineas.add(linea);
@@ -170,7 +171,7 @@ public class CarritoService {
         BigDecimal precioUnitario = BigDecimal.valueOf(precio).setScale(2);
         BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
         return new LineaCarritoResponse(producto.getId(), cantidad, precioUnitario, subtotal,
-                producto.getNombre(), producto.getStock(), true, null);
+                producto.getNombre(), producto.getImagen(), producto.getStock(), true, null);
     }
 
     private Resultado actualizarCarrito(String idProducto, int cantidad) {
@@ -239,7 +240,13 @@ public class CarritoService {
         return new CarritoResponse(List.copyOf(lineas), importe);
     }
 
-    private Cliente obtenerClienteAutenticado() {
+    LineaCarritoResponse validarLineaParaCompra(Producto producto, int cantidad, Cliente cliente) {
+        String aviso = comprobarDisponibilidad(producto, cantidad, cliente);
+        if (aviso != null) throw new IllegalArgumentException(aviso);
+        return calcularLinea(producto, cantidad, cliente);
+    }
+
+    Cliente obtenerClienteAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication.getAuthorities().stream()

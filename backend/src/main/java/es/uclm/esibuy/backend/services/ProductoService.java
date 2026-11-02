@@ -220,6 +220,8 @@ public class ProductoService {
         String nombreCategoria = validarDatosProducto(request);
         Producto producto = buscarProductoPropio(vendedor, idProducto);
 
+        int stockAnterior = producto.getStock();
+
         // Solo se actualizan los campos permitidos; el vendedor y la visibilidad se conservan.
         asignarDatos(producto, request, nombreCategoria);
         // La marca «solo premium» es opcional: si no se envía, se conserva la actual.
@@ -234,7 +236,19 @@ public class ProductoService {
             producto.setImagen(imagenNueva);
         }
 
-        Producto productoModificado = guardarEliminandoImagenSiFalla(producto, imagenNueva);
+        Producto productoModificado;
+        try {
+            productoModificado = productoDAO.actualizarDatos(producto, stockAnterior);
+        } catch (RuntimeException exception) {
+            if (imagenNueva != null) {
+                try {
+                    productoImagenService.eliminar(imagenNueva);
+                } catch (RuntimeException limpieza) {
+                    exception.addSuppressed(limpieza);
+                }
+            }
+            throw exception;
+        }
         if (imagenNueva != null) {
             productoImagenService.eliminar(imagenAnterior);
         }
@@ -327,6 +341,6 @@ public class ProductoService {
 
         // La desactivación es lógica: solo cambia el estado, el producto nunca se elimina.
         producto.setEsVisible(activo);
-        productoDAO.save(producto);
+        productoDAO.actualizarVisibilidad(producto.getId(), activo);
     }
 }

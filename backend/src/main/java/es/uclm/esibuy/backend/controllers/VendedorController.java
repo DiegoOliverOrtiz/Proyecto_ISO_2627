@@ -3,9 +3,11 @@ package es.uclm.esibuy.backend.controllers;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
+import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
 import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
@@ -36,6 +39,12 @@ public class VendedorController {
     public VendedorController(VendedorService vendedorService, ProductoService productoService) {
         this.vendedorService = vendedorService;
         this.productoService = productoService;
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> conflictoProducto() {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse("El producto ha cambiado. Actualiza e inténtalo de nuevo."));
     }
 
     @GetMapping("/productos")

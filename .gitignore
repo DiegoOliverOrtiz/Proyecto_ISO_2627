@@ -4,3 +4,4 @@
 *.p12
 *.pfx
 .scannerwork/
+/documents/HU*.md

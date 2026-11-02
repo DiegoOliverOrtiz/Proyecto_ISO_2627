@@ -31,7 +31,7 @@
   gap: .75rem;
 }
 
-.cart-access { justify-content: end; margin: 1rem 2rem; }
+.cart-access { justify-content: end; margin: .5rem 2rem; }
 
 .profile-link,
 .logout-button,
@@ -109,7 +109,7 @@
 .client-content {
   width: min(1100px, calc(100% - 4rem));
   margin: 0 auto;
-  padding: 2.5rem 0;
+  padding: 1.5rem 0 2.5rem;
 }
 
 .status-message,
@@ -228,7 +228,6 @@
 
 .product-heading h3 {
   margin: 0;
-  color: #173042;
 }
 
 .premium-badge {

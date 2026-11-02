@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +35,17 @@ public class MetodoPagoController {
 	@GetMapping("/tipos")
 	public List<TipoMetodoPagoResponse> consultarTipos() {
 		return pagoSimuladoService.consultarTiposDisponibles();
+	}
+
+	@GetMapping
+	public List<MetodoPagoResponse> consultarMetodos(Authentication authentication) {
+		return pagoSimuladoService.consultarMetodos(authentication.getName());
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ApiErrorResponse> accesoDenegado(AccessDeniedException excepcion) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(new ApiErrorResponse(excepcion.getMessage()));
 	}
 
 	@PostMapping
