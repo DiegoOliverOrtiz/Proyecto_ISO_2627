@@ -24,7 +24,7 @@ describe('PanelCliente - catálogo HU-19', () => {
 
   afterEach(() => {
     const peticionesFavoritos = httpMock.match(
-      'http://localhost:8080/usuarios/favoritos'
+      `${environment.apiUrl}/usuarios/favoritos`
     );
 
     for (const peticion of peticionesFavoritos) {
