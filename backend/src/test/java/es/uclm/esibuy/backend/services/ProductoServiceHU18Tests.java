@@ -234,7 +234,7 @@ class ProductoServiceHU18Tests {
         when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
         when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(crearProducto(NOMBRE_COMERCIAL)));
         when(productoImagenService.guardar(imagen)).thenReturn(IMAGEN_NUEVA);
-        when(productoDAO.save(any(Producto.class))).thenThrow(errorGuardado);
+        when(productoDAO.actualizarDatos(any(Producto.class), org.mockito.ArgumentMatchers.anyInt())).thenThrow(errorGuardado);
 
         RuntimeException lanzada = assertThrows(
                 RuntimeException.class,
@@ -365,12 +365,13 @@ class ProductoServiceHU18Tests {
         when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
         when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
         when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
-        when(productoDAO.save(any(Producto.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+        when(productoDAO.actualizarDatos(any(Producto.class), org.mockito.ArgumentMatchers.anyInt()))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
     }
 
     private Producto productoGuardado() {
         ArgumentCaptor<Producto> guardado = ArgumentCaptor.forClass(Producto.class);
-        verify(productoDAO).save(guardado.capture());
+        verify(productoDAO).actualizarDatos(guardado.capture(), org.mockito.ArgumentMatchers.anyInt());
         return guardado.getValue();
     }
 

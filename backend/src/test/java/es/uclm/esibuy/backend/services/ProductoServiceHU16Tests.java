@@ -16,7 +16,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
@@ -77,12 +76,12 @@ class ProductoServiceHU16Tests {
 
         productoService.desactivarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
 
-        ArgumentCaptor<Producto> guardado = ArgumentCaptor.forClass(Producto.class);
-        verify(productoDAO).save(guardado.capture());
-        assertFalse(guardado.getValue().isEsVisible());
-        assertEquals(ID_PRODUCTO, guardado.getValue().getId());
-        assertEquals("Teclado", guardado.getValue().getNombre());
-        assertEquals(NOMBRE_COMERCIAL, guardado.getValue().getVendedor());
+        verify(productoDAO).actualizarVisibilidad(ID_PRODUCTO, false);
+        verify(productoDAO, never()).save(any());
+        assertFalse(producto.isEsVisible());
+        assertEquals(ID_PRODUCTO, producto.getId());
+        assertEquals("Teclado", producto.getNombre());
+        assertEquals(NOMBRE_COMERCIAL, producto.getVendedor());
     }
 
     @Test
@@ -93,7 +92,7 @@ class ProductoServiceHU16Tests {
 
         productoService.activarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
 
-        verify(productoDAO).save(producto);
+        verify(productoDAO).actualizarVisibilidad(ID_PRODUCTO, true);
         assertTrue(producto.isEsVisible());
     }
 

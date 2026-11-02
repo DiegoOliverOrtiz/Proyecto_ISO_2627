@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../../environments/environment';
 import { AuthService } from '../login/auth.service';
 import { CarritoResponse, CarritoService, LineaCarritoResponse } from './carrito.service';
 
@@ -95,6 +96,17 @@ export class Carrito {
     if (!window.confirm('¿Quieres descartar todo el carrito? Se eliminarán todos sus productos.')) return;
     this.ejecutar(this.servicio.descartarCarrito(), 'descarte',
       'Carrito descartado.', 'No se pudo descartar el carrito. Inténtalo de nuevo.');
+  }
+
+  comprar(): void {
+    if (this.cargando() || this.operacion() !== null || !this.carrito()?.productos.length || this.hayAvisos()) return;
+    void this.enrutador.navigate(['/cliente/checkout']);
+  }
+
+  urlImagen(imagen: string): string {
+    const ruta = imagen.trim();
+    if (/^https?:\/\//i.test(ruta)) return ruta;
+    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
   }
 
   private ejecutar(peticion: Observable<CarritoResponse>, operacion: string, exito: string, error: string,

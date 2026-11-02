@@ -42,7 +42,6 @@ export class PagosService {
     return this.http.get<TipoPago[]>(`${this.baseUrl}/tipos`, { withCredentials: true });
   }
 
-  // Todavía no está implementado el listado en backend, pero se prepararía así para futuras HUs (o devolvemos vacío)
   consultarMetodos(): Observable<MetodoPagoResponse[]> {
     return this.http.get<MetodoPagoResponse[]>(this.baseUrl, { withCredentials: true });
   }

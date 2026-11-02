@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 import es.uclm.esibuy.backend.model.Producto;
 
-public interface ProductoDAO extends MongoRepository<Producto, String> {
+public interface ProductoDAO extends MongoRepository<Producto, String>, ProductoActualizacionDAO {
     List<Producto> findByVendedor(String nombreComercial);
 
     List<Producto> findByEsVisibleTrue();

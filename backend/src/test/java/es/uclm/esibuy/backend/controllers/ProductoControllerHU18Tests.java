@@ -237,6 +237,17 @@ class ProductoControllerHU18Tests {
         verifyNoInteractions(productoService);
     }
 
+    @Test
+    void conflictoDeStockDevuelve409SinExponerDetallesInternos() throws Exception {
+        when(productoService.modificarProducto(eq(EMAIL_VENDEDOR), eq("producto-1"), any(), isNull()))
+                .thenThrow(new org.springframework.dao.OptimisticLockingFailureException("Detalle interno"));
+        mockMvc.perform(peticionModificar(JSON_VALIDO)
+                        .with(user(EMAIL_VENDEDOR).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("El producto ha cambiado. Actualiza e inténtalo de nuevo."));
+    }
+
     private MockMultipartHttpServletRequestBuilder peticionModificar(String json) {
         MockMultipartFile producto = new MockMultipartFile(
                 "producto", "", MediaType.APPLICATION_JSON_VALUE, json.getBytes(StandardCharsets.UTF_8));

@@ -15,6 +15,7 @@ import { CrearAdministrador } from './pages/admin/crear-administrador';
 import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
+import { Checkout } from './pages/checkout/checkout';
 
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos'; // <--- IMPORTACIÓN NUEVA
@@ -93,6 +94,12 @@ export const routes: Routes = [
   {
     path: 'cliente/carrito',
     component: Carrito,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'cliente/checkout',
+    component: Checkout,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },

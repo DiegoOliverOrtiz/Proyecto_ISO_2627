@@ -181,6 +181,8 @@ export class ProductoService {
   }
 
   urlImagen(imagen: string): string {
-    return `${environment.apiUrl}${imagen}`;
+    const ruta = imagen.trim();
+    if (/^https?:\/\//i.test(ruta)) return ruta;
+    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
   }
 }
