@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Pagos</p>
       <h1>Mis métodos de pago</h1>
-      <p>Añade tarjetas, PayPal o Bizum para tus compras.</p>
+      <p>Añade y consulta tus tarjetas, PayPal o Bizum para tus compras.</p>
     </div>
     <div class="header-actions">
       <a class="secondary-button" routerLink="/perfil">Volver al perfil</a>
@@ -14,9 +14,10 @@
   </header>
 
   @if (cargando()) {
-    <output class="status-message">Cargando...</output>
+    <output class="status-message">Cargando métodos de pago...</output>
   } @else if (mensajeError()) {
     <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
+    <button class="secondary-button" type="button" (click)="cargarDatos()">Reintentar</button>
   } @else {
     
     @if (mensajeExito() && !editando()) {
@@ -102,15 +103,15 @@
             <h3>{{ metodo.nombre }}</h3>
             <p><strong>Tipo:</strong> {{ metodo.tipo }}</p>
             <p><strong>Referencia:</strong> {{ metodo.datosEnmascarados }}</p>
-            @if(metodo.titular) { <p><strong>Titular:</strong> {{ metodo.titular }}</p> }
-            @if(metodo.caducidad) { <p><strong>Caduca:</strong> {{ metodo.caducidad }}</p> }
+            @if (metodo.titular) { <p><strong>Titular:</strong> {{ metodo.titular }}</p> }
+            @if (metodo.caducidad) { <p><strong>Caducidad:</strong> {{ metodo.caducidad }}</p> }
             
             <div class="card-actions">
               <button class="secondary-button danger action-btn" (click)="eliminarMetodo(metodo.id)">Eliminar</button>
             </div>
           </article>
         } @empty {
-          <p class="status-message">No tienes métodos de pago guardados.</p>
+          <p class="status-message">No tienes ningún método de pago guardado.</p>
         }
       </div>
     }

@@ -158,4 +158,38 @@ class MetodoPagoControllerTests {
 
 		verifyNoInteractions(pagoSimuladoService);
 	}
+
+		@Test
+	void consultaLosMetodosDePagoDelClienteSinExponerElToken() throws Exception {
+		when(pagoSimuladoService.consultarMetodosPago(EMAIL)).thenReturn(List.of(respuesta()));
+
+		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].nombre").value("Visa personal"))
+				.andExpect(jsonPath("$[0].tipo").value("TARJETA"))
+				.andExpect(jsonPath("$[0].datosEnmascarados").value("**** **** **** 4242"))
+				.andExpect(jsonPath("$[0].token").doesNotExist());
+
+		verify(pagoSimuladoService).consultarMetodosPago(EMAIL);
+	}
+
+	@Test
+	void sinMetodosDePago_devuelveUnaListaVaciaConEstado200() throws Exception {
+		when(pagoSimuladoService.consultarMetodosPago(EMAIL)).thenReturn(List.of());
+
+		mockMvc.perform(get(URL).with(user(EMAIL).roles("CLIENTE")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
+	void vendedoresAdministradoresYAnonimos_noPuedenConsultarMetodosDePago() throws Exception {
+		mockMvc.perform(get(URL).with(user("otro@example.com").roles("VENDEDOR")))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get(URL).with(user("otro@example.com").roles("ADMIN")))
+				.andExpect(status().isForbidden());
+		mockMvc.perform(get(URL)).andExpect(status().isForbidden());
+
+		verifyNoInteractions(pagoSimuladoService);
+	}
 }

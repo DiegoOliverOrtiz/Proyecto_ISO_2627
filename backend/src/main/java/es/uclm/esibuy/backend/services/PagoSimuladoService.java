@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
@@ -110,5 +111,13 @@ public class PagoSimuladoService {
 			case TipoMetodoPago.CODIGO_BIZUM -> "******" + dato.substring(dato.length() - 3);
 			default -> throw new IllegalStateException("Tipo de método de pago no soportado.");
 		};
+	}
+
+	public List<MetodoPagoResponse> consultarMetodosPago(String emailAutenticado) {
+		Cliente cliente = obtenerCliente(emailAutenticado);
+		return metodoPagoDAO.findByClienteId(cliente.getId()).stream()
+				.sorted(Comparator.comparing(MetodoPago::getNombre, String.CASE_INSENSITIVE_ORDER))
+				.map(MetodoPagoResponse::de)
+				.toList();
 	}
 }
