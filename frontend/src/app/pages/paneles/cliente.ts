@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { FavoritosService } from '../favoritos/favoritos.service';
 
 import { AuthService } from '../login/auth.service';
 import { CarritoService } from '../carrito/carrito.service';
@@ -64,7 +65,26 @@ export class PanelCliente implements OnInit {
     this.categoriaFiltro() !== '' ||
     this.precioMinimo() !== '' ||
     this.precioMaximo() !== '' ||
-    this.disponibilidadFiltro() !== 'todos'
+    this.disponibilidadFiltro() !== 'todos' ||
+    this.soloFavoritos()
+  );
+
+  private readonly servicioFavoritos = inject(FavoritosService);
+
+  readonly idsFavoritos = signal<ReadonlySet<string>>(new Set<string>());
+  readonly favoritosDisponibles = signal(false);
+  readonly cargandoFavoritos = signal(false);
+  readonly modificandoFavorito = signal<string | null>(null);
+  readonly soloFavoritos = signal(false);
+  readonly errorFavoritos = signal('');
+  readonly mensajeFavoritos = signal('');
+
+  readonly productosMostrados = computed(() =>
+    this.soloFavoritos()
+      ? this.productos().filter(producto =>
+        this.idsFavoritos().has(producto.id)
+      )
+      : this.productos()
   );
 
 
@@ -74,6 +94,7 @@ export class PanelCliente implements OnInit {
 
   ngOnInit(): void {
     this.cargarProductos({});
+    this.cargarFavoritos();
   }
 
 
@@ -172,9 +193,9 @@ export class PanelCliente implements OnInit {
 
     this.disponibilidadFiltro.set(
       (evento.target as HTMLSelectElement).value as
-        'todos' |
-        'disponibles' |
-        'agotados'
+      'todos' |
+      'disponibles' |
+      'agotados'
     );
   }
 
@@ -186,6 +207,7 @@ export class PanelCliente implements OnInit {
     this.precioMinimo.set('');
     this.precioMaximo.set('');
     this.disponibilidadFiltro.set('todos');
+    this.soloFavoritos.set(false);
 
     this.cargarProductos({});
   }
@@ -410,7 +432,7 @@ export class PanelCliente implements OnInit {
         if (error.status === 403) {
           // La seguridad actual también responde 403 cuando no hay sesión.
           this.servicioAutenticacion.obtenerSesionActual().subscribe({
-            next: () => {},
+            next: () => { },
             error: (sesion: HttpErrorResponse) => {
               if (sesion.status === 401 || sesion.status === 403) this.irALogin();
             }
@@ -510,6 +532,85 @@ export class PanelCliente implements OnInit {
     );
   }
 
+  cargarFavoritos(): void {
+    this.cargandoFavoritos.set(true);
+    this.favoritosDisponibles.set(false);
+    this.errorFavoritos.set('');
+
+    this.servicioFavoritos.consultar().subscribe({
+      next: respuesta => {
+        this.idsFavoritos.set(new Set(respuesta.ids));
+        this.favoritosDisponibles.set(true);
+        this.cargandoFavoritos.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargandoFavoritos.set(false);
+        this.errorFavoritos.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio de favoritos.'
+            : 'No se pudieron consultar tus favoritos.'
+        );
+
+        if (error.status === 401) {
+          this.irALogin();
+        }
+      }
+    });
+  }
+
+  esFavorito(productoId: string): boolean {
+    return this.idsFavoritos().has(productoId);
+  }
+
+  cambiarFavorito(producto: ProductoCatalogo): void {
+    if (
+      !this.favoritosDisponibles() ||
+      this.modificandoFavorito() !== null
+    ) {
+      return;
+    }
+
+    const yaGuardado = this.esFavorito(producto.id);
+
+    this.modificandoFavorito.set(producto.id);
+    this.errorFavoritos.set('');
+    this.mensajeFavoritos.set('');
+
+    const peticion = yaGuardado
+      ? this.servicioFavoritos.quitar(producto.id)
+      : this.servicioFavoritos.anadir(producto.id);
+
+    peticion.subscribe({
+      next: respuesta => {
+        this.idsFavoritos.set(new Set(respuesta.ids));
+        this.modificandoFavorito.set(null);
+        this.mensajeFavoritos.set(
+          yaGuardado
+            ? 'Producto eliminado de favoritos.'
+            : 'Producto guardado en favoritos.'
+        );
+      },
+      error: (error: HttpErrorResponse) => {
+        this.modificandoFavorito.set(null);
+
+        this.errorFavoritos.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servidor.'
+            : 'No se pudo actualizar el favorito.'
+        );
+
+        if (error.status === 401) {
+          this.irALogin();
+        }
+      }
+    });
+  }
+
+  actualizarFiltroFavoritos(evento: Event): void {
+    this.soloFavoritos.set(
+      (evento.target as HTMLInputElement).checked
+    );
+  }
 
   /* =========================================================
      CERRAR SESIÓN
