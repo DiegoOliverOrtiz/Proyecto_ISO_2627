@@ -1,0 +1,171 @@
+<header class="favorites-header">
+  <h1>ESIBuy</h1>
+
+  <nav aria-label="Navegación de favoritos">
+    <a routerLink="/cliente">Catálogo</a>
+    <a routerLink="/cliente/carrito">Mi carrito</a>
+    <a routerLink="/perfil">Mi perfil</a>
+  </nav>
+</header>
+
+<main class="favorites-page">
+
+  <div class="favorites-heading">
+    <div>
+      <h2>Mis favoritos</h2>
+      <p>
+        Guarda tus productos preferidos para encontrarlos
+        fácilmente cuando los necesites.
+      </p>
+    </div>
+
+    <a routerLink="/cliente" class="back-link">
+      Volver al catálogo
+    </a>
+  </div>
+
+  @if (error()) {
+    <p class="message error-message" role="alert">
+      {{ error() }}
+    </p>
+  }
+
+  @if (exito()) {
+    <output class="message success-message">
+      {{ exito() }}
+    </output>
+  }
+
+  @if (cargando()) {
+
+    <output class="message">
+      Cargando favoritos...
+    </output>
+
+  } @else if (productos().length === 0) {
+
+    <section class="empty-favorites">
+      <h3>Todavía no tienes favoritos</h3>
+
+      <p>
+        Explora el catálogo y guarda los productos
+        que más te interesen.
+      </p>
+
+      <a routerLink="/cliente" class="primary-link">
+        Explorar productos
+      </a>
+    </section>
+
+  } @else {
+
+    <p class="favorites-count">
+      {{ productos().length }}
+      {{
+        productos().length === 1
+          ? 'producto guardado'
+          : 'productos guardados'
+      }}
+    </p>
+
+    <ul class="favorites-grid">
+
+      @for (producto of productos(); track producto.id) {
+
+        <li
+          class="favorite-card"
+          [class.unavailable]="!producto.disponible"
+        >
+
+          <div class="favorite-image">
+
+            @if (producto.imagen) {
+              <img
+                [src]="urlImagen(producto.imagen)"
+                [alt]="producto.nombre"
+              />
+            } @else {
+              <span>Sin imagen</span>
+            }
+
+          </div>
+
+          <div class="favorite-content">
+
+            <h3>{{ producto.nombre }}</h3>
+
+            @if (producto.precio !== null) {
+              <p class="favorite-price">
+                {{ producto.precio | number:'1.2-2' }} €
+              </p>
+            } @else {
+              <p class="favorite-price">
+                Precio no disponible
+              </p>
+            }
+
+            @if (!producto.disponible) {
+              <output class="unavailable-message">
+                {{ producto.aviso || 'Producto no disponible' }}
+              </output>
+            } @else {
+              <p class="available-message">
+                Disponible para comprar
+              </p>
+            }
+
+            <div class="favorite-actions">
+
+              <button
+                type="button"
+                class="buy-button"
+                [disabled]="
+                  !producto.disponible ||
+                  operacion() !== null
+                "
+                (click)="anadirAlCarrito(producto)"
+              >
+                {{
+                  !producto.disponible
+                    ? 'Producto no disponible'
+                    : operacion() === producto.id
+                      ? 'Procesando...'
+                      : 'Añadir al carrito'
+                }}
+              </button>
+
+              <button
+                type="button"
+                class="remove-button"
+                [disabled]="operacion() !== null"
+                [attr.aria-label]="
+                  'Quitar ' + producto.nombre + ' de favoritos'
+                "
+                (click)="quitarFavorito(producto)"
+              >
+                Quitar de favoritos
+              </button>
+
+            </div>
+
+          </div>
+
+        </li>
+
+      }
+
+    </ul>
+
+  }
+
+  @if (error() && !cargando() && productos().length === 0) {
+    <button
+      type="button"
+      class="retry-button"
+      (click)="cargarFavoritos()"
+    >
+      Reintentar
+    </button>
+  }
+
+</main>
