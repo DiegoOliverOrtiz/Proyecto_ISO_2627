@@ -136,7 +136,7 @@ class PedidoServiceTests {
         verify(productos, times(1)).descontarStock(any(), anyInt());
         verify(carritos, times(1)).save(any());
         verify(pedidos, times(1)).insert(any(Pedido.class));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(es.uclm.esibuy.backend.exceptions.OperacionPedidoConflictivaException.class,
                 () -> servicio.realizarPedido("direccion-otra", "metodo-a", operacion));
     }
 

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
@@ -46,6 +47,15 @@ public class PagoSimuladoService {
 		return tipoMetodoPagoDAO.findByActivoTrueOrderByNombreAsc().stream()
 				.map(tipo -> new TipoMetodoPagoResponse(tipo.getCodigo(), tipo.getNombre()))
 				.toList();
+	}
+
+	public List<MetodoPagoResponse> consultarMetodos(String emailAutenticado) {
+		Cliente cliente = obtenerCliente(emailAutenticado);
+		if (!cliente.isActivada() || cliente.isBloqueada()) {
+			throw new AccessDeniedException("Solo un cliente activo puede consultar sus métodos de pago.");
+		}
+		return metodoPagoDAO.findByClienteId(cliente.getId()).stream()
+				.map(MetodoPagoResponse::de).toList();
 	}
 
 	public MetodoPagoResponse registrarMetodoPago(String emailAutenticado, MetodoPagoRequest request) {

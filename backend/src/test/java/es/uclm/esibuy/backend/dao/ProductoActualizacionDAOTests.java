@@ -44,7 +44,7 @@ class ProductoActualizacionDAOTests {
         assertEquals(2, filtro.get("stock", org.bson.Document.class).get("$gte"));
         assertEquals(true, filtro.get("esVisible"));
         assertEquals(100.0, filtro.get("precio"));
-        assertEquals(0, filtro.get("descuentoPremium"));
+        assertEquals(3, filtro.getList("$and", org.bson.Document.class).size());
         assertEquals(-2, update.getValue().getUpdateObject().get("$inc", org.bson.Document.class).get("stock"));
     }
 

@@ -38,14 +38,23 @@ public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
         if (cantidad <= 0) throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
         Query query = Query.query(Criteria.where("id").is(producto.getId())
                 .and("stock").gte(cantidad).and("esVisible").is(true)
-                .and("precio").is(producto.getPrecio()).and("descuento").is(producto.getDescuento())
-                .and("descuentoPremium").is(producto.getDescuentoPremium())
-                .and("soloPremium").is(producto.isSoloPremium()));
+                .and("precio").is(producto.getPrecio())
+                .andOperator(
+                        valorPredeterminadoCompatible("descuento", producto.getDescuento(), 0),
+                        valorPredeterminadoCompatible("descuentoPremium", producto.getDescuentoPremium(), 0),
+                        valorPredeterminadoCompatible("soloPremium", producto.isSoloPremium(), false)));
         long modificados = mongoTemplate.updateFirst(query, new Update().inc("stock", -cantidad), Producto.class)
                 .getModifiedCount();
         if (modificados != 1) {
             throw new IllegalArgumentException("El producto ha cambiado o no hay stock suficiente.");
         }
+    }
+
+    private Criteria valorPredeterminadoCompatible(String campo, Object valor, Object predeterminado) {
+        if (!predeterminado.equals(valor)) return Criteria.where(campo).is(valor);
+        // Spring conserva el valor predeterminado del primitivo si el campo no existe
+        // en documentos antiguos; un null explícito no es un primitivo válido.
+        return new Criteria().orOperator(Criteria.where(campo).is(valor), Criteria.where(campo).exists(false));
     }
 
     private void comprobarActualizacion(long encontrados) {

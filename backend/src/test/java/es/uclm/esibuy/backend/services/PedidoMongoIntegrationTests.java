@@ -130,6 +130,33 @@ class PedidoMongoIntegrationTests {
     }
 
     @Test
+    void productoAntiguoConCamposPredeterminadosAusentesPermitePagar() {
+        Update update = new Update();
+        for (String campo : List.of("descuento", "descuentoPremium", "soloPremium")) {
+            update.unset(campo);
+        }
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")), update, Producto.class);
+
+        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+
+        assertEquals(EstadoPedido.PAGADO_COMPLETADO, pedido.getEstado());
+        assertEquals(new BigDecimal("100.00"), pedido.getImporte());
+        assertEquals(0, productos.findById("producto").orElseThrow().getStock());
+        assertEquals(1, pedidos.count());
+        assertTrue(carritos.findById("a").orElseThrow().getProductos().isEmpty());
+    }
+
+    @Test
+    void cambioDeDescuentoPosteriorALaLecturaRechazaElDescuentoDeStock() {
+        Producto anterior = productos.findById("producto").orElseThrow();
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")),
+                new Update().set("descuentoPremium", 20), Producto.class);
+
+        assertThrows(IllegalArgumentException.class, () -> productos.descontarStock(anterior, 1));
+        assertEquals(1, productos.findById("producto").orElseThrow().getStock());
+    }
+
+    @Test
     void anadirModificarYConsultarNoDescuentaStockHastaPagar() {
         template.updateFirst(Query.query(Criteria.where("id").is("producto")),
                 new Update().set("stock", 10), Producto.class);
@@ -239,6 +266,81 @@ class PedidoMongoIntegrationTests {
         assertEquals(0, productos.findById("producto").orElseThrow().getStock());
         assertEquals(1, pedidos.count());
         assertEquals(1, carritos.findAll().stream().filter(c -> c.getProductos().isEmpty()).count());
+    }
+
+    @Test
+    void mismaClaveDeClientesDistintosNoPermiteAccederAlPedidoAjeno() {
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")),
+                new Update().set("stock", 5), Producto.class);
+        String operacion = UUID.randomUUID().toString();
+        Pedido a = pagar("a", operacion);
+        Pedido b = pagar("b", operacion);
+        assertNotEquals(a.getId(), b.getId());
+        assertEquals("a", a.getClienteId());
+        assertEquals("b", b.getClienteId());
+        assertEquals("metodo-b", b.getMetodoPagoId());
+        assertEquals("direccion-b", b.getDireccionEnvio().getId());
+        assertEquals(2, pedidos.count());
+        assertEquals(3, productos.findById("producto").orElseThrow().getStock());
+    }
+
+    @Test
+    void peticionesSimultaneasConMismaClaveSoloCobranUnaVez() throws Exception {
+        template.updateFirst(Query.query(Criteria.where("id").is("producto")),
+                new Update().set("stock", 5), Producto.class);
+        String operacion = UUID.randomUUID().toString();
+        CountDownLatch salida = new CountDownLatch(1);
+        Callable<Boolean> intento = () -> {
+            assertTrue(salida.await(5, TimeUnit.SECONDS));
+            try {
+                pagar("a", operacion);
+                return true;
+            } catch (org.springframework.dao.DuplicateKeyException
+                    | org.springframework.dao.OptimisticLockingFailureException conflicto) {
+                return false;
+            }
+        };
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var a = executor.submit(intento);
+            var b = executor.submit(intento);
+            salida.countDown();
+            boolean resultadoA = a.get(30, TimeUnit.SECONDS);
+            boolean resultadoB = b.get(30, TimeUnit.SECONDS);
+            assertTrue(resultadoA || resultadoB);
+        }
+        Pedido resultado = pagar("a", operacion);
+        assertEquals(EstadoPedido.PAGADO_COMPLETADO, resultado.getEstado());
+        assertEquals(1, pedidos.count());
+        assertEquals(4, productos.findById("producto").orElseThrow().getStock());
+        assertTrue(carritos.findById("a").orElseThrow().getProductos().isEmpty());
+        assertEquals(1, carritos.findById("b").orElseThrow().cantidadDe("producto"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void productoOcultoOEliminadoAntesDePagarNoModificaCarritoNiCreaPedido(boolean eliminado) {
+        Carrito anterior = carritos.findById("a").orElseThrow();
+        if (eliminado) productos.deleteById("producto");
+        else productos.actualizarVisibilidad("producto", false);
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertEquals(0, pedidos.count());
+        assertEquals(anterior.getProductos(), carritos.findById("a").orElseThrow().getProductos());
+        if (!eliminado) assertEquals(1, productos.findById("producto").orElseThrow().getStock());
+    }
+
+    @Test
+    void documentoPedidoNoCopiaTokenNiDatosDeTarjeta() {
+        template.updateFirst(Query.query(Criteria.where("id").is("metodo-a")),
+                new Update().set("token", "token-privado-hu26").set("referenciaEnmascarada", "****4242"),
+                MetodoPago.class);
+        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        Document guardado = template.getCollection("pedidos").find(new Document("_id", pedido.getId())).first();
+        assertNotNull(guardado);
+        assertEquals("metodo-a", guardado.getString("metodoPagoId"));
+        String json = guardado.toJson();
+        for (String sensible : List.of("token-privado-hu26", "referenciaEnmascarada", "cvv", "numeroTarjeta")) {
+            assertFalse(json.contains(sensible));
+        }
     }
 
     private boolean intentarCompra(String cliente, CountDownLatch salida) throws Exception {

@@ -30,6 +30,19 @@ describe('CarritoService - HU-20', () => {
     peticion.flush({ productos: [], importe: 0 });
   });
 
+  it('recupera la imagen desde el producto cuando la línea antigua no la incluye', () => {
+    let resultado: CarritoResponse | undefined;
+    servicio.consultarCarrito().subscribe(respuesta => resultado = respuesta);
+    http.expectOne(`${environment.apiUrl}/cliente/carrito`).flush({
+      productos: [{ productoId: 'p1', cantidad: 1, precioUnitario: 20, subtotal: 20,
+        nombre: 'Producto A', stock: 4, disponible: true, aviso: null }], importe: 20
+    });
+    const detalle = http.expectOne(`${environment.apiUrl}/cliente/productos/p1`);
+    expect(detalle.request.withCredentials).toBe(true);
+    detalle.flush({ imagen: '/product-images/producto-a.jpg' });
+    expect(resultado?.productos[0].imagen).toBe('/product-images/producto-a.jpg');
+  });
+
   it.each([
     ['cantidad', 'PUT', '/productos/p%2F1'],
     ['eliminar', 'DELETE', '/productos/p%2F1'],
@@ -59,7 +72,7 @@ describe('CarritoService - HU-20', () => {
   it('envía solo producto y cantidad con sesión y token CSRF y devuelve el carrito', () => {
     const esperado: CarritoResponse = {
       productos: [{ productoId: 'p1', cantidad: 3, precioUnitario: 8, subtotal: 24,
-        nombre: 'Producto A', stock: 10, disponible: true, aviso: null }], importe: 24
+        nombre: 'Producto A', imagen: null, stock: 10, disponible: true, aviso: null }], importe: 24
     };
     let resultado: CarritoResponse | undefined;
     servicio.anadirProducto('p1', 3).subscribe(respuesta => resultado = respuesta);

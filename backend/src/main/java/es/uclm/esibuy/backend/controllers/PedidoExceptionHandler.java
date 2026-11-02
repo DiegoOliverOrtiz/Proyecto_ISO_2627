@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.exceptions.OperacionPedidoConflictivaException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = PedidoController.class)
@@ -25,7 +26,8 @@ public class PedidoExceptionHandler {
                 .body(new ApiErrorResponse("Solo un cliente activo puede realizar pedidos."));
     }
 
-    @ExceptionHandler({OptimisticLockingFailureException.class, DuplicateKeyException.class})
+    @ExceptionHandler({OptimisticLockingFailureException.class, DuplicateKeyException.class,
+            OperacionPedidoConflictivaException.class})
     public ResponseEntity<ApiErrorResponse> conflicto() {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiErrorResponse(
                 "La compra ha cambiado o se está procesando. Revisa el carrito y repite con la misma clave de operación."));

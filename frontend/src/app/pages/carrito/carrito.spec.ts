@@ -14,7 +14,7 @@ describe('Carrito - HU-21', () => {
   const url = `${environment.apiUrl}/cliente/carrito`;
   const linea = (cambios: Partial<LineaCarritoResponse> = {}): LineaCarritoResponse => ({
     productoId: 'p1', nombre: 'Producto A', cantidad: 2, precioUnitario: 8, subtotal: 16,
-    stock: 10, disponible: true, aviso: null, ...cambios
+    imagen: null, stock: 10, disponible: true, aviso: null, ...cambios
   });
   const cargar = (productos = [linea()], importe = 16): void => {
     http.expectOne(url).flush({ productos, importe });
@@ -46,10 +46,26 @@ describe('Carrito - HU-21', () => {
     cargar();
     const texto = fixture.nativeElement.textContent;
     expect(texto).toContain('Producto A');
-    expect(texto).toContain('Cantidad en el carrito: 2');
+    expect(texto).toContain('Producto A');
     expect(texto).toContain('8.00');
-    expect(texto).toContain('Total: 16.00');
+    expect(texto).toContain('16.00 €');
     expect(fixture.nativeElement.querySelector('a').getAttribute('href')).toBe('/cliente');
+  });
+
+  it('Comprar navega al checkout con productos disponibles', () => {
+    cargar();
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.nativeElement.querySelector('.cart-summary .primary-button').click();
+    expect(navegar).toHaveBeenCalledWith(['/cliente/checkout']);
+  });
+
+  it('no inicia la compra con carrito vacío o productos inválidos', () => {
+    cargar([]);
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.componentInstance.comprar();
+    fixture.componentInstance.carrito.set({ productos: [linea({ disponible: false })], importe: 0 });
+    fixture.componentInstance.comprar();
+    expect(navegar).not.toHaveBeenCalled();
   });
 
   it('muestra carrito vacío sin lista ni botón de descarte', () => {
@@ -76,7 +92,7 @@ describe('Carrito - HU-21', () => {
     expect(peticion.request.body).toEqual({ cantidad: 5 });
     peticion.flush({ productos: [linea({ cantidad: 5, subtotal: 40 })], importe: 40 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Total: 40.00');
+    expect(fixture.nativeElement.textContent).toContain('40.00 €');
     expect(fixture.componentInstance.cantidades()['p1']).toBe(5);
   });
 
@@ -94,13 +110,13 @@ describe('Carrito - HU-21', () => {
     responderMutacion('/productos/p1', { productos: [linea({ productoId: 'p2', nombre: 'Producto B' })], importe: 16 });
     expect(fixture.nativeElement.textContent).not.toContain('Producto A');
     expect(fixture.nativeElement.textContent).toContain('Producto B');
-    expect(fixture.nativeElement.textContent).toContain('Total: 16.00');
+    expect(fixture.nativeElement.textContent).toContain('16.00 €');
   });
 
   it('no descarta cuando se cancela la confirmación', () => {
     cargar();
     vi.spyOn(window, 'confirm').mockReturnValue(false);
-    fixture.nativeElement.querySelector('.cart-summary button').click();
+    fixture.nativeElement.querySelector('.cart-summary .logout-button').click();
     expect(window.confirm).toHaveBeenCalled();
     http.expectNone(`${environment.apiUrl}/usuarios/csrf`);
     expect(fixture.componentInstance.carrito()?.productos).toHaveLength(1);
@@ -109,7 +125,7 @@ describe('Carrito - HU-21', () => {
   it('confirma el descarte y muestra estado vacío', () => {
     cargar();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    fixture.nativeElement.querySelector('.cart-summary button').click();
+    fixture.nativeElement.querySelector('.cart-summary .logout-button').click();
     fixture.componentInstance.descartarCarrito();
     expect(window.confirm).toHaveBeenCalledTimes(1);
     responderMutacion('', { productos: [], importe: 0 });
@@ -122,7 +138,7 @@ describe('Carrito - HU-21', () => {
       aviso: 'El producto ha sido eliminado.' })], 0);
     await fixture.whenStable();
     expect(fixture.nativeElement.textContent).toContain('El producto ha sido eliminado.');
-    expect(fixture.nativeElement.textContent).toContain('El total incluye únicamente las líneas disponibles.');
+    expect(fixture.nativeElement.textContent).toContain('Hay productos no disponibles');
     expect(fixture.nativeElement.querySelector('input').disabled).toBe(true);
     expect(fixture.nativeElement.querySelectorAll('.quantity-selector button')[1].disabled).toBe(true);
     expect(fixture.nativeElement.querySelector('.cart-line-actions .logout-button').disabled).toBe(false);
@@ -136,7 +152,7 @@ describe('Carrito - HU-21', () => {
     fixture.componentInstance.ajustarCantidad(producto, -1);
     expect(fixture.componentInstance.cantidades()['p1']).toBe(3);
     responderMutacion('/productos/p1', { productos: [linea({ cantidad: 3, stock: 3, subtotal: 24 })], importe: 24 });
-    expect(fixture.nativeElement.textContent).toContain('Total: 24.00');
+    expect(fixture.nativeElement.textContent).toContain('24.00 €');
   });
 
   it('el botón más guarda directamente sin botón de confirmación', () => {
@@ -147,7 +163,7 @@ describe('Carrito - HU-21', () => {
     expect(peticion.request.body).toEqual({ cantidad: 3 });
     peticion.flush({ productos: [linea({ cantidad: 3, subtotal: 24 })], importe: 24 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Total: 24.00');
+    expect(fixture.nativeElement.textContent).toContain('24.00 €');
     expect(fixture.nativeElement.textContent).not.toContain('Guardar cantidad');
   });
 
@@ -166,7 +182,7 @@ describe('Carrito - HU-21', () => {
     await fixture.whenStable();
     input.dispatchEvent(new Event('blur'));
     http.expectNone(`${environment.apiUrl}/usuarios/csrf`);
-    expect(fixture.nativeElement.textContent).toContain('Total: 32.00');
+    expect(fixture.nativeElement.textContent).toContain('32.00 €');
   });
 
   it('el botón menos guarda y queda bloqueado al llegar a una unidad', () => {
@@ -178,7 +194,7 @@ describe('Carrito - HU-21', () => {
     peticion.flush({ productos: [linea({ cantidad: 1, subtotal: 8 })], importe: 8 });
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.quantity-selector button').disabled).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Total: 8.00');
+    expect(fixture.nativeElement.textContent).toContain('8.00 €');
   });
 
   it('eliminar la última línea muestra el estado vacío sin recargar manualmente', () => {

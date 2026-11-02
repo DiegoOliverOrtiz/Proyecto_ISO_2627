@@ -122,6 +122,28 @@ class PedidoControllerSecurityTests {
     }
 
     @Test
+    void claveYaPagadaConOtraSeleccionDevuelveConflictoSinSegundaCompra() throws Exception {
+        mvc.perform(peticion(JSON)).andExpect(status().isCreated());
+        mvc.perform(peticion(JSON.replace("direccion-a", "direccion-b"))).andExpect(status().isConflict());
+        verify(productos, times(1)).descontarStock(any(), eq(2));
+        verify(pedidos, times(1)).insert(any(Pedido.class));
+        verify(carritos, times(1)).save(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"direccionId", "metodoPagoId", "operacionId"})
+    void identificadoresConObjetosNoSeInterpretanComoConsultas(String campo) throws Exception {
+        String valor = switch (campo) {
+            case "direccionId" -> "direccion-a";
+            case "metodoPagoId" -> "metodo-a";
+            default -> "0746e76d-70d6-49a8-b972-f08b359474e1";
+        };
+        mvc.perform(peticion(JSON.replace("\"" + valor + "\"", "{\"$ne\":null}")))
+                .andExpect(status().isBadRequest());
+        verificarSinEscrituras();
+    }
+
+    @Test
     void repetirPeticionDevuelveMismoPedidoSinSegundaEscritura() throws Exception {
         String primera = mvc.perform(peticion(JSON)).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

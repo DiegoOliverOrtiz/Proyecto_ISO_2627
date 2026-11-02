@@ -21,6 +21,7 @@ import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
+import es.uclm.esibuy.backend.exceptions.OperacionPedidoConflictivaException;
 import es.uclm.esibuy.backend.model.Carrito;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Direccion;
@@ -80,7 +81,7 @@ public class PedidoService {
                     || anterior.getDireccionEnvio() == null
                     || !direccionId.equals(anterior.getDireccionEnvio().getId())
                     || anterior.getEstado() != EstadoPedido.PAGADO_COMPLETADO) {
-                throw new IllegalArgumentException("La clave de operación ya está utilizada por otro pedido.");
+                throw new OperacionPedidoConflictivaException();
             }
             return anterior;
         }

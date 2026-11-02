@@ -1,0 +1,29 @@
+<header class="checkout-header">
+  <a class="checkout-brand" routerLink="/cliente" aria-label="ESIBuy, catálogo"><span class="brand-mark">ESI<span>Buy</span></span></a>
+  <h1>Confirmar compra</h1>
+  <nav class="checkout-actions" aria-label="Navegación de compra"><a class="checkout-nav-link" routerLink="/cliente/carrito">Volver al carrito</a><a class="checkout-nav-link" routerLink="/cliente">Catálogo</a></nav>
+</header>
+<main class="checkout-page" [attr.aria-busy]="cargando() || procesando()">
+  @if (error()) { <p class="status-message error-message" role="alert">{{ error() }}</p> }
+  @if (pedido(); as confirmado) {
+    <section class="confirmation-card" role="status" aria-labelledby="pedido-confirmado">
+      <div class="confirmation-banner"><span class="confirmation-mark" aria-hidden="true">✓</span><div><h2 id="pedido-confirmado">Compra completada</h2><p>El pago se ha completado correctamente.</p></div></div>
+      <div class="confirmation-details">
+        <p class="confirmation-order"><span>Pedido:</span> <strong>{{ confirmado.id }}</strong></p>
+        <p class="confirmation-status"><span>Estado:</span> <strong>{{ confirmado.estado === 'PAGADO_COMPLETADO' ? 'Pagado / Completado' : confirmado.estado }}</strong></p>
+        <p class="confirmation-amount"><span>Importe pagado:</span> <strong>{{ confirmado.importe | number:'1.2-2' }} €</strong></p>
+        <ul class="confirmation-products">@for (linea of confirmado.lineas; track linea.productoId) { <li><span>{{ linea.nombreProducto }} x {{ linea.cantidad }}</span><strong>{{ linea.precioCompra | number:'1.2-2' }} € por unidad</strong></li> }</ul>
+        <p class="confirmation-shipping">Envío a {{ confirmado.direccionEnvio.calle }}, {{ confirmado.direccionEnvio.numero }}, {{ confirmado.direccionEnvio.ciudad }}.</p>
+        <a class="confirmation-continue" routerLink="/cliente">Seguir comprando</a>
+      </div>
+    </section>
+  } @else if (cargando()) { <output class="status-message">Cargando compra...</output> } @else {
+    @if (pendiente()) { <section class="status-message pending"><h2>{{ procesando() ? 'Procesando pago...' : 'Comprueba tu compra pendiente' }}</h2><p>Puede que el pago ya se haya completado. Comprueba su resultado antes de iniciar otra compra.</p><button class="primary-button" type="button" [disabled]="!puedePagar()" (click)="pagar()">{{ procesando() ? 'Procesando...' : 'Comprobar resultado' }}</button></section> }
+    @if (!carrito()) { <button class="secondary-button" type="button" [disabled]="procesando()" (click)="cargar()">Volver a cargar</button> } @else if (carrito()!.productos.length === 0) { @if (!pendiente()) { <section class="status-message"><h2>Tu carrito está vacío</h2><p>Añade productos antes de realizar una compra.</p></section> } } @else {
+      <div class="checkout-layout">
+        <section class="checkout-products" aria-labelledby="resumen-compra"><h2 id="resumen-compra">Productos de tu carrito</h2><ul class="checkout-list">@for (linea of carrito()!.productos; track linea.productoId) { <li class="checkout-product" [class.product-blocked]="!linea.disponible"><div class="checkout-product-image">@if (linea.imagen) { <img [src]="urlImagen(linea.imagen)" [alt]="linea.nombre || 'Imagen del producto'" /> }</div><div class="checkout-product-name"><h3>{{ linea.nombre || 'Producto no disponible' }}</h3><p>Cantidad: {{ linea.cantidad }}</p></div><div class="checkout-product-prices">@if (linea.precioUnitario !== null) { <p>Unidad: <strong>{{ linea.precioUnitario | number:'1.2-2' }} €</strong></p> } @if (linea.subtotal !== null) { <p>Subtotal: <strong>{{ linea.subtotal | number:'1.2-2' }} €</strong></p> }</div>@if (!linea.disponible) { <output class="premium-message">{{ linea.aviso }}</output> }</li> }</ul><div class="checkout-total"><strong>Total:</strong><strong>{{ carrito()!.importe | number:'1.2-2' }} €</strong></div></section>
+        @if (!pendiente()) { <form class="checkout-form" (ngSubmit)="pagar()" aria-label="Pago"><h2>Envío y pago</h2><div class="form-section"><h3 id="titulo-direccion">Dirección de envío</h3><select aria-labelledby="titulo-direccion" id="direccion-envio" name="direccionId" [ngModel]="direccionId()" (ngModelChange)="direccionId.set($event)" required><option value="">Selecciona una dirección</option>@for (direccion of direcciones(); track direccion.id) { <option [value]="direccion.id">{{ direccion.nombre }} · {{ direccion.calle }}, {{ direccion.numero }} · {{ direccion.ciudad }}</option> }</select>@if (direcciones().length === 0) { <p class="checkout-help">No tienes direcciones registradas.</p> }<a class="checkout-link" routerLink="/perfil/direcciones">Gestionar direcciones</a></div><div class="form-section"><h3 id="titulo-metodo">Método de pago</h3><select aria-labelledby="titulo-metodo" id="metodo-pago" name="metodoPagoId" [ngModel]="metodoPagoId()" (ngModelChange)="metodoPagoId.set($event)" required><option value="">Selecciona un método</option>@for (metodo of metodos(); track metodo.id) { <option [value]="metodo.id">{{ metodo.nombre }} · {{ metodo.tipo }} · {{ metodo.datosEnmascarados }}</option> }</select>@if (metodos().length === 0) { <p class="checkout-help">No tienes métodos de pago registrados.</p> }<a class="checkout-link" routerLink="/perfil/pagos">Gestionar métodos de pago</a></div><button class="primary-button pay-button" type="submit" [disabled]="!puedePagar()">Pagar</button></form> }
+      </div>
+    }
+  }
+</main>
