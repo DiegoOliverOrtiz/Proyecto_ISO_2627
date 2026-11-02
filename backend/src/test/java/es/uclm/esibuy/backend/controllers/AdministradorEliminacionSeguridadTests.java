@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -29,6 +30,7 @@ import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = { AuthController.class, AdministradorController.class })
 @Import({ SecurityConfiguration.class, SesionService.class })
+@TestPropertySource(properties = "app.cors.allowed-origin=https://localhost:4200")
 class AdministradorEliminacionSeguridadTests {
 
 	private static final String EMAIL = "admin.eliminado@esibuy.es";
@@ -107,11 +109,11 @@ class AdministradorEliminacionSeguridadTests {
 	@Test
 	void preflightDeDelete_desdeElOrigenDelFrontend_estaPermitido() throws Exception {
 		mockMvc.perform(options("/administrador/{id}", "id-1")
-						.header("Origin", "http://localhost:4200")
+						.header("Origin", "https://localhost:4200")
 						.header("Access-Control-Request-Method", "DELETE")
 						.header("Access-Control-Request-Headers", "x-xsrf-token"))
 				.andExpect(status().isOk())
-				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+				.andExpect(header().string("Access-Control-Allow-Origin", "https://localhost:4200"))
 				.andExpect(header().string("Access-Control-Allow-Methods",
 						Matchers.containsString("DELETE")));
 	}
