@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.ClienteDAO;
@@ -23,10 +24,20 @@ public class ClienteService {
 
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
+	private final FavoritosRegistroService favoritosRegistroService;
 
 	public ClienteService(ClienteDAO clienteDAO, SoporteRegistro soporteRegistro) {
+		this(clienteDAO, soporteRegistro, null);
+	}
+
+	@Autowired
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro,
+			FavoritosRegistroService favoritosRegistroService) {
 		this.clienteDAO = clienteDAO;
 		this.soporteRegistro = soporteRegistro;
+		this.favoritosRegistroService = favoritosRegistroService;
 	}
 
 	public RegistroUsuarioResponse registrar(RegistroClienteRequest request) {
@@ -51,6 +62,13 @@ public class ClienteService {
 		cliente.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
 		Cliente guardado = soporteRegistro.guardarRegistro(() -> clienteDAO.save(cliente));
+
+		if (favoritosRegistroService != null) {
+			favoritosRegistroService.crearListaPredeterminada(
+				guardado.getId()
+			);
+		}
+
 		return new RegistroUsuarioResponse(guardado.getId(), "cliente");
 	}
 

@@ -1,6 +1,7 @@
 
 package es.uclm.esibuy.backend.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,26 @@ public class VendedorService {
     private final VendedorDAO vendedorDAO;
     private final CategoriaDAO categoriaDAO;
     private final SoporteRegistro soporteRegistro;
+    private final FavoritosRegistroService favoritosRegistroService;
 
     public VendedorService(
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
             SoporteRegistro soporteRegistro) {
+        this(vendedorDAO, categoriaDAO, soporteRegistro, null);
+    }
+
+    @Autowired
+    public VendedorService(
+            VendedorDAO vendedorDAO,
+            CategoriaDAO categoriaDAO,
+            SoporteRegistro soporteRegistro,
+            FavoritosRegistroService favoritosRegistroService) {
 
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.soporteRegistro = soporteRegistro;
+        this.favoritosRegistroService = favoritosRegistroService;
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
@@ -63,6 +75,13 @@ public class VendedorService {
         vendedor.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
         Vendedor guardado = soporteRegistro.guardarRegistro(() -> vendedorDAO.save(vendedor));
+
+        if (favoritosRegistroService != null) {
+            favoritosRegistroService.crearListaPredeterminada(
+                guardado.getId()
+            );
+        }
+
         return new RegistroUsuarioResponse(guardado.getId(), "vendedor");
     }
 

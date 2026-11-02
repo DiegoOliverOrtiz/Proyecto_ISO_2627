@@ -3,6 +3,7 @@ package es.uclm.esibuy.backend.services;
 import java.time.LocalDate;
 import java.util.Locale;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,7 @@ public class AdministradorService {
 	private final PasswordPolicy passwordPolicy;
 	private final Validator validator;
 	private final SesionService sesionService;
+	private final FavoritosRegistroService favoritosRegistroService;
 
 	public AdministradorService(
 			AdministradorDAO administradorDAO,
@@ -52,6 +54,20 @@ public class AdministradorService {
 			PasswordPolicy passwordPolicy,
 			Validator validator,
 			SesionService sesionService) {
+		this(administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
+				passwordPolicy, validator, sesionService, null);
+	}
+
+	@Autowired
+	public AdministradorService(
+			AdministradorDAO administradorDAO,
+			CategoriaDAO categoriaDAO,
+			UsuarioDAO usuarioDAO,
+			PasswordEncoder passwordEncoder,
+			PasswordPolicy passwordPolicy,
+			Validator validator,
+			SesionService sesionService,
+			FavoritosRegistroService favoritosRegistroService) {
 
 		this.administradorDAO = administradorDAO;
 		this.categoriaDAO = categoriaDAO;
@@ -60,6 +76,7 @@ public class AdministradorService {
 		this.passwordPolicy = passwordPolicy;
 		this.validator = validator;
 		this.sesionService = sesionService;
+		this.favoritosRegistroService = favoritosRegistroService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
@@ -281,6 +298,12 @@ public class AdministradorService {
 			Administrador guardado =
 					administradorDAO.save(
 							administrador);
+
+			if (favoritosRegistroService != null) {
+				favoritosRegistroService.crearListaPredeterminada(
+					guardado.getId()
+				);
+			}
 
 			return new RegistroUsuarioResponse(
 					guardado.getId(),
