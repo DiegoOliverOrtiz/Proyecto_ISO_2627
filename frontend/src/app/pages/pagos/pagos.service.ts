@@ -42,7 +42,6 @@ export class PagosService {
     return this.http.get<TipoPago[]>(`${this.baseUrl}/tipos`, { withCredentials: true });
   }
 
-  // Todavía no está implementado el listado en backend, pero se prepararía así para futuras HUs (o devolvemos vacío)
   consultarMetodos(): Observable<MetodoPagoResponse[]> {
     return this.http.get<MetodoPagoResponse[]>(this.baseUrl, { withCredentials: true });
   }
@@ -55,8 +54,7 @@ export class PagosService {
       }))
     );
   }
-  
-  // HU-36 Eliminar (por si lo necesitas ya)
+
   eliminarMetodo(id: string): Observable<void> {
     return this.http.get<RespuestaTokenCsrf>(this.csrfUrl, { withCredentials: true }).pipe(
       switchMap(csrf => this.http.delete<void>(`${this.baseUrl}/${id}`, {

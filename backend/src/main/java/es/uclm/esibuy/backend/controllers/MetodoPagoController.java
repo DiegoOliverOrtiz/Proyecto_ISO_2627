@@ -36,6 +36,11 @@ public class MetodoPagoController {
 		return pagoSimuladoService.consultarTiposDisponibles();
 	}
 
+	@GetMapping
+	public List<MetodoPagoResponse> consultarMetodosPago(Authentication authentication) {
+		return pagoSimuladoService.consultarMetodosPago(authentication.getName());
+	}
+
 	@PostMapping
 	public ResponseEntity<MetodoPagoResponse> registrarMetodoPago(
 			Authentication authentication,
