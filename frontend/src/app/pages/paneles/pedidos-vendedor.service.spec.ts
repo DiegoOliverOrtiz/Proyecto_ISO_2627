@@ -20,6 +20,7 @@ describe('PedidosVendedorService - HU-35', () => {
 
   const pedido: PedidoVendedor = {
     id: 'pedido-1',
+    clienteNombre: 'cliente eliminado',
     estado: 'PAGADO_COMPLETADO',
     fechaCreacion: '2026-11-02T12:00:00Z',
     fechaPago: '2026-11-02T12:05:00Z',
