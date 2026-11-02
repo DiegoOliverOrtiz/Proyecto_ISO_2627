@@ -46,6 +46,9 @@ export class Perfil {
   readonly mensajeExito = signal('');
   readonly mostrandoConfirmacionTipo = signal(false);
   readonly tipoPremiumPendiente = signal(false);
+  readonly pasoConfirmacionBaja = signal<0 | 1 | 2>(0);
+  readonly bajaEnCurso = signal(false);
+  readonly errorBaja = signal('');
   readonly fechaMaximaNacimiento = this.calcularFechaMaximaNacimiento();
   readonly categorias = signal<CategoriaPerfil[]>([]);
   readonly configuracionTOTP = signal<{ otpauthUri: string | null; qrDataUrl: string | null } | null>(null);
@@ -235,6 +238,57 @@ export class Perfil {
         : '/cliente';
 
     void this.enrutador.navigateByUrl(ruta);
+  }
+
+  iniciarBaja(): void {
+    const tipoUsuario = this.perfil()?.tipoUsuario;
+    if ((tipoUsuario !== 'CLIENTE' && tipoUsuario !== 'VENDEDOR') || this.bajaEnCurso()) {
+      return;
+    }
+    this.errorBaja.set('');
+    this.pasoConfirmacionBaja.set(1);
+  }
+
+  continuarBaja(): void {
+    if (this.pasoConfirmacionBaja() === 1) {
+      this.pasoConfirmacionBaja.set(2);
+      return;
+    }
+    if (this.pasoConfirmacionBaja() !== 2) {
+      return;
+    }
+
+    const tipoUsuario = this.perfil()?.tipoUsuario;
+    if (tipoUsuario !== 'CLIENTE' && tipoUsuario !== 'VENDEDOR') {
+      this.pasoConfirmacionBaja.set(0);
+      return;
+    }
+
+    this.bajaEnCurso.set(true);
+    this.errorBaja.set('');
+    this.servicioPerfil.darDeBajaCuenta(tipoUsuario).subscribe({
+      next: () => {
+        this.bajaEnCurso.set(false);
+        this.pasoConfirmacionBaja.set(0);
+        void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'cuenta-eliminada' } });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.bajaEnCurso.set(false);
+        this.pasoConfirmacionBaja.set(0);
+        if (error.status === 401) {
+          void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+          return;
+        }
+        this.errorBaja.set(this.obtenerMensajeError(error,
+          'No se pudo eliminar la cuenta. Inténtalo de nuevo.'));
+      }
+    });
+  }
+
+  cancelarBaja(): void {
+    if (!this.bajaEnCurso()) {
+      this.pasoConfirmacionBaja.set(0);
+    }
   }
 
   configurarTOTP(): void {

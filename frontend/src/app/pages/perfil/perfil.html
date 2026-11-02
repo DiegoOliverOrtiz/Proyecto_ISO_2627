@@ -164,6 +164,22 @@
         </section>
       }
 
+      @if ((datos.tipoUsuario === 'CLIENTE' || datos.tipoUsuario === 'VENDEDOR') && !editando()) {
+        <section class="account-deletion-card" aria-labelledby="dar-de-baja-titulo">
+          <div>
+            <p class="account-type-kicker">Cuenta</p>
+            <h3 id="dar-de-baja-titulo">Eliminar mi cuenta</h3>
+            <p>La baja elimina tu cuenta y sus datos personales. La operación requiere dos confirmaciones.</p>
+          </div>
+          <button class="danger-button" type="button" (click)="iniciarBaja()" [disabled]="bajaEnCurso()">
+            Dar de baja
+          </button>
+          @if (errorBaja()) {
+            <p class="field-error" role="alert">{{ errorBaja() }}</p>
+          }
+        </section>
+      }
+
       @if (editando()) {
         <form class="edit-form" [formGroup]="formulario" (ngSubmit)="guardarCambios()">
           <div class="form-grid">
@@ -280,6 +296,42 @@
             <button class="secondary-button" type="button" (click)="cancelarCambioTipoCliente()">Cancelar</button>
             <button class="primary-button" type="button" (click)="confirmarCambioTipoCliente()">
               {{ tipoPremiumPendiente() ? 'Sí, hacerme Premium' : 'Sí, volver a Normal' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (pasoConfirmacionBaja() === 1) {
+      <div class="confirmation-backdrop">
+        <section class="confirmation-dialog confirmation-dialog-danger" role="alertdialog" aria-modal="true"
+                 aria-labelledby="confirmacion-baja-uno">
+          <p class="account-type-kicker">Aviso 1 de 2</p>
+          <h2 id="confirmacion-baja-uno">¿Quieres iniciar la baja?</h2>
+          @if (datos.tipoUsuario === 'CLIENTE') {
+            <p>Se eliminarán tu perfil, direcciones, métodos de pago y carrito. Tus pedidos se conservarán sin datos que te identifiquen.</p>
+          } @else {
+            <p>Se eliminarán tu perfil y tus productos. Los pedidos finalizados conservarán su histórico; con pedidos en curso la baja se rechazará.</p>
+          }
+          <div class="confirmation-actions">
+            <button class="secondary-button" type="button" (click)="cancelarBaja()">Cancelar</button>
+            <button class="danger-button" type="button" (click)="continuarBaja()">Continuar</button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (pasoConfirmacionBaja() === 2) {
+      <div class="confirmation-backdrop">
+        <section class="confirmation-dialog confirmation-dialog-danger" role="alertdialog" aria-modal="true"
+                 aria-labelledby="confirmacion-baja-dos">
+          <p class="account-type-kicker">Aviso 2 de 2</p>
+          <h2 id="confirmacion-baja-dos">La eliminación es permanente</h2>
+          <p>Perderás el acceso a esta cuenta y no podrás recuperar los datos eliminados. Confirma solo si quieres completar la baja.</p>
+          <div class="confirmation-actions">
+            <button class="secondary-button" type="button" (click)="cancelarBaja()" [disabled]="bajaEnCurso()">Cancelar</button>
+            <button class="danger-button" type="button" (click)="continuarBaja()" [disabled]="bajaEnCurso()">
+              {{ bajaEnCurso() ? 'Eliminando...' : 'Eliminar mi cuenta' }}
             </button>
           </div>
         </section>

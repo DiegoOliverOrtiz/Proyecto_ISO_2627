@@ -128,6 +128,16 @@ export class PerfilService {
     return this.peticionConCsrf<void>('DELETE', '/usuarios/2fa', { code });
   }
 
+  darDeBajaCuenta(tipoUsuario: 'CLIENTE' | 'VENDEDOR'): Observable<void> {
+    const ruta = tipoUsuario === 'CLIENTE' ? '/cliente/cuenta' : '/vendedor/cuenta';
+    return this.http.get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true }).pipe(
+      switchMap((respuestaCsrf) => this.http.delete<void>(`${environment.apiUrl}${ruta}`, {
+        withCredentials: true,
+        headers: new HttpHeaders({ 'X-XSRF-TOKEN': respuestaCsrf.token })
+      }))
+    );
+  }
+
   private peticionConCsrf<T>(method: 'POST' | 'DELETE', ruta: string, body?: unknown): Observable<T> {
     return this.http.get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true }).pipe(
       switchMap((respuestaCsrf) => this.http.request<T>(method, `${environment.apiUrl}${ruta}`, {

@@ -45,6 +45,8 @@ export class Login {
       this.mensajeError.set(
         'Tu sesión ya no es válida. Es posible que tu cuenta haya sido bloqueada.'
       );
+    } else if (motivo === 'cuenta-eliminada') {
+      this.mensajeExito.set('La cuenta se ha eliminado correctamente.');
     }
   }
 

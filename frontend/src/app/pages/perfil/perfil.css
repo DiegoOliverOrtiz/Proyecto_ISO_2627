@@ -58,6 +58,13 @@ h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .confirmation-dialog h2 { margin-bottom: .65rem; }
 .confirmation-dialog > p:not(.account-type-kicker) { color: #536a75; line-height: 1.5; }
 .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.account-deletion-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #e4b9b1; border-radius: 12px; background: #fff8f6; }
+.account-deletion-card h3 { margin: 0 0 .35rem; color: #8f3024; }
+.account-deletion-card p:not(.account-type-kicker) { margin: 0; color: #6b504d; }
+.danger-button { padding: .7rem 1rem; border: 1px solid #a63120; border-radius: 7px; color: #fff; background: #a63120; font: inherit; font-weight: 800; cursor: pointer; }
+.danger-button:disabled { opacity: .6; cursor: not-allowed; }
+.confirmation-dialog-danger { border-color: #d98d82; }
+@media (max-width: 620px) { .account-deletion-card { align-items: flex-start; flex-direction: column; } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 dt { margin-bottom: .35rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 dd { margin: 0; color: #173042; font-size: 1.02rem; overflow-wrap: anywhere; }

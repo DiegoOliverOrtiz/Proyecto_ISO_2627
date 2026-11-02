@@ -40,6 +40,7 @@ describe('Perfil', () => {
     cambiarTipoCliente: ReturnType<typeof vi.fn>;
     confirmarSegundoFactor: ReturnType<typeof vi.fn>;
     desactivarSegundoFactor: ReturnType<typeof vi.fn>;
+    darDeBajaCuenta: ReturnType<typeof vi.fn>;
   };
 
   function crearComponente(respuesta: Observable<PerfilResponse>) {
@@ -57,6 +58,7 @@ describe('Perfil', () => {
       cambiarTipoCliente: vi.fn(),
       confirmarSegundoFactor: vi.fn(),
       desactivarSegundoFactor: vi.fn(),
+      darDeBajaCuenta: vi.fn(),
     };
     await TestBed.configureTestingModule({
       imports: [Perfil],
@@ -136,6 +138,61 @@ describe('Perfil', () => {
     fixture.destroy();
     crearComponente(of(perfilAdministrador));
     expect(fixture.nativeElement.querySelector('.account-type-card')).toBeNull();
+  });
+
+  it('solo ofrece la baja de cuenta a clientes y vendedores', () => {
+    crearComponente(of(perfilCliente));
+    expect(fixture.nativeElement.textContent).toContain('Eliminar mi cuenta');
+
+    fixture.destroy();
+    crearComponente(of(perfilVendedor));
+    expect(fixture.nativeElement.textContent).toContain('Eliminar mi cuenta');
+
+    fixture.destroy();
+    crearComponente(of(perfilAdministrador));
+    expect(fixture.nativeElement.textContent).not.toContain('Eliminar mi cuenta');
+  });
+
+  it('exige dos confirmaciones y permite cancelar sin enviar la baja', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarBaja();
+    componente.cancelarBaja();
+    expect(componente.pasoConfirmacionBaja()).toBe(0);
+    expect(perfilServiceMock.darDeBajaCuenta).not.toHaveBeenCalled();
+
+    componente.iniciarBaja();
+    componente.continuarBaja();
+    expect(componente.pasoConfirmacionBaja()).toBe(2);
+    expect(perfilServiceMock.darDeBajaCuenta).not.toHaveBeenCalled();
+    componente.cancelarBaja();
+    expect(perfilServiceMock.darDeBajaCuenta).not.toHaveBeenCalled();
+  });
+
+  it('envía la baja tras confirmar dos veces y vuelve al inicio de sesión', () => {
+    const router = TestBed.inject(Router);
+    const navegar = vi.spyOn(router, 'navigate');
+    crearComponente(of(perfilCliente));
+    perfilServiceMock.darDeBajaCuenta.mockReturnValue(of(undefined));
+
+    componente.iniciarBaja();
+    componente.continuarBaja();
+    componente.continuarBaja();
+
+    expect(perfilServiceMock.darDeBajaCuenta).toHaveBeenCalledWith('CLIENTE');
+    expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'cuenta-eliminada' } });
+  });
+
+  it('muestra el rechazo de baja cuando el vendedor tiene pedidos pendientes', () => {
+    crearComponente(of(perfilVendedor));
+    perfilServiceMock.darDeBajaCuenta.mockReturnValue(throwError(() =>
+      new HttpErrorResponse({ status: 409, error: { error: 'No puedes darte de baja porque tienes pedidos en curso.' } })));
+
+    componente.iniciarBaja();
+    componente.continuarBaja();
+    componente.continuarBaja();
+
+    expect(componente.errorBaja()).toBe('No puedes darte de baja porque tienes pedidos en curso.');
+    expect(componente.bajaEnCurso()).toBe(false);
   });
 
   it('muestra la categoría del vendedor cuando está asociada', () => {
