@@ -23,10 +23,19 @@ public class ClienteService {
 
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
+	private final BajaUsuarioService bajaUsuarioService;
 
-	public ClienteService(ClienteDAO clienteDAO, SoporteRegistro soporteRegistro) {
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro,
+			BajaUsuarioService bajaUsuarioService) {
 		this.clienteDAO = clienteDAO;
 		this.soporteRegistro = soporteRegistro;
+		this.bajaUsuarioService = bajaUsuarioService;
+	}
+
+	public void darDeBaja(String emailAutenticado) {
+		bajaUsuarioService.darDeBajaCliente(emailAutenticado);
 	}
 
 	public RegistroUsuarioResponse registrar(RegistroClienteRequest request) {

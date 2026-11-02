@@ -18,6 +18,7 @@ public class Pedido {
     private String id;
 
     private String clienteId;
+    private String clienteNombre;
     private List<LineaPedido> lineas;
     private EstadoPedido estado;
     private Direccion direccionEnvio;
@@ -58,12 +59,29 @@ public class Pedido {
         if (estado != EstadoPedido.EN_PROCESO) {
             throw new IllegalStateException("Solo se puede pagar un pedido en proceso.");
         }
-        return new Pedido(id, clienteId, lineas, EstadoPedido.PAGADO_COMPLETADO,
+        Pedido pedidoPagado = new Pedido(id, clienteId, lineas, EstadoPedido.PAGADO_COMPLETADO,
                 importe, fechaCreacion, fechaPago, direccionEnvio, metodoPagoId);
+        pedidoPagado.setClienteNombre(clienteNombre);
+        return pedidoPagado;
+    }
+
+    public Pedido desvinculadoCliente() {
+        Pedido pedidoAnonimizado = new Pedido(id, null, lineas, estado, importe,
+                fechaCreacion, fechaPago, null, null);
+        pedidoAnonimizado.setClienteNombre("cliente eliminado");
+        return pedidoAnonimizado;
     }
 
     public String getClienteId() {
         return clienteId;
+    }
+
+    public String getClienteNombre() {
+        return clienteNombre;
+    }
+
+    public void setClienteNombre(String clienteNombre) {
+        this.clienteNombre = clienteNombre;
     }
 
     public List<LineaPedido> getLineas() {

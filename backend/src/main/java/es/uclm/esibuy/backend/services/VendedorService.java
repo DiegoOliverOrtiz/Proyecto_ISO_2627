@@ -18,15 +18,22 @@ public class VendedorService {
     private final VendedorDAO vendedorDAO;
     private final CategoriaDAO categoriaDAO;
     private final SoporteRegistro soporteRegistro;
+    private final BajaUsuarioService bajaUsuarioService;
 
     public VendedorService(
             VendedorDAO vendedorDAO,
             CategoriaDAO categoriaDAO,
-            SoporteRegistro soporteRegistro) {
+            SoporteRegistro soporteRegistro,
+            BajaUsuarioService bajaUsuarioService) {
 
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.soporteRegistro = soporteRegistro;
+        this.bajaUsuarioService = bajaUsuarioService;
+    }
+
+    public void darDeBaja(String emailAutenticado) {
+        bajaUsuarioService.darDeBajaVendedor(emailAutenticado);
     }
 
     public RegistroUsuarioResponse registrar(RegistroVendedorRequest request) {
