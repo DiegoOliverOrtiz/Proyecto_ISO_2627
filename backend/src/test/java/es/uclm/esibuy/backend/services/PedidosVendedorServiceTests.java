@@ -326,7 +326,8 @@ class PedidosVendedorServiceTests {
                 linea("producto-1", VENDEDOR_ID, 2, "10.00"));
 
         when(pedidoDAO.findById("pedido-1"))
-                .thenReturn(Optional.of(pagado), Optional.of(enviado));
+                .thenReturn(Optional.of(pagado))
+                .thenReturn(Optional.of(enviado));
         when(pedidoDAO.actualizarEstado(
                 "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
                 .thenReturn(1L);
@@ -352,7 +353,8 @@ class PedidosVendedorServiceTests {
                 linea("ajeno", OTRO_VENDEDOR, 1, "100.00"));
 
         when(pedidoDAO.findById("pedido-mixto"))
-                .thenReturn(Optional.of(mixto), Optional.of(enviado));
+                .thenReturn(Optional.of(mixto))
+                .thenReturn(Optional.of(enviado));
         when(pedidoDAO.actualizarEstado(
                 "pedido-mixto", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
                 .thenReturn(1L);
@@ -553,7 +555,8 @@ class PedidosVendedorServiceTests {
                 linea("producto-1", VENDEDOR_ID, 1, "10.00"));
 
         when(pedidoDAO.findById("pedido-1"))
-                .thenReturn(Optional.of(pagado), Optional.empty());
+                .thenReturn(Optional.of(pagado))
+                .thenReturn(Optional.empty());
         when(pedidoDAO.actualizarEstado(any(), any(), any(), any()))
                 .thenReturn(1L);
 

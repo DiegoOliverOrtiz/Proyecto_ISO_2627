@@ -118,9 +118,8 @@ class PedidosVendedorSecurityTests {
     @Test
     void elVendedorPropietarioSiPuedeAceptarlo() throws Exception {
         when(pedidoDAO.findById("pedido-1"))
-                .thenReturn(
-                        Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.PAGADO_COMPLETADO)),
-                        Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.TRAMITADO_ENVIADO)));
+                .thenReturn(Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.PAGADO_COMPLETADO)))
+                .thenReturn(Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.TRAMITADO_ENVIADO)));
         when(pedidoDAO.actualizarEstado("pedido-1", "PAGADO_COMPLETADO", VENDEDOR_A, "TRAMITADO_ENVIADO"))
                 .thenReturn(1L);
 
