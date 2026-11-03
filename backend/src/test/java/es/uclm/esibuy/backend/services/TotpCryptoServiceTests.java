@@ -31,6 +31,14 @@ class TotpCryptoServiceTests {
     }
 
     @Test
+    void elCifradoNoContieneElSecretoEnClaro() {
+        String secreto = "JBSWY3DPEHPK3PXP";
+        String encrypted = crypto.cifrar(secreto);
+        assertFalse(encrypted.contains(secreto));
+        assertEquals(secreto, crypto.descifrar(encrypted));
+    }
+
+    @Test
     void rechazaUnCifradoAlteradoOUnaClaveDiferente() {
         String encrypted = crypto.cifrar("SECRET");
         String[] parts = encrypted.split(":", 2);
