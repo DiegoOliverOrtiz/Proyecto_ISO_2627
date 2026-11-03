@@ -30,6 +30,10 @@ export class PedidosVendedor implements OnInit {
   readonly cargandoDetalle = signal(false);
   readonly errorDetalle = signal('');
 
+  readonly pedidoEnProceso = signal<string | null>(null);
+  readonly mensajeExito = signal('');
+  readonly errorAccion = signal('');
+
   ngOnInit(): void {
     this.cargarPedidos();
   }
@@ -98,6 +102,44 @@ export class PedidosVendedor implements OnInit {
     this.cargandoDetalle.set(false);
   }
 
+  puedeAceptar(pedido: PedidoVendedor): boolean {
+    return pedido.estado === 'PAGADO_COMPLETADO';
+  }
+
+  aceptarPedido(pedido: PedidoVendedor): void {
+    if (this.pedidoEnProceso() || !this.puedeAceptar(pedido)) {
+      return;
+    }
+
+    this.pedidoEnProceso.set(pedido.id);
+    this.mensajeExito.set('');
+    this.errorAccion.set('');
+
+    this.servicio.aceptarPedido(pedido.id).subscribe({
+      next: (aceptado) => {
+        this.pedidoEnProceso.set(null);
+        this.mensajeExito.set(
+          `Pedido ${aceptado.id} aceptado. El envío (simulado) está en curso.`
+        );
+
+        if (this.pedidoSeleccionado()?.id === aceptado.id) {
+          this.pedidoSeleccionado.set(aceptado);
+        }
+
+        this.cargarPedidos();
+      },
+      error: (fallo: HttpErrorResponse) => {
+        this.pedidoEnProceso.set(null);
+        this.errorAccion.set(this.mensajeErrorAceptar(fallo));
+
+        // El pedido puede haber cambiado (cancelado o ya aceptado): se refresca la lista.
+        if (fallo.status === 404 || fallo.status === 409) {
+          this.cargarPedidos();
+        }
+      }
+    });
+  }
+
   textoEstado(estado: PedidoVendedor['estado']): string {
     switch (estado) {
       case 'PAGADO_COMPLETADO':
@@ -128,5 +170,21 @@ export class PedidosVendedor implements OnInit {
     }
 
     return 'Ha ocurrido un error al consultar los pedidos.';
+  }
+
+  private mensajeErrorAceptar(error: HttpErrorResponse): string {
+    if (error.status === 409) {
+      return 'El pedido ya no está pendiente de tramitar. Se ha actualizado la lista.';
+    }
+
+    if (error.status === 403) {
+      return 'No tienes permiso para gestionar este pedido.';
+    }
+
+    if (error.status === 401 || error.status === 404 || error.status === 0) {
+      return this.mensajeError(error);
+    }
+
+    return 'No se ha podido aceptar el pedido. Inténtalo de nuevo.';
   }
 }

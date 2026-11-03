@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 
 export interface LineaPedidoVendedor {
   productoId: string;
@@ -49,5 +50,23 @@ export class PedidosVendedorService {
       `${this.baseUrl}/${encodeURIComponent(pedidoId)}`,
       { withCredentials: true }
     );
+  }
+
+  // HU-32: Pagado/Completado → Tramitado/Enviado (envío simulado).
+  aceptarPedido(pedidoId: string): Observable<PedidoVendedor> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true })
+      .pipe(
+        switchMap((respuestaCsrf) =>
+          this.http.patch<PedidoVendedor>(
+            `${this.baseUrl}/${encodeURIComponent(pedidoId)}/aceptar`,
+            null,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders().set('X-XSRF-TOKEN', respuestaCsrf.token)
+            }
+          )
+        )
+      );
   }
 }
