@@ -29,6 +29,7 @@ import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.ListaProductos;
 import es.uclm.esibuy.backend.model.Producto;
+import es.uclm.esibuy.backend.model.Vendedor;
 
 @ExtendWith(MockitoExtension.class)
 class ListaProductosServiceTests {
@@ -84,6 +85,47 @@ class ListaProductosServiceTests {
         assertEquals(List.of("Favoritos", "Alimentación", "videojuegos"),
                 listas.stream().map(ResumenListaProductosResponse::nombre).toList());
         assertTrue(listas.get(0).predeterminada());
+    }
+
+    @Test
+    void todoUsuarioTieneSuListaDeFavoritosAunqueEsteVacia() {
+        Vendedor vendedor = mock(Vendedor.class);
+        when(vendedor.isActivada()).thenReturn(true);
+        when(vendedor.getId()).thenReturn("vendedor-1");
+        when(usuarioDAO.findByEmail("vendedor@test.com")).thenReturn(Optional.of(vendedor));
+        when(listaProductosDAO.findByUsuarioId("vendedor-1"))
+                .thenReturn(List.of(ListaProductos.crearFavoritos("vendedor-1")));
+
+        List<ResumenListaProductosResponse> listas = servicio.consultarListas("vendedor@test.com");
+
+        verify(favoritosRegistroService).crearListaPredeterminada("vendedor-1");
+        assertEquals(1, listas.size());
+        assertTrue(listas.get(0).predeterminada());
+        assertTrue(listas.get(0).productoIds().isEmpty());
+    }
+
+    @Test
+    void elCorreoDeLaSesionSeNormalizaAntesDeBuscarAlUsuario() {
+        prepararUsuario();
+        when(listaProductosDAO.findByUsuarioId(USUARIO_ID)).thenReturn(List.of());
+
+        servicio.consultarListas("  Cliente@Test.COM ");
+
+        verify(usuarioDAO).findByEmail(CORREO);
+    }
+
+    @Test
+    void eliminarUnaListaNoAfectaALasDemasListasDelUsuario() {
+        prepararUsuario();
+        ListaProductos comida = lista("l1", USUARIO_ID, "Comida");
+        comida.agregarProducto("p1");
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(comida));
+
+        servicio.eliminar(CORREO, "l1");
+
+        verify(listaProductosDAO).delete(comida);
+        verify(listaProductosDAO, never()).deleteByUsuarioId(any());
+        verify(listaProductosDAO, never()).deleteAll();
     }
 
     @Test
@@ -169,8 +211,9 @@ class ListaProductosServiceTests {
     void crearConNombreDemasiadoLargoEsRechazado() {
         prepararUsuario();
 
-        assertThrows(IllegalArgumentException.class,
-                () -> servicio.crear(CORREO, "a".repeat(ListaProductosService.MAX_NOMBRE + 1)));
+        String nombreLargo = "a".repeat(ListaProductosService.MAX_NOMBRE + 1);
+
+        assertThrows(IllegalArgumentException.class, () -> servicio.crear(CORREO, nombreLargo));
         verify(listaProductosDAO, never()).save(any());
     }
 
@@ -270,10 +313,11 @@ class ListaProductosServiceTests {
     void laListaDeFavoritosNoSeRenombra() {
         prepararUsuario();
         ListaProductos favoritos = ListaProductos.crearFavoritos(USUARIO_ID);
-        when(listaProductosDAO.findById(favoritos.getId())).thenReturn(Optional.of(favoritos));
+        String idFavoritos = favoritos.getId();
+        when(listaProductosDAO.findById(idFavoritos)).thenReturn(Optional.of(favoritos));
 
         assertThrows(OperacionListaNoPermitidaException.class,
-                () -> servicio.renombrar(CORREO, favoritos.getId(), "Otra"));
+                () -> servicio.renombrar(CORREO, idFavoritos, "Otra"));
         verify(listaProductosDAO, never()).save(any());
     }
 
@@ -308,10 +352,11 @@ class ListaProductosServiceTests {
     void laListaDeFavoritosNoSeElimina() {
         prepararUsuario();
         ListaProductos favoritos = ListaProductos.crearFavoritos(USUARIO_ID);
-        when(listaProductosDAO.findById(favoritos.getId())).thenReturn(Optional.of(favoritos));
+        String idFavoritos = favoritos.getId();
+        when(listaProductosDAO.findById(idFavoritos)).thenReturn(Optional.of(favoritos));
 
         assertThrows(OperacionListaNoPermitidaException.class,
-                () -> servicio.eliminar(CORREO, favoritos.getId()));
+                () -> servicio.eliminar(CORREO, idFavoritos));
         verify(listaProductosDAO, never()).delete(any());
     }
 
