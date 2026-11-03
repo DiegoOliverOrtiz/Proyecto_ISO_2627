@@ -1,7 +1,7 @@
 <header class="checkout-header">
   <a class="checkout-brand" routerLink="/cliente" aria-label="ESIBuy, catálogo"><span class="brand-mark">ESI<span>Buy</span></span></a>
   <h1>Confirmar compra</h1>
-  <nav class="checkout-actions" aria-label="Navegación de compra"><a class="checkout-nav-link" routerLink="/cliente/carrito">Volver al carrito</a><a class="checkout-nav-link" routerLink="/cliente">Catálogo</a></nav>
+  <nav class="checkout-actions" aria-label="Navegación de compra"><a class="checkout-nav-link" routerLink="/carrito">Volver al carrito</a><a class="checkout-nav-link" routerLink="/cliente">Catálogo</a></nav>
 </header>
 <main class="checkout-page" [attr.aria-busy]="cargando() || procesando()">
   @if (error()) { <p class="status-message error-message" role="alert">{{ error() }}</p> }

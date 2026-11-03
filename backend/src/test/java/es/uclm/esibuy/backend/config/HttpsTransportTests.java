@@ -37,7 +37,10 @@ import es.uclm.esibuy.backend.services.AuthService;
         "TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         "TOTP_MIGRATE_KEY=false",
         "FRONTEND_ORIGIN=https://localhost:4200",
-        "spring.mongodb.auto-index-creation=false"
+        "spring.mongodb.auto-index-creation=false",
+        "server.ssl.enabled=true",
+        "app.security.cookies.secure=true",
+        "server.servlet.session.cookie.secure=true"
 })
 class HttpsTransportTests {
     private static Path keyStorePath;
@@ -57,7 +60,8 @@ class HttpsTransportTests {
         Path directory = Files.createTempDirectory("esibuy-https-test-");
         keyStorePath = directory.resolve("localhost.p12");
         String executable = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win")
-                ? "keytool.exe" : "keytool";
+                ? "keytool.exe"
+                : "keytool";
         var builder = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", executable).toString(),
                 "-genkeypair", "-alias", "esibuy", "-keyalg", "RSA", "-keysize", "2048",
                 "-storetype", "PKCS12", "-keystore", keyStorePath.toString(),
@@ -108,10 +112,11 @@ class HttpsTransportTests {
         var response = trustedClient().send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, response.statusCode());
         assertTrue(response.sslSession().orElseThrow().getProtocol().matches("TLSv1\\.[23]"));
-        assertEquals("https://localhost:4200", response.headers().firstValue("Access-Control-Allow-Origin").orElseThrow());
+        assertEquals("https://localhost:4200",
+                response.headers().firstValue("Access-Control-Allow-Origin").orElseThrow());
         assertTrue(response.headers().firstValue("Strict-Transport-Security").isPresent());
-        assertTrue(response.headers().allValues("Set-Cookie").stream().anyMatch(value ->
-                value.startsWith("XSRF-TOKEN=") && value.toLowerCase(Locale.ROOT).contains("; secure")));
+        assertTrue(response.headers().allValues("Set-Cookie").stream().anyMatch(
+                value -> value.startsWith("XSRF-TOKEN=") && value.toLowerCase(Locale.ROOT).contains("; secure")));
     }
 
     @Test
@@ -127,12 +132,13 @@ class HttpsTransportTests {
         assertTrue(token.find());
         var request = HttpRequest.newBuilder(URI.create("https://localhost:" + port + "/usuarios/login"))
                 .header("Content-Type", "application/json").header("X-XSRF-TOKEN", token.group(1))
-                .POST(HttpRequest.BodyPublishers.ofString("{\"email\":\"tls@example.com\",\"password\":\"test-password\"}"))
+                .POST(HttpRequest.BodyPublishers
+                        .ofString("{\"email\":\"tls@example.com\",\"password\":\"test-password\"}"))
                 .build();
         var response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, response.statusCode());
-        assertTrue(response.headers().allValues("Set-Cookie").stream().anyMatch(value ->
-                value.startsWith("JSESSIONID=") && value.toLowerCase(Locale.ROOT).contains("; secure")
+        assertTrue(response.headers().allValues("Set-Cookie").stream().anyMatch(
+                value -> value.startsWith("JSESSIONID=") && value.toLowerCase(Locale.ROOT).contains("; secure")
                         && value.toLowerCase(Locale.ROOT).contains("; httponly")));
     }
 
@@ -145,7 +151,8 @@ class HttpsTransportTests {
                 var response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 assertTrue(response.statusCode() >= 400);
             } catch (IOException rejected) {
-                // Un conector TLS también puede cerrar la conexión antes de enviar una respuesta HTTP.
+                // Un conector TLS también puede cerrar la conexión antes de enviar una
+                // respuesta HTTP.
             }
         }
     }
