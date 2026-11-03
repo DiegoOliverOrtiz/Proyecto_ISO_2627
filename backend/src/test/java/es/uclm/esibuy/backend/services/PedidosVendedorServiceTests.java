@@ -20,6 +20,7 @@ import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.PedidoVendedorResponse;
 import es.uclm.esibuy.backend.exceptions.PedidoVendedorNoEncontradoException;
+import es.uclm.esibuy.backend.exceptions.TransicionEstadoPedidoException;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
 import es.uclm.esibuy.backend.model.Pedido;
@@ -307,6 +308,276 @@ class PedidosVendedorServiceTests {
         assertThrows(
                 AccessDeniedException.class,
                 () -> servicio.consultarActivos(" "));
+
+        verifyNoInteractions(pedidoDAO);
+    }
+
+    // HU-32: aceptar pedidos pagados (Pagado/Completado -> Tramitado/Enviado)
+
+    @Test
+    void aceptaPedidoPagadoPropio() {
+        Pedido pagado = pedido(
+                "pedido-1",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("producto-1", VENDEDOR_ID, 2, "10.00"));
+        Pedido enviado = pedido(
+                "pedido-1",
+                EstadoPedido.TRAMITADO_ENVIADO,
+                linea("producto-1", VENDEDOR_ID, 2, "10.00"));
+
+        when(pedidoDAO.findById("pedido-1"))
+                .thenReturn(Optional.of(pagado))
+                .thenReturn(Optional.of(enviado));
+        when(pedidoDAO.actualizarEstado(
+                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+                .thenReturn(1L);
+
+        PedidoVendedorResponse respuesta = servicio.aceptarPedido(EMAIL, "pedido-1");
+
+        assertEquals(EstadoPedido.TRAMITADO_ENVIADO, respuesta.estado());
+        verify(pedidoDAO).actualizarEstado(
+                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO");
+    }
+
+    @Test
+    void aceptarPedidoMixtoSoloDevuelveProductosPropios() {
+        Pedido mixto = pedido(
+                "pedido-mixto",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("mio", VENDEDOR_ID, 1, "15.00"),
+                linea("ajeno", OTRO_VENDEDOR, 1, "100.00"));
+        Pedido enviado = pedido(
+                "pedido-mixto",
+                EstadoPedido.TRAMITADO_ENVIADO,
+                linea("mio", VENDEDOR_ID, 1, "15.00"),
+                linea("ajeno", OTRO_VENDEDOR, 1, "100.00"));
+
+        when(pedidoDAO.findById("pedido-mixto"))
+                .thenReturn(Optional.of(mixto))
+                .thenReturn(Optional.of(enviado));
+        when(pedidoDAO.actualizarEstado(
+                "pedido-mixto", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+                .thenReturn(1L);
+
+        PedidoVendedorResponse respuesta = servicio.aceptarPedido(EMAIL, "pedido-mixto");
+
+        assertEquals(1, respuesta.productos().size());
+        assertEquals("mio", respuesta.productos().get(0).productoId());
+    }
+
+    @Test
+    void noAceptaPedidoDeOtroVendedor() {
+        Pedido ajeno = pedido(
+                "pedido-ajeno",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("producto-ajeno", OTRO_VENDEDOR, 1, "40.00"));
+
+        when(pedidoDAO.findById("pedido-ajeno"))
+                .thenReturn(Optional.of(ajeno));
+
+        assertThrows(
+                PedidoVendedorNoEncontradoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-ajeno"));
+
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+    }
+
+    @Test
+    void noAceptaPedidoInexistente() {
+        when(pedidoDAO.findById("no-existe"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                PedidoVendedorNoEncontradoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "no-existe"));
+
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+    }
+
+    @Test
+    void noAceptaPedidoSinPagar() {
+        Pedido pendiente = pedido(
+                "pedido-pendiente",
+                EstadoPedido.EN_PROCESO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findById("pedido-pendiente"))
+                .thenReturn(Optional.of(pendiente));
+
+        assertThrows(
+                PedidoVendedorNoEncontradoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-pendiente"));
+
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+    }
+
+    @Test
+    void noAceptaPedidoYaEnviado() {
+        Pedido enviado = pedido(
+                "pedido-enviado",
+                EstadoPedido.TRAMITADO_ENVIADO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findById("pedido-enviado"))
+                .thenReturn(Optional.of(enviado));
+
+        assertThrows(
+                TransicionEstadoPedidoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-enviado"));
+
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+    }
+
+    @Test
+    void noAceptaPedidoFinalizado() {
+        Pedido finalizado = pedido(
+                "pedido-finalizado",
+                EstadoPedido.FINALIZADO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findById("pedido-finalizado"))
+                .thenReturn(Optional.of(finalizado));
+
+        assertThrows(
+                TransicionEstadoPedidoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-finalizado"));
+
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+    }
+
+    @Test
+    void rechazaAceptarSiElPedidoCambioEntreMedias() {
+        Pedido pagado = pedido(
+                "pedido-1",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findById("pedido-1"))
+                .thenReturn(Optional.of(pagado));
+        when(pedidoDAO.actualizarEstado(
+                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+                .thenReturn(0L);
+
+        assertThrows(
+                TransicionEstadoPedidoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-1"));
+    }
+
+    @Test
+    void rechazaAceptarSinIdentificador() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> servicio.aceptarPedido(EMAIL, " "));
+
+        verifyNoInteractions(pedidoDAO);
+    }
+
+    @Test
+    void vendedorBloqueadoNoPuedeAceptarPedidos() {
+        Vendedor bloqueado = new Vendedor();
+        bloqueado.setId(VENDEDOR_ID);
+        bloqueado.setActivada(true);
+        bloqueado.setBloqueada(true);
+
+        when(vendedorDAO.findByEmail(EMAIL))
+                .thenReturn(Optional.of(bloqueado));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-1"));
+
+        verifyNoInteractions(pedidoDAO);
+    }
+
+    @Test
+    void vendedorInexistenteNoPuedeAceptarPedidos() {
+        when(vendedorDAO.findByEmail("desconocido@test.com"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> servicio.aceptarPedido("desconocido@test.com", "pedido-1"));
+
+        verifyNoInteractions(pedidoDAO);
+    }
+
+    @Test
+    void correoVacioNoPuedeAceptarPedidos() {
+        assertThrows(
+                AccessDeniedException.class,
+                () -> servicio.aceptarPedido(" ", "pedido-1"));
+
+        verifyNoInteractions(pedidoDAO);
+    }
+
+    @Test
+    void aceptarPedidoMixtoUsaSoloElVendedorDeLaSesion() {
+        Pedido mixto = pedido(
+                "pedido-mixto",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("mio", VENDEDOR_ID, 1, "15.00"),
+                linea("ajeno", OTRO_VENDEDOR, 1, "100.00"));
+
+        when(pedidoDAO.findById("pedido-mixto"))
+                .thenReturn(Optional.of(mixto));
+        when(pedidoDAO.actualizarEstado(any(), any(), any(), any()))
+                .thenReturn(1L);
+
+        servicio.aceptarPedido(EMAIL, "pedido-mixto");
+
+        verify(pedidoDAO).actualizarEstado(
+                "pedido-mixto", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO");
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), eq(OTRO_VENDEDOR), any());
+    }
+
+    @Test
+    void pedidoAceptadoSigueEnActivosComoEnviadoYNoPasaAlHistorico() {
+        Pedido enviado = pedido(
+                "pedido-1",
+                EstadoPedido.TRAMITADO_ENVIADO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findByVendedorId(VENDEDOR_ID))
+                .thenReturn(List.of(enviado));
+
+        List<PedidoVendedorResponse> activos = servicio.consultarActivos(EMAIL);
+
+        assertEquals(1, activos.size());
+        assertEquals(EstadoPedido.TRAMITADO_ENVIADO, activos.get(0).estado());
+        assertTrue(servicio.consultarHistorico(EMAIL).isEmpty());
+    }
+
+    @Test
+    void rechazaAceptarSiElPedidoDesapareceTrasActualizar() {
+        Pedido pagado = pedido(
+                "pedido-1",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("producto-1", VENDEDOR_ID, 1, "10.00"));
+
+        when(pedidoDAO.findById("pedido-1"))
+                .thenReturn(Optional.of(pagado))
+                .thenReturn(Optional.empty());
+        when(pedidoDAO.actualizarEstado(any(), any(), any(), any()))
+                .thenReturn(1L);
+
+        assertThrows(
+                PedidoVendedorNoEncontradoException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-1"));
+    }
+
+    @Test
+    void vendedorNoActivadoNoPuedeAceptarPedidos() {
+        Vendedor noActivado = new Vendedor();
+        noActivado.setId(VENDEDOR_ID);
+        noActivado.setActivada(false);
+        noActivado.setBloqueada(false);
+
+        when(vendedorDAO.findByEmail(EMAIL))
+                .thenReturn(Optional.of(noActivado));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> servicio.aceptarPedido(EMAIL, "pedido-1"));
 
         verifyNoInteractions(pedidoDAO);
     }
