@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,9 +37,41 @@ public class ProductoImagenService {
     }
 
     private final Path directorio;
+    private final ProductoImagenMongoService almacenMongo;
+    private final boolean usarMongo;
 
-    public ProductoImagenService(@Value("${app.productos.imagenes.directorio:uploads/productos}") String directorio) {
-        this.directorio = Path.of(directorio).toAbsolutePath().normalize();
+    // Constructor conservado para los tests actuales del modo local.
+    public ProductoImagenService(String directorio) {
+        this.directorio = Path.of(directorio)
+                .toAbsolutePath()
+                .normalize();
+
+        this.almacenMongo = null;
+        this.usarMongo = false;
+    }
+
+    // Constructor que utiliza Spring Boot en la aplicación real.
+    @Autowired
+    public ProductoImagenService(
+            @Value("${app.productos.imagenes.directorio:uploads/productos}")
+            String directorio,
+            @Value("${app.productos.imagenes.almacenamiento:local}")
+            String almacenamiento,
+            ProductoImagenMongoService almacenMongo) {
+
+        this.directorio = Path.of(directorio)
+                .toAbsolutePath()
+                .normalize();
+
+        if (!"local".equals(almacenamiento)
+                && !"mongo".equals(almacenamiento)) {
+            throw new IllegalArgumentException(
+                    "Almacenamiento de imágenes desconocido: "
+                            + almacenamiento);
+        }
+
+        this.almacenMongo = almacenMongo;
+        this.usarMongo = "mongo".equals(almacenamiento);
     }
 
     public String guardar(MultipartFile imagen) {
@@ -68,6 +101,16 @@ public class ProductoImagenService {
 
         // El nombre original nunca se usa: se genera uno propio con una extensión de la lista blanca.
         String nombreArchivo = UUID.randomUUID() + tipo.extensionGuardada;
+
+        if (usarMongo) {
+            almacenMongo.guardar(
+                    nombreArchivo,
+                    tipo.contentType,
+                    contenido);
+
+            return RUTA_PUBLICA + nombreArchivo;
+        }
+
         Path destino = directorio.resolve(nombreArchivo).normalize();
         if (!destino.startsWith(directorio)) {
             throw new IllegalArgumentException("La ruta de la imagen no es válida.");
@@ -141,17 +184,32 @@ public class ProductoImagenService {
     }
 
     public void eliminar(String rutaPublica) {
-        if (rutaPublica == null || !rutaPublica.startsWith(RUTA_PUBLICA)) {
+
+        if (rutaPublica == null
+                || !rutaPublica.startsWith(RUTA_PUBLICA)) {
             return;
         }
-        Path archivo = directorio.resolve(rutaPublica.substring(RUTA_PUBLICA.length())).normalize();
-        if (!archivo.startsWith(directorio)) {
-            throw new IllegalArgumentException("La ruta de la imagen no es válida.");
+
+        String nombre = rutaPublica.substring(
+                RUTA_PUBLICA.length());
+
+        if (usarMongo) {
+            almacenMongo.eliminar(nombre);
+            return;
         }
+
+        Path archivo = directorio.resolve(nombre).normalize();
+
+        if (!archivo.startsWith(directorio)) {
+            throw new IllegalArgumentException(
+                    "La ruta de la imagen no es válida.");
+        }
+
         try {
             Files.deleteIfExists(archivo);
         } catch (IOException e) {
-            throw new IllegalStateException("No se pudo eliminar la imagen del producto.", e);
+            throw new IllegalStateException(
+                    "No se pudo eliminar la imagen del producto.", e);
         }
     }
 }
