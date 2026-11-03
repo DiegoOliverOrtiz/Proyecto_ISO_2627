@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FavoritosService } from '../favoritos/favoritos.service';
+import { ListasService, ResumenLista } from '../listas/listas.service';
 
 import { AuthService } from '../login/auth.service';
 import { CarritoService } from '../carrito/carrito.service';
@@ -335,6 +336,8 @@ export class PanelCliente implements OnInit {
 
     this.cargandoDetalle.set(true);
 
+    this.cargarListas();
+
     /*
      * Reiniciamos la cantidad al abrir
      * un nuevo producto.
@@ -610,6 +613,113 @@ export class PanelCliente implements OnInit {
     this.soloFavoritos.set(
       (evento.target as HTMLInputElement).checked
     );
+  }
+
+  /* =========================================================
+     LISTAS DE PRODUCTOS (HU-39)
+     ========================================================= */
+
+  private readonly servicioListas = inject(ListasService);
+
+  readonly listas = signal<ResumenLista[]>([]);
+  readonly listaSeleccionada = signal('');
+  readonly cargandoListas = signal(false);
+  readonly modificandoLista = signal(false);
+  readonly errorListas = signal('');
+  readonly mensajeListas = signal('');
+
+  // Favoritos tiene su propio botón; aquí solo se ofrecen las listas creadas por el usuario.
+  readonly listasPersonales = computed(() =>
+    this.listas().filter(lista => !lista.predeterminada)
+  );
+
+  cargarListas(): void {
+    this.cargandoListas.set(true);
+    this.errorListas.set('');
+    this.mensajeListas.set('');
+
+    this.servicioListas.consultarListas().subscribe({
+      next: listas => {
+        this.listas.set(listas);
+        this.cargandoListas.set(false);
+
+        const personales = this.listasPersonales();
+        if (!personales.some(lista => lista.id === this.listaSeleccionada())) {
+          this.listaSeleccionada.set(personales[0]?.id ?? '');
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargandoListas.set(false);
+        this.errorListas.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio de listas.'
+            : 'No se pudieron consultar tus listas.'
+        );
+
+        if (error.status === 401) {
+          this.irALogin();
+        }
+      }
+    });
+  }
+
+  actualizarListaSeleccionada(evento: Event): void {
+    this.listaSeleccionada.set((evento.target as HTMLSelectElement).value);
+    this.errorListas.set('');
+    this.mensajeListas.set('');
+  }
+
+  estaEnListaSeleccionada(productoId: string): boolean {
+    return this.listas()
+      .find(lista => lista.id === this.listaSeleccionada())
+      ?.productoIds.includes(productoId) ?? false;
+  }
+
+  cambiarProductoEnLista(producto: ProductoCatalogo): void {
+    const listaId = this.listaSeleccionada();
+
+    if (!listaId || this.modificandoLista()) {
+      return;
+    }
+
+    const yaIncluido = this.estaEnListaSeleccionada(producto.id);
+
+    this.modificandoLista.set(true);
+    this.errorListas.set('');
+    this.mensajeListas.set('');
+
+    const peticion = yaIncluido
+      ? this.servicioListas.quitarProducto(listaId, producto.id)
+      : this.servicioListas.anadirProducto(listaId, producto.id);
+
+    peticion.subscribe({
+      next: lista => {
+        const productoIds = lista.productos.map(item => item.id);
+        this.listas.update(listas =>
+          listas.map(resumen => resumen.id === lista.id ? { ...resumen, productoIds } : resumen)
+        );
+        this.modificandoLista.set(false);
+        this.mensajeListas.set(
+          yaIncluido
+            ? `Producto quitado de «${lista.nombre}».`
+            : `Producto añadido a «${lista.nombre}».`
+        );
+      },
+      error: (error: HttpErrorResponse) => {
+        this.modificandoLista.set(false);
+        this.errorListas.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servidor.'
+            : error.status === 404
+              ? 'El producto o la lista ya no están disponibles.'
+              : 'No se pudo actualizar la lista.'
+        );
+
+        if (error.status === 401) {
+          this.irALogin();
+        }
+      }
+    });
   }
 
   /* =========================================================

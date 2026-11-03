@@ -12,4 +12,6 @@ public interface ListaProductosDAO
     List<ListaProductos> findByUsuarioId(String usuarioId);
 
     void deleteByUsuarioId(String usuarioId);
+
+    long countByUsuarioId(String usuarioId);
 }

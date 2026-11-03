@@ -1,0 +1,142 @@
+<header class="lists-header">
+  <h1>ESIBuy</h1>
+
+  <nav aria-label="Navegación de listas">
+    <a routerLink="/cliente">Catálogo</a>
+    <a routerLink="/cliente/favoritos">Mis favoritos</a>
+    <a routerLink="/perfil">Mi perfil</a>
+  </nav>
+</header>
+
+<main class="lists-page">
+  <h2>Mis listas</h2>
+  <p class="lists-intro">
+    Organiza los productos que te interesan. Puedes añadirlos desde el detalle de cada producto
+    del catálogo.
+  </p>
+
+  @if (error()) {
+    <p class="message error-message" role="alert">{{ error() }}</p>
+  }
+
+  @if (exito()) {
+    <output class="message success-message">{{ exito() }}</output>
+  }
+
+  <form class="new-list" (submit)="$event.preventDefault(); crear()">
+    <label for="nueva-lista">Nueva lista</label>
+    <input
+      id="nueva-lista"
+      type="text"
+      placeholder="Por ejemplo: alimentación"
+      [maxLength]="maxNombre"
+      [formControl]="nombreNueva"
+    />
+    <button type="submit" [disabled]="operacion()">Crear lista</button>
+
+    @if (nombreNueva.touched && nombreNueva.hasError('required')) {
+      <span class="field-error">El nombre de la lista es obligatorio.</span>
+    }
+    @if (nombreNueva.hasError('maxlength')) {
+      <span class="field-error">El nombre no puede superar {{ maxNombre }} caracteres.</span>
+    }
+  </form>
+
+  @if (cargando()) {
+    <output class="message">Cargando listas...</output>
+  } @else {
+    <div class="lists-layout">
+      <ul class="lists-menu" aria-label="Tus listas">
+        @for (lista of listas(); track lista.id) {
+          <li>
+            <button
+              type="button"
+              [class.selected]="seleccionada()?.id === lista.id"
+              [attr.aria-current]="seleccionada()?.id === lista.id"
+              (click)="seleccionar(lista)"
+            >
+              {{ lista.predeterminada ? '♥ ' : '' }}{{ lista.nombre }}
+              <span class="count">({{ lista.productoIds.length }})</span>
+            </button>
+          </li>
+        }
+      </ul>
+
+      <section class="list-detail" aria-live="polite">
+        @if (cargandoLista()) {
+          <output class="message">Cargando productos...</output>
+        } @else if (seleccionada(); as lista) {
+          <div class="list-title">
+            @if (renombrando() === lista.id) {
+              <form class="rename-form" (submit)="$event.preventDefault(); renombrar(lista)">
+                <label for="renombrar-lista">Nuevo nombre</label>
+                <input
+                  id="renombrar-lista"
+                  type="text"
+                  [maxLength]="maxNombre"
+                  [formControl]="nombreRenombrar"
+                />
+                <button type="submit" [disabled]="operacion()">Guardar</button>
+                <button type="button" class="secondary" (click)="cancelarRenombrar()">Cancelar</button>
+                @if (nombreRenombrar.hasError('required')) {
+                  <span class="field-error">El nombre de la lista es obligatorio.</span>
+                }
+              </form>
+            } @else {
+              <h3>{{ lista.nombre }}</h3>
+
+              @if (!lista.predeterminada) {
+                <div class="list-actions">
+                  <button type="button" class="secondary" [disabled]="operacion()" (click)="iniciarRenombrar(lista)">
+                    Renombrar
+                  </button>
+                  <button type="button" class="danger" [disabled]="operacion()" (click)="eliminar(lista)">
+                    Eliminar lista
+                  </button>
+                </div>
+              }
+            }
+          </div>
+
+          @if (lista.productos.length === 0) {
+            <p class="message">Esta lista no tiene productos.</p>
+          } @else {
+            <ul class="products">
+              @for (producto of lista.productos; track producto.id) {
+                <li class="product" [class.unavailable]="!producto.disponible">
+                  @if (producto.imagen) {
+                    <img [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="64" height="64" />
+                  }
+                  <div class="product-info">
+                    <strong>{{ producto.nombre }}</strong>
+                    @if (producto.precio !== null) {
+                      <span>{{ producto.precio | number: '1.2-2' }} €</span>
+                    }
+                    @if (!producto.disponible) {
+                      <span class="unavailable-message">
+                        {{ producto.aviso || 'Producto no disponible' }}: no se puede comprar
+                      </span>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="secondary"
+                    [disabled]="operacion()"
+                    [attr.aria-label]="'Quitar ' + producto.nombre + ' de la lista'"
+                    (click)="quitarProducto(lista, producto)"
+                  >
+                    Quitar de la lista
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </section>
+    </div>
+  }
+
+  @if (error() && !cargando() && listas().length === 0) {
+    <button type="button" (click)="cargarListas()">Reintentar</button>
+  }
+</main>
