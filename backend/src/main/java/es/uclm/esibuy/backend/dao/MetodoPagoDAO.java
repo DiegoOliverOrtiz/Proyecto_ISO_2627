@@ -11,4 +11,6 @@ public interface MetodoPagoDAO extends Repository<MetodoPago, String> {
 	List<MetodoPago> findByClienteId(String clienteId);
 
 	<S extends MetodoPago> S save(S metodoPago);
+
+	long deleteByIdAndClienteId(String id, String clienteId);
 }

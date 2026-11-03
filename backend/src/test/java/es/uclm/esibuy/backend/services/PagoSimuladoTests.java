@@ -38,6 +38,7 @@ import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.MetodoPago;
 import es.uclm.esibuy.backend.model.TipoMetodoPago;
+import es.uclm.esibuy.backend.exceptions.MetodoPagoNoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
 class PagoSimuladoServiceTests {
@@ -319,6 +320,49 @@ class PagoSimuladoServiceTests {
 	@ValueSource(strings = "   ")
 	void consultarMetodosPago_sinSolicitanteIdentificado_lanzaUsuarioNoEncontrado(String email) {
 		assertThrows(UsuarioNoEncontradoException.class, () -> servicio.consultarMetodosPago(email));
+
+		verifyNoInteractions(clienteDAO, metodoPagoDAO);
+	}
+
+		@Test
+	void eliminarMetodoPago_borraElMetodoDelClienteAutenticado() {
+		prepararCliente();
+		when(metodoPagoDAO.deleteByIdAndClienteId("mp-1", ID_CLIENTE)).thenReturn(1L);
+
+		servicio.eliminarMetodoPago(EMAIL, "mp-1");
+
+		verify(metodoPagoDAO).deleteByIdAndClienteId("mp-1", ID_CLIENTE);
+	}
+
+	@Test
+	void eliminarMetodoPago_deOtroClienteOInexistente_lanzaNoEncontrado() {
+		prepararCliente();
+		when(metodoPagoDAO.deleteByIdAndClienteId("mp-ajeno", ID_CLIENTE)).thenReturn(0L);
+
+		assertThrows(MetodoPagoNoEncontradoException.class,
+				() -> servicio.eliminarMetodoPago(EMAIL, "mp-ajeno"));
+
+		verify(metodoPagoDAO).deleteByIdAndClienteId("mp-ajeno", ID_CLIENTE);
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = "   ")
+	void eliminarMetodoPago_conIdNuloOEnBlanco_lanzaNoEncontradoSinBorrar(String id) {
+		prepararCliente();
+
+		assertThrows(MetodoPagoNoEncontradoException.class,
+				() -> servicio.eliminarMetodoPago(EMAIL, id));
+
+		verify(metodoPagoDAO, never()).deleteByIdAndClienteId(any(), any());
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = "   ")
+	void eliminarMetodoPago_sinSolicitanteIdentificado_lanzaUsuarioNoEncontrado(String email) {
+		assertThrows(UsuarioNoEncontradoException.class,
+				() -> servicio.eliminarMetodoPago(email, "mp-1"));
 
 		verifyNoInteractions(clienteDAO, metodoPagoDAO);
 	}

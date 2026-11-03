@@ -22,6 +22,7 @@ import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.MetodoPago;
 import es.uclm.esibuy.backend.model.TipoMetodoPago;
+import es.uclm.esibuy.backend.exceptions.MetodoPagoNoEncontradoException;
 
 @Service
 public class PagoSimuladoService {
@@ -119,5 +120,16 @@ public class PagoSimuladoService {
 				.sorted(Comparator.comparing(MetodoPago::getNombre, String.CASE_INSENSITIVE_ORDER))
 				.map(MetodoPagoResponse::de)
 				.toList();
+	}
+
+	public void eliminarMetodoPago(String emailAutenticado, String idMetodo) {
+		Cliente cliente = obtenerCliente(emailAutenticado);
+		if (idMetodo == null || idMetodo.isBlank()) {
+			throw new MetodoPagoNoEncontradoException();
+		}
+		long eliminados = metodoPagoDAO.deleteByIdAndClienteId(idMetodo, cliente.getId());
+		if (eliminados == 0) {
+			throw new MetodoPagoNoEncontradoException();
+		}
 	}
 }
