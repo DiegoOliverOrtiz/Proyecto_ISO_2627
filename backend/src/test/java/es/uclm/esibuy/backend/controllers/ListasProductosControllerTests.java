@@ -18,10 +18,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.ListaProductosResponse;
+import es.uclm.esibuy.backend.dto.ProductoFavoritoResponse;
 import es.uclm.esibuy.backend.dto.ResumenListaProductosResponse;
 import es.uclm.esibuy.backend.exceptions.ListaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.NombreListaDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.OperacionListaNoPermitidaException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.services.ListaProductosService;
 
 @WebMvcTest(ListasProductosController.class)
@@ -162,6 +164,45 @@ class ListasProductosControllerTests {
                 .andExpect(status().isNoContent());
 
         verify(listaProductosService).eliminar(CORREO, "l1");
+    }
+
+    @Test
+    void anadirProductoALaLista() throws Exception {
+        ProductoFavoritoResponse producto =
+                new ProductoFavoritoResponse("p1", "Teclado", null, 20.0, 3, true, null);
+        when(listaProductosService.anadirProducto(CORREO, "l1", "p1"))
+                .thenReturn(new ListaProductosResponse("l1", "Comida", false, List.of(producto)));
+
+        mvc.perform(put(RUTA + "/l1/productos/p1")
+                        .with(user(CORREO).roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productos[0].id").value("p1"))
+                .andExpect(jsonPath("$.productos[0].disponible").value(true));
+    }
+
+    @Test
+    void anadirProductoNoDisponibleDevuelve404() throws Exception {
+        when(listaProductosService.anadirProducto(CORREO, "l1", "p1"))
+                .thenThrow(new ProductoNoEncontradoException());
+
+        mvc.perform(put(RUTA + "/l1/productos/p1")
+                        .with(user(CORREO).roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quitarProductoDeLaLista() throws Exception {
+        when(listaProductosService.quitarProducto(CORREO, "l1", "p1")).thenReturn(lista("l1", "Comida"));
+
+        mvc.perform(delete(RUTA + "/l1/productos/p1")
+                        .with(user(CORREO).roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productos").isEmpty());
+
+        verify(listaProductosService).quitarProducto(CORREO, "l1", "p1");
     }
 
     @Test

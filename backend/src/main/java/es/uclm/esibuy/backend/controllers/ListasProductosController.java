@@ -71,4 +71,24 @@ public class ListasProductosController {
         listaProductosService.eliminar(authentication.getName(), listaId);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{listaId}/productos/{productoId}")
+    public ListaProductosResponse anadirProducto(
+            Authentication authentication,
+            @PathVariable String listaId,
+            @PathVariable String productoId) {
+
+        return listaProductosService.anadirProducto(
+                authentication.getName(), listaId, productoId);
+    }
+
+    @DeleteMapping("/{listaId}/productos/{productoId}")
+    public ListaProductosResponse quitarProducto(
+            Authentication authentication,
+            @PathVariable String listaId,
+            @PathVariable String productoId) {
+
+        return listaProductosService.quitarProducto(
+                authentication.getName(), listaId, productoId);
+    }
 }

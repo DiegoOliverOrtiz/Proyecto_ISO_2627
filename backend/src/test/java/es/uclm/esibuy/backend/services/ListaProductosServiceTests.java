@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.ListaProductosDAO;
@@ -23,8 +25,10 @@ import es.uclm.esibuy.backend.dto.ResumenListaProductosResponse;
 import es.uclm.esibuy.backend.exceptions.ListaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.NombreListaDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.OperacionListaNoPermitidaException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.ListaProductos;
+import es.uclm.esibuy.backend.model.Producto;
 
 @ExtendWith(MockitoExtension.class)
 class ListaProductosServiceTests {
@@ -309,6 +313,176 @@ class ListaProductosServiceTests {
         assertThrows(OperacionListaNoPermitidaException.class,
                 () -> servicio.eliminar(CORREO, favoritos.getId()));
         verify(listaProductosDAO, never()).delete(any());
+    }
+
+    // Añadir y quitar productos (T-39.2)
+
+    private Producto producto(String id, boolean visible, int stock) {
+        Producto producto = mock(Producto.class);
+        lenient().when(producto.getId()).thenReturn(id);
+        lenient().when(producto.getNombre()).thenReturn("Producto " + id);
+        lenient().when(producto.isEsVisible()).thenReturn(visible);
+        lenient().when(producto.getStock()).thenReturn(stock);
+        lenient().when(producto.getPrecio()).thenReturn(10.0);
+        return producto;
+    }
+
+    @Test
+    void anadirProductoVisibleALaListaElegida() {
+        prepararUsuario();
+        ListaProductos existente = lista("l1", USUARIO_ID, "Comida");
+        Producto producto = producto("p1", true, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(producto));
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(existente));
+        when(productoDAO.findAllById(List.of("p1"))).thenReturn(List.of(producto));
+        guardarDevuelveLoMismo();
+
+        ListaProductosResponse respuesta = servicio.anadirProducto(CORREO, "l1", "p1");
+
+        assertEquals(Set.of("p1"), existente.getProductos());
+        assertEquals(1, respuesta.productos().size());
+        assertTrue(respuesta.productos().get(0).disponible());
+        verify(listaProductosDAO).save(existente);
+    }
+
+    @Test
+    void anadirUnProductoRepetidoNoCreaDuplicadosNiGuarda() {
+        prepararUsuario();
+        ListaProductos existente = lista("l1", USUARIO_ID, "Comida");
+        existente.agregarProducto("p1");
+        Producto producto = producto("p1", true, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(producto));
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(existente));
+        when(productoDAO.findAllById(List.of("p1"))).thenReturn(List.of(producto));
+
+        ListaProductosResponse respuesta = servicio.anadirProducto(CORREO, "l1", "p1");
+
+        assertEquals(1, respuesta.productos().size());
+        verify(listaProductosDAO, never()).save(any());
+    }
+
+    @Test
+    void elMismoProductoPuedeEstarEnVariasListas() {
+        prepararUsuario();
+        ListaProductos comida = lista("l1", USUARIO_ID, "Comida");
+        ListaProductos regalos = lista("l2", USUARIO_ID, "Regalos");
+        Producto producto = producto("p1", true, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(producto));
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(comida));
+        when(listaProductosDAO.findById("l2")).thenReturn(Optional.of(regalos));
+        when(productoDAO.findAllById(List.of("p1"))).thenReturn(List.of(producto));
+        guardarDevuelveLoMismo();
+
+        servicio.anadirProducto(CORREO, "l1", "p1");
+        servicio.anadirProducto(CORREO, "l2", "p1");
+
+        assertEquals(Set.of("p1"), comida.getProductos());
+        assertEquals(Set.of("p1"), regalos.getProductos());
+    }
+
+    @Test
+    void noSeAnadeUnProductoDesactivadoOInexistente() {
+        Producto desactivado = producto("p1", false, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(desactivado));
+        when(productoDAO.findById("nada")).thenReturn(Optional.empty());
+
+        assertThrows(ProductoNoEncontradoException.class,
+                () -> servicio.anadirProducto(CORREO, "l1", "p1"));
+        assertThrows(ProductoNoEncontradoException.class,
+                () -> servicio.anadirProducto(CORREO, "l1", "nada"));
+        verify(listaProductosDAO, never()).save(any());
+    }
+
+    @Test
+    void anadirSinIdentificadorDeProductoEsRechazado() {
+        assertThrows(IllegalArgumentException.class,
+                () -> servicio.anadirProducto(CORREO, "l1", " "));
+        assertThrows(IllegalArgumentException.class,
+                () -> servicio.quitarProducto(CORREO, "l1", null));
+        verifyNoInteractions(listaProductosDAO, productoDAO);
+    }
+
+    @Test
+    void anadirAUnaListaAjenaEsRechazado() {
+        prepararUsuario();
+        Producto producto = producto("p1", true, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(producto));
+        ListaProductos ajena = lista("ajena", OTRO_USUARIO_ID, "Privada");
+        when(listaProductosDAO.findById("ajena")).thenReturn(Optional.of(ajena));
+
+        assertThrows(ListaNoEncontradaException.class,
+                () -> servicio.anadirProducto(CORREO, "ajena", "p1"));
+        assertTrue(ajena.getProductos().isEmpty());
+        verify(listaProductosDAO, never()).save(any());
+    }
+
+    @Test
+    void quitarProductoDeLaLista() {
+        prepararUsuario();
+        ListaProductos existente = lista("l1", USUARIO_ID, "Comida");
+        existente.agregarProducto("p1");
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(existente));
+        guardarDevuelveLoMismo();
+
+        ListaProductosResponse respuesta = servicio.quitarProducto(CORREO, "l1", "p1");
+
+        assertTrue(existente.getProductos().isEmpty());
+        assertTrue(respuesta.productos().isEmpty());
+        verify(listaProductosDAO).save(existente);
+        verify(productoDAO, never()).findById(any());
+    }
+
+    @Test
+    void quitarDeUnaListaAjenaEsRechazado() {
+        prepararUsuario();
+        ListaProductos ajena = lista("ajena", OTRO_USUARIO_ID, "Privada");
+        ajena.agregarProducto("p1");
+        when(listaProductosDAO.findById("ajena")).thenReturn(Optional.of(ajena));
+
+        assertThrows(ListaNoEncontradaException.class,
+                () -> servicio.quitarProducto(CORREO, "ajena", "p1"));
+        assertEquals(Set.of("p1"), ajena.getProductos());
+        verify(listaProductosDAO, never()).save(any());
+    }
+
+    @Test
+    void unProductoNoDisponiblePermaneceEnLaListaPeroNoEsComprable() {
+        prepararUsuario();
+        ListaProductos existente = lista("l1", USUARIO_ID, "Comida");
+        existente.agregarProducto("desactivado");
+        existente.agregarProducto("eliminado");
+        Producto desactivado = producto("desactivado", false, 5);
+        when(listaProductosDAO.findById("l1")).thenReturn(Optional.of(existente));
+        when(productoDAO.findAllById(List.of("desactivado", "eliminado")))
+                .thenReturn(List.of(desactivado));
+
+        ListaProductosResponse respuesta = servicio.consultarLista(CORREO, "l1");
+
+        assertEquals(2, respuesta.productos().size());
+        assertFalse(respuesta.productos().get(0).disponible());
+        assertEquals("Producto no disponible", respuesta.productos().get(0).aviso());
+        assertFalse(respuesta.productos().get(1).disponible());
+        assertEquals("Producto eliminado", respuesta.productos().get(1).nombre());
+    }
+
+    @Test
+    void reintentaSiLaListaSeModificaALaVez() {
+        prepararUsuario();
+        ListaProductos existente = lista("l1", USUARIO_ID, "Comida");
+        Producto producto = producto("p1", true, 5);
+        when(productoDAO.findById("p1")).thenReturn(Optional.of(producto));
+        when(listaProductosDAO.findById("l1"))
+                .thenReturn(Optional.of(existente))
+                .thenReturn(Optional.of(lista("l1", USUARIO_ID, "Comida")));
+        when(productoDAO.findAllById(List.of("p1"))).thenReturn(List.of(producto));
+        when(listaProductosDAO.save(any(ListaProductos.class)))
+                .thenThrow(new OptimisticLockingFailureException("conflicto"))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        ListaProductosResponse respuesta = servicio.anadirProducto(CORREO, "l1", "p1");
+
+        assertEquals(1, respuesta.productos().size());
+        verify(listaProductosDAO, times(2)).save(any());
     }
 
     @Test

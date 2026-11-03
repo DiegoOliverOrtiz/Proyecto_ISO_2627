@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import es.uclm.esibuy.backend.dto.ResumenListaProductosResponse;
 import es.uclm.esibuy.backend.exceptions.ListaNoEncontradaException;
 import es.uclm.esibuy.backend.exceptions.NombreListaDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.OperacionListaNoPermitidaException;
+import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.ListaProductos;
 import es.uclm.esibuy.backend.model.Producto;
@@ -33,6 +35,7 @@ public class ListaProductosService {
 
     static final int MAX_NOMBRE = 50;
     static final int MAX_LISTAS = 20;
+    private static final int MAX_INTENTOS = 3;
     private static final String NOMBRE_RESERVADO = "favoritos";
 
     private final ListaProductosDAO listaProductosDAO;
@@ -123,6 +126,69 @@ public class ListaProductosService {
 
         // Solo se borra la lista: los productos siguen en el catálogo.
         listaProductosDAO.delete(lista);
+    }
+
+    public ListaProductosResponse anadirProducto(
+            String correoAutenticado,
+            String listaId,
+            String productoId) {
+
+        validarIdProducto(productoId);
+
+        Producto producto = productoDAO.findById(productoId)
+                .filter(Producto::isEsVisible)
+                .orElseThrow(ProductoNoEncontradoException::new);
+
+        return modificarProductos(correoAutenticado, listaId, producto.getId(), true);
+    }
+
+    public ListaProductosResponse quitarProducto(
+            String correoAutenticado,
+            String listaId,
+            String productoId) {
+
+        validarIdProducto(productoId);
+
+        // Se puede quitar aunque el producto ya no esté disponible o se haya eliminado.
+        return modificarProductos(correoAutenticado, listaId, productoId, false);
+    }
+
+    private ListaProductosResponse modificarProductos(
+            String correo,
+            String listaId,
+            String productoId,
+            boolean anadir) {
+
+        Usuario usuario = obtenerUsuario(correo);
+
+        for (int intento = 0; intento < MAX_INTENTOS; intento++) {
+            ListaProductos lista = obtenerListaPropia(usuario, listaId);
+
+            boolean cambio = anadir
+                    ? lista.agregarProducto(productoId)
+                    : lista.quitarProducto(productoId);
+
+            // Sin duplicados: añadir un producto que ya está no modifica la lista.
+            if (!cambio) {
+                return construirRespuesta(lista, usuario);
+            }
+
+            try {
+                return construirRespuesta(listaProductosDAO.save(lista), usuario);
+            } catch (OptimisticLockingFailureException excepcion) {
+                if (intento == MAX_INTENTOS - 1) {
+                    throw excepcion;
+                }
+            }
+        }
+
+        throw new IllegalStateException("No se ha podido actualizar la lista.");
+    }
+
+    private void validarIdProducto(String productoId) {
+        if (productoId == null || productoId.isBlank()) {
+            throw new IllegalArgumentException("El identificador del producto es obligatorio.");
+        }
     }
 
     private Usuario obtenerUsuario(String correo) {
