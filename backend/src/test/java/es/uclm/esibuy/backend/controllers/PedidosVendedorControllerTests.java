@@ -20,6 +20,7 @@ import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.LineaPedidoVendedorResponse;
 import es.uclm.esibuy.backend.dto.PedidoVendedorResponse;
 import es.uclm.esibuy.backend.exceptions.PedidoVendedorNoEncontradoException;
+import es.uclm.esibuy.backend.exceptions.TransicionEstadoPedidoException;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.services.PedidosVendedorService;
 
@@ -227,5 +228,46 @@ class PedidosVendedorControllerTests {
                 .andExpect(jsonPath("$.importeTotal").doesNotExist());
 
         verify(servicio).consultarDetalle(CORREO, "pedido-1");
+    }
+
+    // HU-32: aceptar pedido
+
+    @Test
+    void vendedorAceptaPedidoPropio() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-1"))
+                .thenReturn(
+                        pedido("pedido-1", EstadoPedido.TRAMITADO_ENVIADO)
+                );
+
+        mvc.perform(patch(RUTA + "/pedido-1/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("pedido-1"))
+                .andExpect(jsonPath("$.estado").value("TRAMITADO_ENVIADO"));
+
+        verify(servicio).aceptarPedido(CORREO, "pedido-1");
+    }
+
+    @Test
+    void aceptarPedidoAjenoDevuelve404() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-ajeno"))
+                .thenThrow(new PedidoVendedorNoEncontradoException());
+
+        mvc.perform(patch(RUTA + "/pedido-ajeno/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void aceptarPedidoEnEstadoNoPermitidoDevuelve409() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-enviado"))
+                .thenThrow(new TransicionEstadoPedidoException());
+
+        mvc.perform(patch(RUTA + "/pedido-enviado/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isConflict());
     }
 }
