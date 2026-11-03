@@ -25,19 +25,40 @@ public class ClienteService {
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
 	private final FavoritosRegistroService favoritosRegistroService;
+	private final BajaUsuarioService bajaUsuarioService;
 
-	public ClienteService(ClienteDAO clienteDAO, SoporteRegistro soporteRegistro) {
-		this(clienteDAO, soporteRegistro, null);
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro) {
+		this(clienteDAO, soporteRegistro, null, null);
+	}
+
+	public ClienteService(ClienteDAO clienteDAO, SoporteRegistro soporteRegistro,
+			FavoritosRegistroService favoritosRegistroService) {
+		this(clienteDAO, soporteRegistro, favoritosRegistroService, null);
+	}
+
+	public ClienteService(
+			ClienteDAO clienteDAO,
+			SoporteRegistro soporteRegistro,
+			BajaUsuarioService bajaUsuarioService) {
+		this(clienteDAO, soporteRegistro, null, bajaUsuarioService);
 	}
 
 	@Autowired
 	public ClienteService(
 			ClienteDAO clienteDAO,
 			SoporteRegistro soporteRegistro,
-			FavoritosRegistroService favoritosRegistroService) {
+			FavoritosRegistroService favoritosRegistroService,
+			BajaUsuarioService bajaUsuarioService) {
 		this.clienteDAO = clienteDAO;
 		this.soporteRegistro = soporteRegistro;
 		this.favoritosRegistroService = favoritosRegistroService;
+		this.bajaUsuarioService = bajaUsuarioService;
+	}
+
+	public void darDeBaja(String emailAutenticado) {
+		bajaUsuarioService.darDeBajaCliente(emailAutenticado);
 	}
 
 	public RegistroUsuarioResponse registrar(RegistroClienteRequest request) {

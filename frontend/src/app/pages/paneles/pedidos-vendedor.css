@@ -1,0 +1,232 @@
+:host {
+    display: block;
+    min-height: 100vh;
+    background: #f4f7f8;
+    color: #173042;
+}
+
+.cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 2rem;
+    background: #e8eef0;
+    border-bottom: 1px solid #d9e3e6;
+}
+
+.marca {
+    color: #255b4d;
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.cabecera h1 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.cabecera nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.cabecera nav a {
+    color: #255b4d;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.contenedor {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+.encabezado,
+.cabecera-pedido,
+.cabecera-detalle {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.encabezado h2,
+.detalle h2 {
+    margin-top: 0;
+}
+
+.encabezado p,
+.cabecera-pedido p {
+    color: #5c7180;
+}
+
+.pestañas {
+    display: flex;
+    gap: .5rem;
+    border-bottom: 1px solid #d9e3e6;
+    margin: 1.5rem 0;
+}
+
+.pestañas button {
+    padding: .85rem 1.25rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #526675;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.pestañas button.seleccionada {
+    color: #255b4d;
+    border-bottom-color: #255b4d;
+}
+
+.lista-pedidos {
+    display: grid;
+    gap: 1rem;
+}
+
+.tarjeta-pedido,
+.detalle,
+.estado-vacio {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid #dae3e6;
+    border-radius: 8px;
+}
+
+.tarjeta-pedido h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.estado {
+    border-radius: 999px;
+    padding: .45rem .85rem;
+    background: #e5f3eb;
+    color: #255b4d;
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+.resumen {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+
+.boton-primario,
+.boton-secundario {
+    padding: .7rem 1rem;
+    border-radius: 4px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton-primario {
+    background: #d36b54;
+    border: 1px solid #d36b54;
+    color: white;
+}
+
+.boton-secundario {
+    background: white;
+    border: 1px solid #255b4d;
+    color: #255b4d;
+}
+
+button:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.detalle {
+    margin-top: 2rem;
+}
+
+.tabla-contenedor {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    text-align: left;
+}
+
+th,
+td {
+    padding: .8rem;
+    border-bottom: 1px solid #e0e7e9;
+}
+
+.total {
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-align: right;
+}
+
+.direccion {
+    margin-top: 1.5rem;
+}
+
+.nota {
+    color: #526675;
+    font-size: .9rem;
+}
+
+.estado-vacio {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.acciones {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.mensaje-exito {
+    padding: 1rem;
+    border: 1px solid #a9d3bb;
+    border-radius: 4px;
+    background: #e5f3eb;
+    color: #255b4d;
+}
+
+.mensaje-error {
+    padding: 1rem;
+    border: 1px solid #e5b1a8;
+    border-radius: 4px;
+    background: #fff0ed;
+    color: #a63120;
+}
+
+@media (max-width: 640px) {
+    .cabecera {
+        padding: 1rem;
+    }
+
+    .contenedor {
+        padding: 1.5rem 1rem;
+    }
+
+    .tarjeta-pedido,
+    .detalle {
+        padding: 1rem;
+    }
+
+    .pestañas button {
+        padding: .75rem;
+    }
+}

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { PanelCliente } from './cliente';
 import { ProductoCatalogo } from './producto.service';
+import type { ResumenLista } from '../listas/listas.service';
 
 describe('PanelCliente - catálogo HU-19', () => {
   let fixture: ComponentFixture<PanelCliente>;
@@ -24,7 +25,7 @@ describe('PanelCliente - catálogo HU-19', () => {
 
   afterEach(() => {
     const peticionesFavoritos = httpMock.match(
-      'http://localhost:8080/usuarios/favoritos'
+      `${environment.apiUrl}/usuarios/favoritos`
     );
 
     for (const peticion of peticionesFavoritos) {
@@ -32,6 +33,11 @@ describe('PanelCliente - catálogo HU-19', () => {
         ids: [],
         productos: []
       });
+    }
+
+    // HU-39: el detalle consulta las listas del usuario.
+    for (const peticion of httpMock.match(`${environment.apiUrl}/usuarios/listas`)) {
+      peticion.flush([]);
     }
 
     httpMock.verify();
@@ -379,6 +385,98 @@ describe('PanelCliente - catálogo HU-19', () => {
     for (const boton of fixture.nativeElement.querySelectorAll('.catalog-cart-button')) {
       expect(boton.disabled).toBe(true);
     }
+  });
+
+  describe('listas de productos HU-39', () => {
+    const urlListas = `${environment.apiUrl}/usuarios/listas`;
+    const listas: ResumenLista[] = [
+      { id: 'favoritos:c1', nombre: 'Favoritos', predeterminada: true, productoIds: [] },
+      { id: 'l1', nombre: 'Comida', predeterminada: false, productoIds: [] },
+      { id: 'l2', nombre: 'Regalos', predeterminada: false, productoIds: ['lista-1'] }
+    ];
+
+    function abrirDetalle(respuestaListas: ResumenLista[] = listas) {
+      const producto = crearProducto('lista-1', false, true, 10);
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush([producto]);
+      fixture.detectChanges();
+      fixture.nativeElement.querySelector('.product-card .product-actions .secondary-button').click();
+      httpMock.expectOne(urlListas).flush(respuestaListas);
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos/lista-1`).flush(producto);
+      fixture.detectChanges();
+      return producto;
+    }
+
+    function botonLista(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.detail-lists button');
+    }
+
+    it('ofrece solo las listas propias, sin favoritos, y preselecciona la primera', () => {
+      abrirDetalle();
+
+      const opciones = [...fixture.nativeElement.querySelectorAll('#lista-destino option')]
+        .map((opcion: HTMLOptionElement) => opcion.textContent?.trim());
+      expect(opciones).toEqual(['Comida', 'Regalos']);
+      expect(fixture.componentInstance.listaSeleccionada()).toBe('l1');
+      expect(botonLista().textContent).toContain('Añadir a la lista');
+    });
+
+    it('añade el producto a la lista elegida con CSRF y lo marca como incluido', () => {
+      abrirDetalle();
+
+      botonLista().click();
+      httpMock.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({ token: 'csrf' });
+      const peticion = httpMock.expectOne(`${urlListas}/l1/productos/lista-1`);
+      expect(peticion.request.method).toBe('PUT');
+      expect(peticion.request.headers.get('X-XSRF-TOKEN')).toBe('csrf');
+      peticion.flush({
+        id: 'l1', nombre: 'Comida', predeterminada: false,
+        productos: [{ id: 'lista-1', nombre: 'Producto', imagen: null, precio: 25, stock: 10, disponible: true, aviso: null }]
+      });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.mensajeListas()).toBe('Producto añadido a «Comida».');
+      expect(botonLista().textContent).toContain('Quitar de la lista');
+    });
+
+    it('quita el producto si ya estaba en la lista seleccionada', () => {
+      abrirDetalle();
+      const selector: HTMLSelectElement = fixture.nativeElement.querySelector('#lista-destino');
+      selector.value = 'l2';
+      selector.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      expect(botonLista().textContent).toContain('Quitar de la lista');
+
+      botonLista().click();
+      httpMock.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({ token: 'csrf' });
+      const peticion = httpMock.expectOne(`${urlListas}/l2/productos/lista-1`);
+      expect(peticion.request.method).toBe('DELETE');
+      peticion.flush({ id: 'l2', nombre: 'Regalos', predeterminada: false, productos: [] });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.mensajeListas()).toBe('Producto quitado de «Regalos».');
+      expect(botonLista().textContent).toContain('Añadir a la lista');
+    });
+
+    it('invita a crear una lista cuando solo existe favoritos', () => {
+      abrirDetalle([listas[0]]);
+
+      expect(fixture.nativeElement.querySelector('.detail-lists').textContent)
+        .toContain('No tienes listas propias.');
+      expect(fixture.nativeElement.querySelector('#lista-destino')).toBeNull();
+    });
+
+    it('muestra un error si el producto ya no está disponible', () => {
+      abrirDetalle();
+
+      botonLista().click();
+      httpMock.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({ token: 'csrf' });
+      httpMock.expectOne(`${urlListas}/l1/productos/lista-1`)
+        .flush({ error: 'No se ha encontrado el producto solicitado.' }, { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.errorListas()).toBe('El producto o la lista ya no están disponibles.');
+      expect(fixture.componentInstance.modificandoLista()).toBe(false);
+    });
   });
 
   function crearProducto(

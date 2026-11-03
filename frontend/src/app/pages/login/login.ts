@@ -3,6 +3,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import {
   FormBuilder,
   FormGroup,
+  FormsModule,
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
@@ -14,7 +15,7 @@ import { rutaParaRol } from './rutas-por-rol';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, FormsModule, ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -24,6 +25,8 @@ export class Login {
   isLoading = signal(false);
   mensajeError = signal('');
   mensajeExito = signal('');
+  requiereSegundoFactor = signal(false);
+  codigoSegundoFactor = '';
 
   constructor(
     private fb: FormBuilder,
@@ -42,6 +45,8 @@ export class Login {
       this.mensajeError.set(
         'Tu sesión ya no es válida. Es posible que tu cuenta haya sido bloqueada.'
       );
+    } else if (motivo === 'cuenta-eliminada') {
+      this.mensajeExito.set('La cuenta se ha eliminado correctamente.');
     }
   }
 
@@ -50,6 +55,10 @@ export class Login {
   }
 
   onSubmit(): void {
+    if (this.requiereSegundoFactor()) {
+      this.verificarSegundoFactor();
+      return;
+    }
     if (this.loginForm.valid) {
       this.isLoading.set(true);
       this.mensajeError.set('');
@@ -63,6 +72,11 @@ export class Login {
       ).subscribe({
         next: (respuesta) => {
           this.isLoading.set(false);
+          if (respuesta.requiresTwoFactor) {
+            this.requiereSegundoFactor.set(true);
+            this.mensajeExito.set('Introduce el código de tu aplicación de autenticación.');
+            return;
+          }
           this.router.navigateByUrl(
             rutaParaRol(respuesta.role)
           );
@@ -85,5 +99,40 @@ export class Login {
     } else {
       this.loginForm.markAllAsTouched();
     }
+  }
+
+  verificarSegundoFactor(): void {
+    const codigo = this.codigoSegundoFactor.replace(/[\s-]/g, '').toUpperCase();
+    if (!/^([0-9]{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
+      this.mensajeError.set('Introduce un código TOTP de 6 cifras o un código de respaldo válido.');
+      return;
+    }
+    this.isLoading.set(true);
+    this.mensajeError.set('');
+    this.authService.verificarSegundoFactor(codigo).subscribe({
+      next: (respuesta) => {
+        this.isLoading.set(false);
+        this.router.navigateByUrl(rutaParaRol(respuesta.role));
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        if (error.status === 410) {
+          this.volverAlInicioSesion();
+          this.mensajeError.set('La comprobación ha caducado. Vuelve a iniciar sesión.');
+          return;
+        }
+        this.mensajeError.set(typeof error.error?.error === 'string'
+          ? error.error.error
+          : 'El código del segundo factor no es válido o ya se ha utilizado.');
+      }
+    });
+  }
+
+  volverAlInicioSesion(): void {
+    this.requiereSegundoFactor.set(false);
+    this.codigoSegundoFactor = '';
+    this.loginForm.controls['password'].reset('');
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
   }
 }

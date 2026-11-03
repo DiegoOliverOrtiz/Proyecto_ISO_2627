@@ -46,11 +46,14 @@ class ClienteServiceDireccionesTests {
 	@Mock
 	private SoporteRegistro soporteRegistro;
 
+	@Mock
+	private BajaUsuarioService bajaUsuarioService;
+
 	private ClienteService clienteService;
 
 	@BeforeEach
 	void setUp() {
-		clienteService = new ClienteService(clienteDAO, soporteRegistro);
+		clienteService = new ClienteService(clienteDAO, soporteRegistro, bajaUsuarioService);
 	}
 
 	private Direccion crearDireccion(String id, String nombre) {

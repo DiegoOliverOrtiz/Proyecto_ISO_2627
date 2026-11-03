@@ -45,6 +45,14 @@ public class ListaProductos {
         );
     }
 
+    public static ListaProductos crearLista(String usuarioId, String nombre) {
+        return new ListaProductos(null, usuarioId, nombre, false);
+    }
+
+    public void renombrar(String nombre) {
+        this.nombre = nombre;
+    }
+
     public String getId() {
         return id;
     }

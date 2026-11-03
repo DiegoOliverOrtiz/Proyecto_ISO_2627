@@ -18,6 +18,7 @@ import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.SesionService;
+import es.uclm.esibuy.backend.services.TotpService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerSesionTests {
@@ -31,6 +32,8 @@ class AuthControllerSesionTests {
 	private SecurityContextRepository securityContextRepository;
 	@Mock
 	private SesionService sesionService;
+	@Mock
+	private TotpService totpService;
 
 	@InjectMocks
 	private AuthController controller;

@@ -17,9 +17,11 @@ import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
 import { Checkout } from './pages/checkout/checkout';
 import { Favoritos } from './pages/favoritos/favoritos';
+import { Listas } from './pages/listas/listas';
 
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
+import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
 
 export const routes: Routes = [
   {
@@ -41,6 +43,12 @@ export const routes: Routes = [
   {
     path: 'perfil',
     component: Perfil,
+    canActivate: [autenticadoGuard]
+  },
+  {
+    // HU-39: todo usuario tiene listas (al menos la de favoritos).
+    path: 'listas',
+    component: Listas,
     canActivate: [autenticadoGuard]
   },
   {
@@ -115,6 +123,12 @@ export const routes: Routes = [
     component: PanelCliente,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'vendedor/pedidos',
+    component: PedidosVendedor,
+    canActivate: [rolGuard],
+    data: { rol: 'VENDEDOR' }
   },
   {
     path: 'vendedor',

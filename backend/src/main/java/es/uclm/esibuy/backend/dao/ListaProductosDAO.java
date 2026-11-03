@@ -10,4 +10,8 @@ public interface ListaProductosDAO
         extends MongoRepository<ListaProductos, String> {
 
     List<ListaProductos> findByUsuarioId(String usuarioId);
+
+    void deleteByUsuarioId(String usuarioId);
+
+    long countByUsuarioId(String usuarioId);
 }

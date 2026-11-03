@@ -44,4 +44,12 @@ public class AuthService {
 
         return usuario;
     }
+
+    public Usuario buscarPorCorreo(String correo) {
+        if (correo == null || correo.isBlank()) {
+            throw new BadCredentialsException(MENSAJE_ERROR_CREDENCIALES);
+        }
+        return usuarioDAO.findByEmail(correo.trim().toLowerCase(Locale.ROOT))
+                .orElseThrow(() -> new BadCredentialsException(MENSAJE_ERROR_CREDENCIALES));
+    }
 }

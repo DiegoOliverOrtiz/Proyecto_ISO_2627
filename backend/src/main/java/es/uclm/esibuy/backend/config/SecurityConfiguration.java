@@ -41,7 +41,7 @@ public class SecurityConfiguration {
 
         @Bean
         CookieCsrfTokenRepository csrfTokenRepository(
-                        @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
+                        @Value("${app.security.cookies.secure:true}") boolean cookieSeguro) {
 
                 CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
 
@@ -103,6 +103,7 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/usuarios/login",
+                                                                "/usuarios/login/2fa",
                                                                 "/cliente/register",
                                                                 "/vendedor/register")
                                                 .permitAll()
@@ -164,7 +165,7 @@ public class SecurityConfiguration {
 
         @Bean
         CorsConfigurationSource corsConfigurationSource(
-                        @Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
+                        @Value("${app.cors.allowed-origin:https://localhost:4200}") String allowedOrigin) {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 

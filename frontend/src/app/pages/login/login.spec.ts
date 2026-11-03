@@ -53,6 +53,41 @@ describe('Login', () => {
     TestBed.resetTestingModule();
   });
 
+  it.each(['081804', 'ABCDEFG2', 'ABCDEFGH234567AB', 'abcd-efgh-2345-67ab'])(
+    'admite el codigo de segundo factor %s y normaliza el formato', (codigo) => {
+      const verificar = vi.spyOn(servicioAutenticacion, 'verificarSegundoFactor')
+        .mockReturnValue(of({ email: 'ana@example.com', role: 'CLIENTE' }));
+      vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      componente.requiereSegundoFactor.set(true);
+      componente.codigoSegundoFactor = codigo;
+      componente.onSubmit();
+      expect(verificar).toHaveBeenCalledWith(codigo.replace(/[\s-]/g, '').toUpperCase());
+    }
+  );
+
+  it('vuelve al primer paso cuando ha caducado el reto y borra la contrasena', () => {
+    vi.spyOn(servicioAutenticacion, 'verificarSegundoFactor').mockReturnValue(throwError(() =>
+      new HttpErrorResponse({ status: 410 })));
+    componente.loginForm.patchValue({ password: 'secreto' });
+    componente.requiereSegundoFactor.set(true);
+    componente.codigoSegundoFactor = '123456';
+    componente.onSubmit();
+    expect(componente.requiereSegundoFactor()).toBe(false);
+    expect(componente.loginForm.value.password).toBe('');
+    expect(componente.codigoSegundoFactor).toBe('');
+    expect(componente.mensajeError()).toContain('caducado');
+  });
+
+  it('muestra el limite de intentos indicado por el servidor', () => {
+    vi.spyOn(servicioAutenticacion, 'verificarSegundoFactor').mockReturnValue(throwError(() =>
+      new HttpErrorResponse({ status: 429, error: { error: 'Espera 5 minutos.' } })));
+    componente.requiereSegundoFactor.set(true);
+    componente.codigoSegundoFactor = '123456';
+    componente.onSubmit();
+    expect(componente.requiereSegundoFactor()).toBe(true);
+    expect(componente.mensajeError()).toBe('Espera 5 minutos.');
+  });
+
   it('marca los campos como tocados y no intenta autenticar si el formulario es inválido', () => {
     const iniciarSesion = vi.spyOn(
       servicioAutenticacion,

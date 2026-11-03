@@ -522,6 +522,28 @@
   background: #fff2cd;
 }
 
+/* Listas de productos (HU-39) */
+
+.detail-lists {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+.detail-lists select {
+  min-width: 0;
+  padding: .45rem .6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.detail-lists .status-message,
+.detail-lists-empty {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 /* Responsive */
 
 @media (max-width: 700px) {
