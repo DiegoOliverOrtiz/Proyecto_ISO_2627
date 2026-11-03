@@ -109,6 +109,17 @@ class PedidoModelTests {
     }
 
     @Test
+    void conservaElNombreDelClienteAlMarcarElPedidoComoPagado() {
+        Pedido pedido = new Pedido("cliente-1", List.of(), EstadoPedido.EN_PROCESO,
+                BigDecimal.ZERO, Instant.now(), null, null, null);
+        pedido.setClienteNombre("Ana García");
+
+        Pedido pagado = pedido.pagado(Instant.now());
+
+        assertEquals("Ana García", pagado.getClienteNombre());
+    }
+
+    @Test
     void puedeLeerDocumentosAnterioresSinDireccionNiMetodoPago() {
         Document documento = new Document("clienteId", "cliente-1")
                 .append("lineas", List.of()).append("estado", "EN_PROCESO")

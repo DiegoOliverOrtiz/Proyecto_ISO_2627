@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -12,6 +13,10 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@ConditionalOnProperty(
+        name = "app.productos.imagenes.almacenamiento",
+        havingValue = "local",
+        matchIfMissing = true)
 public class ProductoImagenConfiguration implements WebMvcConfigurer {
     private final Path directorio;
 

@@ -31,6 +31,51 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfiguration.class)
 class PerfilControllerSecurityTests {
 
+    @MockitoBean
+    private es.uclm.esibuy.backend.services.TotpService totpService;
+
+    @Test
+    void desactivarRequiereCodigoYNoLlegaAlServicioSiFalta() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/usuarios/2fa")
+                        .with(user("ana@esibuy.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"\"}"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(totpService);
+    }
+
+    @Test
+    void desactivarSigueProtegidoPorCsrf() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/usuarios/2fa")
+                        .with(user("ana@esibuy.com"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"123456\"}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(totpService);
+    }
+
+    @Test
+    void desactivarUsaLaIdentidadAutenticadaYElCodigoDelCuerpo() throws Exception {
+        var usuario = new es.uclm.esibuy.backend.model.Cliente();
+        when(totpService.buscarUsuario("ana@esibuy.com")).thenReturn(usuario);
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/usuarios/2fa")
+                        .with(user("ana@esibuy.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"123456\"}"))
+                .andExpect(status().isNoContent());
+        verify(totpService).desactivar(usuario, "123456");
+    }
+
+    @Test
+    void elLimiteDeIntentosSeDevuelveComo429YConTiempoDeEspera() throws Exception {
+        var usuario = new es.uclm.esibuy.backend.model.Cliente();
+        when(totpService.buscarUsuario("ana@esibuy.com")).thenReturn(usuario);
+        org.mockito.Mockito.doThrow(new es.uclm.esibuy.backend.exceptions.TooManyTwoFactorAttemptsException())
+                .when(totpService).desactivar(usuario, "123456");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/usuarios/2fa")
+                        .with(user("ana@esibuy.com")).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"123456\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "300"));
+    }
+
     @Autowired
     private MockMvc mockMvc;
 

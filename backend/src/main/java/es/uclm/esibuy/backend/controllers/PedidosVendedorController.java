@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +46,17 @@ public class PedidosVendedorController {
             @PathVariable String pedidoId) {
 
         return pedidosVendedorService.consultarDetalle(
+                authentication.getName(),
+                pedidoId
+        );
+    }
+
+    @PatchMapping("/{pedidoId}/aceptar")
+    public PedidoVendedorResponse aceptarPedido(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+
+        return pedidosVendedorService.aceptarPedido(
                 authentication.getName(),
                 pedidoId
         );

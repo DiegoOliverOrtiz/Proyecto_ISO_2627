@@ -52,7 +52,7 @@ describe('Register', () => {
       .click();
 
     httpMock.expectOne(
-      'http://localhost:8080/categorias/registro'
+      'https://localhost:8443/categorias/registro'
     ).flush([]);
 
     fixture.detectChanges();
@@ -84,7 +84,7 @@ describe('Register', () => {
     expect(component.clienteForm.invalid).toBe(true);
     expect(component.passwordMismatch(component.clienteForm)).toBe(true);
 
-    httpMock.expectNone('http://localhost:8080/cliente/register');
+    httpMock.expectNone('https://localhost:8443/cliente/register');
   });
 
   it('validates all password requirements for customer and seller forms', () => {
@@ -193,7 +193,7 @@ describe('Register', () => {
       .querySelector('.role-switch button:last-child')
       .click();
     httpMock.expectOne(
-      'http://localhost:8080/categorias/registro'
+      'https://localhost:8443/categorias/registro'
     ).flush([]);
     fixture.detectChanges();
 
@@ -233,7 +233,7 @@ describe('Register', () => {
       component.controlError(component.clienteForm, 'fechaNacimiento')
     ).toContain('18 años');
 
-    httpMock.expectNone('http://localhost:8080/cliente/register');
+    httpMock.expectNone('https://localhost:8443/cliente/register');
   });
 
   it('maps a premium customer request and confirms pending activation', () => {
@@ -253,7 +253,7 @@ describe('Register', () => {
     component.register();
 
     const request = httpMock.expectOne(
-      'http://localhost:8080/cliente/register'
+      'https://localhost:8443/cliente/register'
     );
 
     expect(request.request.method).toBe('POST');
@@ -297,7 +297,7 @@ describe('Register', () => {
     component.register();
 
     httpMock.expectOne(
-      'http://localhost:8080/cliente/register'
+      'https://localhost:8443/cliente/register'
     ).flush(
       {
         error: 'Ya existe un usuario con los datos únicos indicados.'
@@ -332,7 +332,7 @@ describe('Register', () => {
     component.register();
 
     httpMock.expectOne(
-      'http://localhost:8080/cliente/register'
+      'https://localhost:8443/cliente/register'
     ).flush(
       {
         error: 'Revisa los campos del formulario.',
@@ -367,7 +367,7 @@ describe('Register', () => {
       .click();
 
     const request = httpMock.expectOne(
-      'http://localhost:8080/categorias/registro'
+      'https://localhost:8443/categorias/registro'
     );
 
     expect(request.request.method).toBe('GET');
@@ -412,7 +412,7 @@ describe('Register', () => {
     registrationService.registerVendedor(requestBody).subscribe();
 
     const request = httpMock.expectOne(
-      'http://localhost:8080/vendedor/register'
+      'https://localhost:8443/vendedor/register'
     );
 
     expect(request.request.method).toBe('POST');

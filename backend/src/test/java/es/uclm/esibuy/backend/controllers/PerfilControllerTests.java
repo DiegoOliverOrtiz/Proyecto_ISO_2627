@@ -24,7 +24,8 @@ class PerfilControllerTests {
 
     @Test
     void consultaElPerfilUsandoElEmailDelUsuarioAutenticado() {
-        PerfilController controller = new PerfilController(perfilService);
+        PerfilController controller = new PerfilController(perfilService,
+                org.mockito.Mockito.mock(es.uclm.esibuy.backend.services.TotpService.class));
         PerfilResponse esperado = new PerfilResponse(
                 "CLIENTE", "Ana", "García", "ana@esibuy.com", null,
                 null, "12*******", null, true, null, null, null, null, null, null);

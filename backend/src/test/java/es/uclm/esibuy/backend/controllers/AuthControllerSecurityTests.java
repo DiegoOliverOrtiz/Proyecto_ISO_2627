@@ -48,6 +48,9 @@ import es.uclm.esibuy.backend.services.SesionService;
 @Import(SecurityConfiguration.class)
 class AuthControllerSecurityTests {
 
+    @MockitoBean
+    private es.uclm.esibuy.backend.services.TotpService totpService;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -236,7 +239,7 @@ class AuthControllerSecurityTests {
         AuthController controller = new AuthController(
                 authService,
                 mock(SecurityContextRepository.class),
-                mock(SesionService.class));
+                mock(SesionService.class), totpService);
         Authentication autenticacionSinAutoridades = mock(Authentication.class);
         when(autenticacionSinAutoridades.getAuthorities()).thenReturn(List.of());
 

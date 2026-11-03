@@ -14,6 +14,7 @@ import es.uclm.esibuy.backend.dto.DireccionResponse;
 import es.uclm.esibuy.backend.dto.LineaPedidoVendedorResponse;
 import es.uclm.esibuy.backend.dto.PedidoVendedorResponse;
 import es.uclm.esibuy.backend.exceptions.PedidoVendedorNoEncontradoException;
+import es.uclm.esibuy.backend.exceptions.TransicionEstadoPedidoException;
 import es.uclm.esibuy.backend.model.Direccion;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
@@ -76,6 +77,51 @@ public class PedidosVendedorService {
         }
 
         return convertirRespuesta(pedido, vendedorId);
+    }
+
+    public PedidoVendedorResponse aceptarPedido(
+            String emailAutenticado,
+            String pedidoId) {
+
+        String vendedorId = obtenerVendedorActivo(
+                emailAutenticado
+        ).getId();
+
+        if (pedidoId == null || pedidoId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El identificador del pedido es obligatorio."
+            );
+        }
+
+        Pedido pedido = pedidoDAO.findById(pedidoId)
+                .orElseThrow(PedidoVendedorNoEncontradoException::new);
+
+        if (!esVisibleParaVendedor(pedido, vendedorId)) {
+            throw new PedidoVendedorNoEncontradoException();
+        }
+
+        EstadoPedido destino = EstadoPedido.TRAMITADO_ENVIADO;
+
+        if (!pedido.getEstado().permiteTransicionA(destino)) {
+            throw new TransicionEstadoPedidoException();
+        }
+
+        // Si el cliente lo canceló u otro vendedor lo aceptó entre medias, no se modifica nada.
+        long actualizados = pedidoDAO.actualizarEstado(
+                pedidoId,
+                pedido.getEstado().name(),
+                vendedorId,
+                destino.name()
+        );
+
+        if (actualizados == 0) {
+            throw new TransicionEstadoPedidoException();
+        }
+
+        Pedido aceptado = pedidoDAO.findById(pedidoId)
+                .orElseThrow(PedidoVendedorNoEncontradoException::new);
+
+        return convertirRespuesta(aceptado, vendedorId);
     }
 
     private Vendedor obtenerVendedorActivo(String correo) {
@@ -177,6 +223,9 @@ public class PedidosVendedorService {
 
         return new PedidoVendedorResponse(
                 pedido.getId(),
+                pedido.getClienteNombre() == null || pedido.getClienteNombre().isBlank()
+                        ? "Cliente"
+                        : pedido.getClienteNombre(),
                 pedido.getEstado(),
                 pedido.getFechaCreacion(),
                 pedido.getFechaPago(),

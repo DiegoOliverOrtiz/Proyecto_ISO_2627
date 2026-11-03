@@ -7,6 +7,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -91,5 +92,11 @@ public class VendedorController {
     public NombreComercialResponse mostrarNombreComercial(Authentication authentication) {
         String nombreComercial = vendedorService.obtenerNombreComercial(authentication.getName());
         return new NombreComercialResponse(nombreComercial);
+    }
+
+    @DeleteMapping("/cuenta")
+    public ResponseEntity<Void> darDeBaja(Authentication authentication) {
+        vendedorService.darDeBaja(authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }

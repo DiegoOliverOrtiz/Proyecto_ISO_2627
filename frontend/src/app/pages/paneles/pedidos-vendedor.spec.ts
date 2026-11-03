@@ -23,6 +23,7 @@ describe('PedidosVendedor - HU-35', () => {
 
   const pedido: PedidoVendedor = {
     id: 'pedido-mixto',
+    clienteNombre: 'cliente eliminado',
     estado: 'PAGADO_COMPLETADO',
     fechaCreacion: '2026-11-02T12:00:00Z',
     fechaPago: '2026-11-02T12:05:00Z',
@@ -57,7 +58,8 @@ describe('PedidosVendedor - HU-35', () => {
   const servicioMock = {
     consultarActivos: vi.fn(),
     consultarHistorico: vi.fn(),
-    consultarDetalle: vi.fn()
+    consultarDetalle: vi.fn(),
+    aceptarPedido: vi.fn()
   };
 
   function texto(): string {
@@ -99,6 +101,7 @@ describe('PedidosVendedor - HU-35', () => {
     expect(componente.pedidos()).toEqual([pedido]);
     expect(componente.pestana()).toBe('activos');
     expect(texto()).toContain('Pedido pedido-mixto');
+    expect(texto()).toContain('Cliente: cliente eliminado');
     expect(texto()).toContain('5.00 €');
   });
 
@@ -241,5 +244,138 @@ describe('PedidosVendedor - HU-35', () => {
 
     expect(navegar).toHaveBeenCalledWith('/login');
     expect(componente.cargando()).toBe(false);
+  });
+
+  describe('HU-32 aceptar pedido', () => {
+    const enviado: PedidoVendedor = { ...pedido, estado: 'TRAMITADO_ENVIADO' };
+
+    function botonesAceptar(): HTMLButtonElement[] {
+      fixture.detectChanges();
+      return Array.from(
+        fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>
+      ).filter(boton => boton.textContent?.includes('Aceptar y enviar'));
+    }
+
+    it('muestra «Aceptar y enviar» solo en pedidos pagados', () => {
+      expect(botonesAceptar()).toHaveLength(1);
+
+      servicioMock.consultarActivos.mockReturnValue(of([enviado]));
+      componente.cargarPedidos();
+
+      expect(botonesAceptar()).toHaveLength(0);
+      expect(texto()).toContain('Enviado');
+    });
+
+    it('no muestra la acción en el histórico', () => {
+      componente.cambiarPestana('historico');
+
+      expect(botonesAceptar()).toHaveLength(0);
+    });
+
+    it('acepta el pedido, informa del resultado y recarga la lista', () => {
+      servicioMock.aceptarPedido.mockReturnValue(of(enviado));
+      servicioMock.consultarActivos.mockReturnValue(of([enviado]));
+
+      botonesAceptar()[0].click();
+
+      expect(servicioMock.aceptarPedido).toHaveBeenCalledWith('pedido-mixto');
+      expect(servicioMock.consultarActivos).toHaveBeenCalledTimes(2);
+      expect(componente.pedidoEnProceso()).toBeNull();
+      expect(texto()).toContain(
+        'Pedido pedido-mixto aceptado. El envío (simulado) está en curso.'
+      );
+      expect(componente.pedidos()).toEqual([enviado]);
+    });
+
+    it('actualiza el detalle abierto tras aceptar desde él', () => {
+      servicioMock.aceptarPedido.mockReturnValue(of(enviado));
+      componente.abrirDetalle(pedido);
+      expect(texto()).toContain('Detalle del pedido');
+
+      componente.aceptarPedido(pedido);
+
+      expect(componente.pedidoSeleccionado()?.estado).toBe('TRAMITADO_ENVIADO');
+      expect(texto()).not.toContain('cliente ya no podrá cancelarlo');
+    });
+
+    it('desactiva la acción mientras se procesa y evita envíos dobles', () => {
+      const respuesta = new Subject<PedidoVendedor>();
+      servicioMock.aceptarPedido.mockReturnValue(respuesta.asObservable());
+
+      componente.aceptarPedido(pedido);
+      componente.aceptarPedido(pedido);
+
+      expect(servicioMock.aceptarPedido).toHaveBeenCalledTimes(1);
+      expect(componente.pedidoEnProceso()).toBe('pedido-mixto');
+      expect(texto()).toContain('Aceptando...');
+
+      respuesta.next(enviado);
+      respuesta.complete();
+
+      expect(componente.pedidoEnProceso()).toBeNull();
+    });
+
+    it('no intenta aceptar un pedido que no está pagado', () => {
+      componente.aceptarPedido(enviado);
+
+      expect(servicioMock.aceptarPedido).not.toHaveBeenCalled();
+    });
+
+    it('informa del 409 y refresca la lista', () => {
+      servicioMock.aceptarPedido.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, statusText: 'Conflict' }))
+      );
+
+      componente.aceptarPedido(pedido);
+
+      expect(servicioMock.consultarActivos).toHaveBeenCalledTimes(2);
+      expect(componente.mensajeExito()).toBe('');
+      expect(texto()).toContain('El pedido ya no está pendiente de tramitar.');
+    });
+
+    it('informa de la falta de permisos al aceptar', () => {
+      servicioMock.aceptarPedido.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 403, statusText: 'Forbidden' }))
+      );
+
+      componente.aceptarPedido(pedido);
+
+      expect(texto()).toContain('No tienes permiso para gestionar este pedido.');
+    });
+
+    it('el detalle de un pedido enviado no ofrece la acción', () => {
+      servicioMock.consultarActivos.mockReturnValue(of([enviado]));
+      servicioMock.consultarDetalle.mockReturnValue(of(enviado));
+      componente.cargarPedidos();
+
+      componente.abrirDetalle(enviado);
+
+      expect(texto()).toContain('Detalle del pedido');
+      expect(botonesAceptar()).toHaveLength(0);
+    });
+
+    it('redirige al login si la sesión caduca al aceptar', () => {
+      const router = TestBed.inject(Router);
+      const navegar = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      servicioMock.aceptarPedido.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' }))
+      );
+
+      componente.aceptarPedido(pedido);
+
+      expect(navegar).toHaveBeenCalledWith('/login');
+      expect(componente.pedidoEnProceso()).toBeNull();
+      expect(componente.mensajeExito()).toBe('');
+    });
+
+    it('informa del 404 al aceptar un pedido no disponible', () => {
+      servicioMock.aceptarPedido.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }))
+      );
+
+      componente.aceptarPedido(pedido);
+
+      expect(texto()).toContain('El pedido no existe o no está disponible.');
+    });
   });
 });

@@ -17,6 +17,7 @@ import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
 import { Checkout } from './pages/checkout/checkout';
 import { Favoritos } from './pages/favoritos/favoritos';
+import { Listas } from './pages/listas/listas';
 
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
@@ -42,6 +43,12 @@ export const routes: Routes = [
   {
     path: 'perfil',
     component: Perfil,
+    canActivate: [autenticadoGuard]
+  },
+  {
+    // HU-39: todo usuario tiene listas (al menos la de favoritos).
+    path: 'listas',
+    component: Listas,
     canActivate: [autenticadoGuard]
   },
   {
@@ -100,7 +107,7 @@ export const routes: Routes = [
     data: { rol: 'CLIENTE' }
   },
   {
-    path: 'cliente/carrito',
+    path: 'carrito',
     component: Carrito,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }

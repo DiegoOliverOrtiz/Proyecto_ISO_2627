@@ -57,6 +57,9 @@ class RegistrationSecurityTests {
     @Mock
     private CategoriaDAO categoriaDAO;
 
+    @Mock
+    private BajaUsuarioService bajaUsuarioService;
+
     private SoporteRegistro soporteRegistro() {
         return new SoporteRegistro(
                 usuarioDAO,
@@ -121,7 +124,7 @@ class RegistrationSecurityTests {
             return cliente;
         });
 
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -169,7 +172,7 @@ class RegistrationSecurityTests {
         when(usuarioDAO.existsByEmail("ana@example.com"))
                 .thenReturn(true);
 
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -217,7 +220,8 @@ class RegistrationSecurityTests {
         VendedorService service = new VendedorService(
                 vendedorDAO,
                 categoriaDAO,
-                soporteRegistro());
+                soporteRegistro(),
+                bajaUsuarioService);
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
@@ -277,7 +281,8 @@ class RegistrationSecurityTests {
         VendedorService service = new VendedorService(
                 vendedorDAO,
                 categoriaDAO,
-                soporteRegistro());
+                soporteRegistro(),
+                bajaUsuarioService);
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
@@ -304,7 +309,7 @@ class RegistrationSecurityTests {
 
     @Test
     void serviceRejectsPasswordThatDoesNotMeetStrengthPolicy() {
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -326,7 +331,7 @@ class RegistrationSecurityTests {
 
         @Test
         void rejectsCustomersYoungerThanEighteenBeforePersisting() {
-                ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+                ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
                 RegistroClienteRequest request = new RegistroClienteRequest(
                                 "Ana",
                                 "García",
@@ -347,7 +352,7 @@ class RegistrationSecurityTests {
                 when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false);
                 when(passwordEncoder.encode("ClaveSegura9!")).thenReturn("bcrypt-hash");
                 when(clienteDAO.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-                ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+                ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
                 RegistroClienteRequest request = new RegistroClienteRequest(
                                 "Ana",
                                 "García",

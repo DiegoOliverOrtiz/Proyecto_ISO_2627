@@ -20,6 +20,7 @@ describe('PedidosVendedorService - HU-35', () => {
 
   const pedido: PedidoVendedor = {
     id: 'pedido-1',
+    clienteNombre: 'cliente eliminado',
     estado: 'PAGADO_COMPLETADO',
     fechaCreacion: '2026-11-02T12:00:00Z',
     fechaPago: '2026-11-02T12:05:00Z',
@@ -136,5 +137,67 @@ describe('PedidosVendedorService - HU-35', () => {
     );
 
     expect(codigoError).toBe(404);
+  });
+
+  describe('HU-32 aceptar pedido', () => {
+    const csrfUrl = `${environment.apiUrl}/usuarios/csrf`;
+
+    it('pide el token CSRF y envía el PATCH de aceptación con la sesión', () => {
+      let resultado: PedidoVendedor | undefined;
+
+      servicio.aceptarPedido('pedido-1').subscribe(
+        detalle => resultado = detalle
+      );
+
+      const csrf = http.expectOne(csrfUrl);
+      expect(csrf.request.withCredentials).toBe(true);
+      csrf.flush({ token: 'token-csrf' });
+
+      const peticion = http.expectOne(`${baseUrl}/pedido-1/aceptar`);
+      expect(peticion.request.method).toBe('PATCH');
+      expect(peticion.request.withCredentials).toBe(true);
+      expect(peticion.request.headers.get('X-XSRF-TOKEN')).toBe('token-csrf');
+      expect(peticion.request.body).toBeNull();
+
+      peticion.flush({ ...pedido, estado: 'TRAMITADO_ENVIADO' });
+
+      expect(resultado?.estado).toBe('TRAMITADO_ENVIADO');
+    });
+
+    it('codifica el identificador del pedido al aceptarlo', () => {
+      servicio.aceptarPedido('pedido/1').subscribe();
+
+      http.expectOne(csrfUrl).flush({ token: 't' });
+      http.expectOne(`${baseUrl}/pedido%2F1/aceptar`).flush(pedido);
+    });
+
+    it('no envía el PATCH si falla la obtención del token CSRF', () => {
+      let codigoError: number | undefined;
+
+      servicio.aceptarPedido('pedido-1').subscribe({
+        error: error => codigoError = error.status
+      });
+
+      http.expectOne(csrfUrl).flush(null, { status: 500, statusText: 'Error' });
+
+      http.expectNone(`${baseUrl}/pedido-1/aceptar`);
+      expect(codigoError).toBe(500);
+    });
+
+    it('propaga el 409 cuando el pedido ya no está pendiente', () => {
+      let codigoError: number | undefined;
+
+      servicio.aceptarPedido('pedido-1').subscribe({
+        error: error => codigoError = error.status
+      });
+
+      http.expectOne(csrfUrl).flush({ token: 't' });
+      http.expectOne(`${baseUrl}/pedido-1/aceptar`).flush(
+        null,
+        { status: 409, statusText: 'Conflict' }
+      );
+
+      expect(codigoError).toBe(409);
+    });
   });
 });

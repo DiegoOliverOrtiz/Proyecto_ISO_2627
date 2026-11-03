@@ -26,13 +26,16 @@ class ClienteServiceTests {
     @Mock
     private SoporteRegistro soporteRegistro;
 
+    @Mock
+    private BajaUsuarioService bajaUsuarioService;
+
     @Test
     void cambiaUnClienteNormalAPremiumYConservaElRestoDeDatos() {
         Cliente cliente = cliente("cliente@example.com", false);
         when(clienteDAO.findByEmail("cliente@example.com")).thenReturn(Optional.of(cliente));
         when(clienteDAO.save(cliente)).thenReturn(cliente);
 
-        Cliente resultado = new ClienteService(clienteDAO, soporteRegistro)
+        Cliente resultado = new ClienteService(clienteDAO, soporteRegistro, bajaUsuarioService)
                 .cambiarTipoCliente("cliente@example.com", true);
 
         assertEquals(true, resultado.isEsPremium());
@@ -47,7 +50,7 @@ class ClienteServiceTests {
         when(clienteDAO.findByEmail("cliente@example.com")).thenReturn(Optional.of(cliente));
         when(clienteDAO.save(cliente)).thenReturn(cliente);
 
-        Cliente resultado = new ClienteService(clienteDAO, soporteRegistro)
+        Cliente resultado = new ClienteService(clienteDAO, soporteRegistro, bajaUsuarioService)
                 .cambiarTipoCliente("cliente@example.com", false);
 
         assertEquals(false, resultado.isEsPremium());
@@ -60,7 +63,7 @@ class ClienteServiceTests {
 
         assertThrows(
                 UsuarioNoEncontradoException.class,
-                () -> new ClienteService(clienteDAO, soporteRegistro)
+                () -> new ClienteService(clienteDAO, soporteRegistro, bajaUsuarioService)
                         .cambiarTipoCliente("desconocido@example.com", true));
 
         verify(clienteDAO, never()).save(org.mockito.ArgumentMatchers.any(Cliente.class));
@@ -70,7 +73,7 @@ class ClienteServiceTests {
     void rechazaUnTipoNulo() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ClienteService(clienteDAO, soporteRegistro)
+                () -> new ClienteService(clienteDAO, soporteRegistro, bajaUsuarioService)
                         .cambiarTipoCliente("cliente@example.com", null));
 
         verify(clienteDAO, never()).findByEmail(org.mockito.ArgumentMatchers.anyString());

@@ -41,7 +41,7 @@ public class SecurityConfiguration {
 
         @Bean
         CookieCsrfTokenRepository csrfTokenRepository(
-                        @Value("${app.security.cookies.secure:false}") boolean cookieSeguro) {
+                        @Value("${app.security.cookies.secure:true}") boolean cookieSeguro) {
 
                 CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
 
@@ -103,6 +103,7 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.POST,
                                                                 "/usuarios/login",
+                                                                "/usuarios/login/2fa",
                                                                 "/cliente/register",
                                                                 "/vendedor/register")
                                                 .permitAll()
@@ -116,6 +117,42 @@ public class SecurityConfiguration {
                                                                 HttpMethod.GET,
                                                                 "/product-images/**")
                                                 .permitAll()
+                                                // Recursos públicos del frontend Angular empaquetado
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/",
+                                                                "/index.html",
+                                                                "/favicon.ico",
+                                                                "/*.js",
+                                                                "/*.css",
+                                                                "/avatars/**",
+                                                                "/media/**")
+                                                .permitAll()
+
+                                                // Rutas HTML de Angular: solo navegación GET.
+                                                // La autorización real de los datos sigue en las API.
+                                                .requestMatchers(
+                                                                HttpMethod.GET,
+                                                                "/login",
+                                                                "/registro",
+                                                                "/recuperar-contrasena",
+                                                                "/perfil",
+                                                                "/listas",
+                                                                "/perfil/direcciones",
+                                                                "/perfil/pagos",
+                                                                "/admin",
+                                                                "/admin/usuarios",
+                                                                "/admin/usuarios/*",
+                                                                "/admin/categorias",
+                                                                "/admin/administradores",
+                                                                "/admin/administradores/nuevo",
+                                                                "/cliente",
+                                                                "/cliente/favoritos",
+                                                                "/carrito",
+                                                                "/cliente/checkout",
+                                                                "/vendedor",
+                                                                "/vendedor/pedidos")
+                                                .permitAll()
 
                                                 // Necesario para el registro público de vendedores.
                                                 .requestMatchers(
@@ -123,7 +160,8 @@ public class SecurityConfiguration {
                                                                 "/categorias/registro")
                                                 .permitAll()
 
-                                                // HU11 + HU17: los vendedores necesitan consultar categorías para asociar productos
+                                                // HU11 + HU17: los vendedores necesitan consultar categorías para
+                                                // asociar productos
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias",
@@ -164,7 +202,7 @@ public class SecurityConfiguration {
 
         @Bean
         CorsConfigurationSource corsConfigurationSource(
-                        @Value("${app.cors.allowed-origin:http://localhost:4200}") String allowedOrigin) {
+                        @Value("${app.cors.allowed-origin:https://localhost:4200}") String allowedOrigin) {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 

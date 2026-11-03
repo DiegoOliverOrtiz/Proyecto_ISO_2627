@@ -36,6 +36,14 @@
         </button>
     </div>
 
+    @if (mensajeExito()) {
+    <p class="mensaje-exito" role="status">{{ mensajeExito() }}</p>
+    }
+
+    @if (errorAccion()) {
+    <p class="mensaje-error" role="alert">{{ errorAccion() }}</p>
+    }
+
     @if (cargando()) {
     <p role="status">Cargando pedidos...</p>
     } @else if (error()) {
@@ -61,6 +69,7 @@
                         Fecha:
                         {{ (pedido.fechaPago || pedido.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}
                     </p>
+                    <p>Cliente: {{ pedido.clienteNombre }}</p>
                 </div>
 
                 <span class="estado">{{ textoEstado(pedido.estado) }}</span>
@@ -78,9 +87,18 @@
                 </p>
             </div>
 
-            <button type="button" class="boton-primario" (click)="abrirDetalle(pedido)">
-                Ver detalle
-            </button>
+            <div class="acciones">
+                <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido)">
+                    Ver detalle
+                </button>
+
+                @if (puedeAceptar(pedido)) {
+                <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+                    (click)="aceptarPedido(pedido)">
+                    {{ pedidoEnProceso() === pedido.id ? 'Aceptando...' : 'Aceptar y enviar' }}
+                </button>
+                }
+            </div>
         </article>
         }
     </div>
@@ -111,6 +129,7 @@
             <strong>Estado:</strong>
             {{ textoEstado(detalle.estado) }}
         </p>
+        <p>Cliente: {{ detalle.clienteNombre }}</p>
 
         <h3>Productos de tu tienda</h3>
 
@@ -166,10 +185,18 @@
         </div>
         }
 
+        @if (puedeAceptar(detalle)) {
+        <div class="acciones">
+            <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+                (click)="aceptarPedido(detalle)">
+                {{ pedidoEnProceso() === detalle.id ? 'Aceptando...' : 'Aceptar y enviar' }}
+            </button>
+        </div>
         <p class="nota">
-            La consulta es de solo lectura. La actualización del estado
-            del pedido se implementa en HU-32.
+            Al aceptar el pedido pasa a «Enviado» (envío simulado) y el cliente
+            ya no podrá cancelarlo.
         </p>
+        }
     </section>
     }
 </main>

@@ -29,10 +29,14 @@
     <span aria-hidden="true">♥</span>
     Mis favoritos
   </a>
+  <a class="profile-link" routerLink="/listas">
+    <span aria-hidden="true">☰</span>
+    Mis listas
+  </a>
 </nav>
 
 <nav class="client-actions cart-access" aria-label="Carrito de compra">
-  <a class="profile-link" routerLink="/cliente/carrito">
+  <a class="profile-link" routerLink="/carrito">
     <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M3 3h2l2.4 11.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6"></path>
       <circle cx="10" cy="20" r="1"></circle>
@@ -621,6 +625,37 @@
             : 'Guardar en favoritos'
         }}
       </button>
+
+      <!-- HU-39: añadir el producto a una lista propia o quitarlo de ella -->
+      <div class="detail-lists" aria-label="Listas de productos">
+        @if (listasPersonales().length === 0) {
+        <p class="detail-lists-empty">
+          @if (cargandoListas()) {
+          Cargando tus listas...
+          } @else {
+          No tienes listas propias. <a routerLink="/listas">Crea una en Mis listas</a>.
+          }
+        </p>
+        } @else {
+        <label for="lista-destino">Lista</label>
+        <select id="lista-destino" [value]="listaSeleccionada()" (change)="actualizarListaSeleccionada($event)">
+          @for (lista of listasPersonales(); track lista.id) {
+          <option [value]="lista.id">{{ lista.nombre }}</option>
+          }
+        </select>
+        <button type="button" class="secondary-button" [disabled]="modificandoLista()"
+          (click)="cambiarProductoEnLista(producto)">
+          {{ estaEnListaSeleccionada(producto.id) ? 'Quitar de la lista' : 'Añadir a la lista' }}
+        </button>
+        }
+
+        @if (errorListas()) {
+        <output class="status-message error-message" role="alert">{{ errorListas() }}</output>
+        }
+        @if (mensajeListas()) {
+        <output class="status-message">{{ mensajeListas() }}</output>
+        }
+      </div>
 
       <!-- =================================================
              ZONA DE COMPRA
