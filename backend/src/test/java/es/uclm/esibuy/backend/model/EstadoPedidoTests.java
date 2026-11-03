@@ -21,6 +21,16 @@ class EstadoPedidoTests {
     }
 
     @Test
+    void unPedidoEnviadoSoloPuedeFinalizarse() {
+        for (EstadoPedido destino : EstadoPedido.values()) {
+            assertEquals(
+                    destino == EstadoPedido.FINALIZADO,
+                    EstadoPedido.TRAMITADO_ENVIADO.permiteTransicionA(destino),
+                    () -> "TRAMITADO_ENVIADO -> " + destino);
+        }
+    }
+
+    @Test
     void rechazaRetrocesosYRepeticiones() {
         assertFalse(EstadoPedido.TRAMITADO_ENVIADO.permiteTransicionA(EstadoPedido.PAGADO_COMPLETADO));
         assertFalse(EstadoPedido.FINALIZADO.permiteTransicionA(EstadoPedido.TRAMITADO_ENVIADO));

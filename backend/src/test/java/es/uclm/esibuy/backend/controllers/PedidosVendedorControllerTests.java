@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -244,9 +245,23 @@ class PedidosVendedorControllerTests {
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("pedido-1"))
-                .andExpect(jsonPath("$.estado").value("TRAMITADO_ENVIADO"));
+                .andExpect(jsonPath("$.estado").value("TRAMITADO_ENVIADO"))
+                .andExpect(jsonPath("$.productos[0].productoId").value("producto-1"))
+                .andExpect(jsonPath("$.importeProductosPropios").value(25.00))
+                .andExpect(jsonPath("$.metodoPagoId").doesNotExist());
 
         verify(servicio).aceptarPedido(CORREO, "pedido-1");
+    }
+
+    @Test
+    void vendedorInactivoNoPuedeAceptarPedidos() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-1"))
+                .thenThrow(new AccessDeniedException("Solo un vendedor activo puede consultar pedidos."));
+
+        mvc.perform(patch(RUTA + "/pedido-1/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
     }
 
     @Test

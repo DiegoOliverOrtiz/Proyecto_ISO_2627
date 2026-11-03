@@ -343,6 +343,31 @@ describe('PedidosVendedor - HU-35', () => {
       expect(texto()).toContain('No tienes permiso para gestionar este pedido.');
     });
 
+    it('el detalle de un pedido enviado no ofrece la acción', () => {
+      servicioMock.consultarActivos.mockReturnValue(of([enviado]));
+      servicioMock.consultarDetalle.mockReturnValue(of(enviado));
+      componente.cargarPedidos();
+
+      componente.abrirDetalle(enviado);
+
+      expect(texto()).toContain('Detalle del pedido');
+      expect(botonesAceptar()).toHaveLength(0);
+    });
+
+    it('redirige al login si la sesión caduca al aceptar', () => {
+      const router = TestBed.inject(Router);
+      const navegar = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      servicioMock.aceptarPedido.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' }))
+      );
+
+      componente.aceptarPedido(pedido);
+
+      expect(navegar).toHaveBeenCalledWith('/login');
+      expect(componente.pedidoEnProceso()).toBeNull();
+      expect(componente.mensajeExito()).toBe('');
+    });
+
     it('informa del 404 al aceptar un pedido no disponible', () => {
       servicioMock.aceptarPedido.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }))
