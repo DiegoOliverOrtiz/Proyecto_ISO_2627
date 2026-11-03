@@ -1,6 +1,7 @@
 package es.uclm.esibuy.backend.dao;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -12,4 +13,8 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
 
     @Query("{ 'lineas.vendedorId': ?0 }")
     List<Pedido> findByVendedorId(String vendedorId);
+
+    Optional<Pedido> findByIdAndClienteId(String id, String clienteId);
 }
+
+

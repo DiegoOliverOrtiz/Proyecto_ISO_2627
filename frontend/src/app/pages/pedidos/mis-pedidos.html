@@ -1,0 +1,207 @@
+<header class="cabecera">
+  <a routerLink="/cliente" class="marca">ESIBuy</a>
+
+  <h1>Mis pedidos</h1>
+
+  <nav aria-label="Navegación del cliente">
+    <a class="enlace-cliente" routerLink="/cliente">Catálogo</a>
+    <a class="enlace-cliente" routerLink="/perfil" aria-label="Abrir mi perfil">
+      <svg class="icono-perfil" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+        <circle cx="12" cy="8" r="3.5"></circle>
+        <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
+      </svg>
+      Mi perfil
+    </a>
+    <button
+      class="logout-button"
+      type="button"
+      [disabled]="cerrandoSesion()"
+      (click)="cerrarSesion()">
+      {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+    </button>
+  </nav>
+</header>
+
+<main class="contenedor">
+  @if (errorSesion()) {
+    <p class="mensaje-error" role="alert">{{ errorSesion() }}</p>
+  }
+
+  <div class="encabezado">
+    <div>
+      <h2>Mis compras</h2>
+      <p>Consulta tus pedidos, su estado y la información disponible del envío.</p>
+    </div>
+
+    <button
+      type="button"
+      class="boton-secundario"
+      [disabled]="cargandoActivos() || cargandoHistorico()"
+      (click)="cargarPedidos()">
+      Actualizar
+    </button>
+  </div>
+
+  <section class="seccion-pedidos" aria-labelledby="titulo-activos">
+    <h2 id="titulo-activos">Pedidos activos</h2>
+
+    @if (cargandoActivos()) {
+      <p role="status">Cargando pedidos activos...</p>
+    } @else if (errorActivos()) {
+      <p class="mensaje-error" role="alert">{{ errorActivos() }}</p>
+    } @else if (pedidosActivos().length === 0) {
+      <div class="estado-vacio">
+        <h3>No tienes pedidos activos</h3>
+        <p>Cuando completes una compra, aparecerá aquí.</p>
+      </div>
+    } @else {
+      <div class="lista-pedidos">
+        @for (pedido of pedidosActivos(); track pedido.id) {
+          <article class="tarjeta-pedido">
+            <div class="cabecera-pedido">
+              <div>
+                <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
+                <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+            </div>
+
+            <div class="resumen">
+              <p><strong>Productos:</strong> {{ pedido.lineas.length }}</p>
+              <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
+            </div>
+
+            <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+              Ver detalle y seguimiento
+            </button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="seccion-pedidos" aria-labelledby="titulo-historico">
+    <h2 id="titulo-historico">Histórico de pedidos</h2>
+
+    @if (cargandoHistorico()) {
+      <p role="status">Cargando histórico...</p>
+    } @else if (errorHistorico()) {
+      <p class="mensaje-error" role="alert">{{ errorHistorico() }}</p>
+    } @else if (pedidosHistoricos().length === 0) {
+      <div class="estado-vacio">
+        <h3>Tu histórico está vacío</h3>
+        <p>Los pedidos finalizados aparecerán aquí.</p>
+      </div>
+    } @else {
+      <div class="lista-pedidos">
+        @for (pedido of pedidosHistoricos(); track pedido.id) {
+          <article class="tarjeta-pedido">
+            <div class="cabecera-pedido">
+              <div>
+                <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
+                <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+            </div>
+
+            <div class="resumen">
+              <p><strong>Productos:</strong> {{ pedido.lineas.length }}</p>
+              <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
+            </div>
+
+            <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+              Ver detalle y seguimiento
+            </button>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  @if (cargandoDetalle()) {
+    <p role="status">Cargando detalle del pedido...</p>
+  }
+
+  @if (errorDetalle()) {
+    <p class="mensaje-error" role="alert">{{ errorDetalle() }}</p>
+  }
+
+  @if (pedidoSeleccionado(); as pedido) {
+    <section class="detalle" aria-labelledby="titulo-detalle">
+      <div class="cabecera-detalle">
+        <div>
+          <h2 id="titulo-detalle">Detalle del pedido</h2>
+          <p>Referencia: #{{ referenciaPedido(pedido.id) }}</p>
+        </div>
+        <button type="button" class="boton-secundario" (click)="cerrarDetalle()">
+          Cerrar
+        </button>
+      </div>
+
+      <p><strong>Estado actual:</strong> {{ textoEstado(pedido.estado) }}</p>
+
+      <h3>Productos</h3>
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col">Precio unitario</th>
+              <th scope="col">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of pedido.lineas; track linea.productoId) {
+              <tr>
+                <td>{{ linea.nombreProducto }}</td>
+                <td>{{ linea.cantidad }}</td>
+                <td>{{ linea.precioCompra | number:'1.2-2' }} €</td>
+                <td>{{ linea.precioCompra * linea.cantidad | number:'1.2-2' }} €</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="total">Importe total: {{ pedido.importe | number:'1.2-2' }} €</p>
+
+      @if (pedido.direccionEnvio; as direccion) {
+        <div class="direccion">
+          <h3>Dirección de envío</h3>
+          <p>{{ direccion.calle }} {{ direccion.numero }}
+            @if (direccion.portal) {, portal {{ direccion.portal }}}
+            @if (direccion.piso) {, piso {{ direccion.piso }}}
+          </p>
+          <p>{{ direccion.codigoPostal }} {{ direccion.ciudad }} ({{ direccion.provincia }})</p>
+        </div>
+      }
+
+      <h3>Seguimiento e historial de estados</h3>
+      <ol class="historial">
+        @for (estado of estadosSeguimiento; track estado; let indice = $index; let ultimo = $last) {
+          @let cambio = cambioEstado(pedido.historialEstados, estado);
+          <li
+            [class.completado]="cambio"
+            [class.conector-completado]="!ultimo && conectorCompletado(
+              pedido.historialEstados,
+              estado,
+              estadosSeguimiento[indice + 1]
+            )">
+            <span class="punto" aria-hidden="true"></span>
+            <div>
+              <strong>{{ textoEstado(estado) }}</strong>
+              @if (cambio) {
+                <time [attr.datetime]="cambio.fecha">
+                  {{ cambio.fecha | date:'dd/MM/yyyy HH:mm' }}
+                </time>
+              } @else {
+                <span class="fecha-pendiente">Pendiente</span>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+</main>

@@ -20,13 +20,17 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.web.server.ResponseStatusException;
 
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
+import es.uclm.esibuy.backend.dto.CambioEstadoPedidoResponse;
+import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
 import es.uclm.esibuy.backend.model.Direccion;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
@@ -45,6 +49,17 @@ class PedidoControllerTests {
     private MockHttpServletRequestBuilder peticion(String contenido) {
         return post("/cliente/pedidos").with(user("a@example.com").roles("CLIENTE"))
                 .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(contenido);
+    }
+
+    private PedidoConsultaResponse respuestaConsulta() {
+        Instant fecha = Instant.parse("2026-11-01T10:00:00Z");
+        return new PedidoConsultaResponse("pedido-1",
+                List.of(new LineaPedido("p1", "Teclado", new BigDecimal("20.00"),
+                        1, "v1", "Tienda")),
+                EstadoPedido.PAGADO_COMPLETADO, new BigDecimal("20.00"),
+                fecha, fecha, null,
+                List.of(new CambioEstadoPedidoResponse(EstadoPedido.EN_PROCESO, fecha),
+                        new CambioEstadoPedidoResponse(EstadoPedido.PAGADO_COMPLETADO, fecha.plusSeconds(60))));
     }
 
     private Pedido pedido() {
@@ -76,6 +91,41 @@ class PedidoControllerTests {
                 .andExpect(jsonPath("$.numeroTarjeta").doesNotExist())
                 .andExpect(jsonPath("$.cvv").doesNotExist());
         verify(servicio).realizarPedido("direccion-a", "metodo-a", OPERACION);
+    }
+
+    @Test
+    void consultaPedidosActivosDevuelveLineasEstadoEHistorial() throws Exception {
+        when(servicio.consultarPedidosActivos()).thenReturn(List.of(respuestaConsulta()));
+
+        mvc.perform(get("/cliente/pedidos/activos").with(user("a@example.com").roles("CLIENTE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("pedido-1"))
+                .andExpect(jsonPath("$[0].estado").value("PAGADO_COMPLETADO"))
+                .andExpect(jsonPath("$[0].lineas[0].nombreProducto").value("Teclado"))
+                .andExpect(jsonPath("$[0].importe").value(20))
+                .andExpect(jsonPath("$[0].historialEstados.length()").value(2))
+                .andExpect(jsonPath("$[0].historialEstados[1].estado").value("PAGADO_COMPLETADO"))
+                .andExpect(jsonPath("$[0].historialEstados[1].fecha").value("2026-11-01T10:01:00Z"));
+
+        verify(servicio).consultarPedidosActivos();
+    }
+
+    @Test
+    void consultaHistoricoSinPedidosDevuelveListaVacia() throws Exception {
+        when(servicio.consultarHistoricoPedidos()).thenReturn(List.of());
+
+        mvc.perform(get("/cliente/pedidos/historico").with(user("a@example.com").roles("CLIENTE")))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void detalleDePedidoAjenoDevuelve404() throws Exception {
+        when(servicio.consultarPedido("pedido-ajeno"))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+
+        mvc.perform(get("/cliente/pedidos/pedido-ajeno").with(user("a@example.com").roles("CLIENTE")))
+                .andExpect(status().isNotFound());
     }
 
     @Test

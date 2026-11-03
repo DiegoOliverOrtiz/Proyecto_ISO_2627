@@ -22,6 +22,7 @@ import { Listas } from './pages/listas/listas';
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
 import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
+import { MisPedidos } from './pages/pedidos/mis-pedidos';
 
 export const routes: Routes = [
   {
@@ -115,6 +116,12 @@ export const routes: Routes = [
   {
     path: 'cliente/checkout',
     component: Checkout,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'cliente/pedidos',
+    component: MisPedidos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
