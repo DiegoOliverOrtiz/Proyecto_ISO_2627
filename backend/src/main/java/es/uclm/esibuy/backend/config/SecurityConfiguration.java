@@ -137,6 +137,7 @@ public class SecurityConfiguration {
                                                                 "/registro",
                                                                 "/recuperar-contrasena",
                                                                 "/perfil",
+                                                                "/listas",
                                                                 "/perfil/direcciones",
                                                                 "/perfil/pagos",
                                                                 "/admin",
