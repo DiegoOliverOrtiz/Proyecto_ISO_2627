@@ -190,6 +190,20 @@ td {
     padding: 3rem 1.5rem;
 }
 
+.acciones {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+}
+
+.mensaje-exito {
+    padding: 1rem;
+    border: 1px solid #a9d3bb;
+    border-radius: 4px;
+    background: #e5f3eb;
+    color: #255b4d;
+}
+
 .mensaje-error {
     padding: 1rem;
     border: 1px solid #e5b1a8;

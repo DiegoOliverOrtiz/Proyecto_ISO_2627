@@ -175,7 +175,8 @@ public class FavoritoService {
         );
     }
 
-    private ProductoFavoritoResponse presentarProducto(
+    // Compartido con ListaProductosService (HU-39): mismo formato y avisos de disponibilidad.
+    static ProductoFavoritoResponse presentarProducto(
             String id,
             Producto producto,
             boolean premium) {

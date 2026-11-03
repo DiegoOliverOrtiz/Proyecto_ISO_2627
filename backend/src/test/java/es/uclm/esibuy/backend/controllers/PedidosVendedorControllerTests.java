@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -20,6 +21,7 @@ import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.LineaPedidoVendedorResponse;
 import es.uclm.esibuy.backend.dto.PedidoVendedorResponse;
 import es.uclm.esibuy.backend.exceptions.PedidoVendedorNoEncontradoException;
+import es.uclm.esibuy.backend.exceptions.TransicionEstadoPedidoException;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.services.PedidosVendedorService;
 
@@ -227,5 +229,60 @@ class PedidosVendedorControllerTests {
                 .andExpect(jsonPath("$.importeTotal").doesNotExist());
 
         verify(servicio).consultarDetalle(CORREO, "pedido-1");
+    }
+
+    // HU-32: aceptar pedido
+
+    @Test
+    void vendedorAceptaPedidoPropio() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-1"))
+                .thenReturn(
+                        pedido("pedido-1", EstadoPedido.TRAMITADO_ENVIADO)
+                );
+
+        mvc.perform(patch(RUTA + "/pedido-1/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("pedido-1"))
+                .andExpect(jsonPath("$.estado").value("TRAMITADO_ENVIADO"))
+                .andExpect(jsonPath("$.productos[0].productoId").value("producto-1"))
+                .andExpect(jsonPath("$.importeProductosPropios").value(25.00))
+                .andExpect(jsonPath("$.metodoPagoId").doesNotExist());
+
+        verify(servicio).aceptarPedido(CORREO, "pedido-1");
+    }
+
+    @Test
+    void vendedorInactivoNoPuedeAceptarPedidos() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-1"))
+                .thenThrow(new AccessDeniedException("Solo un vendedor activo puede consultar pedidos."));
+
+        mvc.perform(patch(RUTA + "/pedido-1/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void aceptarPedidoAjenoDevuelve404() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-ajeno"))
+                .thenThrow(new PedidoVendedorNoEncontradoException());
+
+        mvc.perform(patch(RUTA + "/pedido-ajeno/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void aceptarPedidoEnEstadoNoPermitidoDevuelve409() throws Exception {
+        when(servicio.aceptarPedido(CORREO, "pedido-enviado"))
+                .thenThrow(new TransicionEstadoPedidoException());
+
+        mvc.perform(patch(RUTA + "/pedido-enviado/aceptar")
+                        .with(user(CORREO).roles("VENDEDOR"))
+                        .with(csrf()))
+                .andExpect(status().isConflict());
     }
 }
