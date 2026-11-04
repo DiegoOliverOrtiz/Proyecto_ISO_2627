@@ -37,11 +37,13 @@ import es.uclm.esibuy.backend.model.Vendedor;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.ProductoService;
+import es.uclm.esibuy.backend.services.RecuperacionContrasenaService;
 import es.uclm.esibuy.backend.services.VendedorService;
 import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = {
         AuthController.class,
+        RecuperacionContrasenaController.class,
         AdministradorController.class,
         VendedorController.class
 })
@@ -56,6 +58,9 @@ class AuthControllerSecurityTests {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private RecuperacionContrasenaService recuperacionContrasenaService;
 
     @MockitoBean
     private AdministradorService administradorService;
@@ -128,6 +133,71 @@ class AuthControllerSecurityTests {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("VENDEDOR"));
+    }
+
+    @Test
+    void solicitudRecuperacionEsPublicaYDevuelveRespuestaGenerica() throws Exception {
+        String respuestaExistente = mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").value(
+                        "Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña."))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String respuestaInexistente = mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"desconocido@example.com"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").value(
+                        "Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña."))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertEquals(respuestaExistente, respuestaInexistente);
+        verify(recuperacionContrasenaService).solicitar("cliente@example.com");
+        verify(recuperacionContrasenaService).solicitar("desconocido@example.com");
+    }
+
+    @Test
+    void confirmacionRecuperacionEsPublicaPeroExigeCsrf() throws Exception {
+        String cuerpo = """
+                {"token":"token-valido","nuevaContrasena":"NuevaClaveSegura9!"}
+                """;
+
+        mockMvc.perform(post("/usuarios/recuperar-contrasena/confirmar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isNoContent());
+        verify(recuperacionContrasenaService)
+                .completar("token-valido", "NuevaClaveSegura9!");
+
+        mockMvc.perform(post("/usuarios/recuperar-contrasena/confirmar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void solicitudRecuperacionTambienExigeCsrf() throws Exception {
+        mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com"}
+                                """))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(recuperacionContrasenaService);
     }
 
     @Test
