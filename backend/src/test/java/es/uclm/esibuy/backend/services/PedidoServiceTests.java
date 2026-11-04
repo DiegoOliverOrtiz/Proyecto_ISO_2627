@@ -522,4 +522,65 @@ class PedidoServiceTests {
                 () -> servicio.realizarPedido("direccion-a", "metodo-a", "clave falsa"));
         verifyNoInteractions(transacciones, clientes, pedidos, productos, carritos);
     }
+
+    @Test
+    void clienteConfirmaRecepcionDePedidoEnviado() {
+        cuenta();
+
+        Pedido pedido = pedidoConEstado(
+                "pedido-enviado",
+                EstadoPedido.TRAMITADO_ENVIADO);
+
+        when(pedidos.findByIdAndClienteId("pedido-enviado", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+
+        when(pedidos.finalizarPedido(
+                eq("pedido-enviado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.TRAMITADO_ENVIADO.name()),
+                eq(EstadoPedido.FINALIZADO.name()),
+                anyList()))
+                .thenReturn(1L);
+
+        PedidoConsultaResponse respuesta =
+                servicio.confirmarRecepcion("pedido-enviado");
+
+        assertEquals(EstadoPedido.FINALIZADO, respuesta.estado());
+
+        assertEquals(EstadoPedido.FINALIZADO,
+                respuesta.historialEstados().getLast().estado());
+
+        assertEquals(4, respuesta.historialEstados().size());
+
+        verify(pedidos).finalizarPedido(
+                eq("pedido-enviado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.TRAMITADO_ENVIADO.name()),
+                eq(EstadoPedido.FINALIZADO.name()),
+                anyList());
+
+        verify(pedidos, never()).save(any(Pedido.class));
+        verifyNoInteractions(productos);
+    }
+
+    @Test
+    void clienteNoPuedeConfirmarUnPedidoAjenoOInexistente() {
+        cuenta();
+
+        when(pedidos.findByIdAndClienteId("pedido-ajeno", "cliente-a"))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
+                () -> servicio.confirmarRecepcion("pedido-ajeno"));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+
+        verify(pedidos).findByIdAndClienteId(
+                "pedido-ajeno", "cliente-a");
+
+        verify(pedidos, never()).findById(anyString());
+        verify(pedidos, never()).save(any(Pedido.class));
+        verifyNoInteractions(productos);
+    }
 }
