@@ -45,4 +45,9 @@ public class PedidoController {
     public PedidoConsultaResponse consultarDetalle(@PathVariable String pedidoId) {
         return pedidoService.consultarPedido(pedidoId);
     }
+
+    @PostMapping("/{pedidoId}/cancelar")
+    public PedidoConsultaResponse cancelarPedido(@PathVariable String pedidoId) {
+        return pedidoService.cancelarPedido(pedidoId);
+    }
 }

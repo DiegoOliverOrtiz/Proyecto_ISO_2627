@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 
+import es.uclm.esibuy.backend.model.CambioEstadoPedido;
 import es.uclm.esibuy.backend.model.Pedido;
 
 public interface PedidoDAO extends MongoRepository<Pedido, String> {
@@ -22,9 +23,17 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
     @Update("{ '$set': { 'estado': ?3 } }")
     long actualizarEstado(String pedidoId, String estadoActual, String vendedorId, String estadoNuevo);
 
+    @Query("{ '_id': ?0, 'clienteId': ?1, 'estado': ?2 }")
+    @Update("{ '$set': { 'estado': ?3, 'historialEstados': ?4 } }")
+    long cancelarPedido(
+            String pedidoId,
+            String clienteId,
+            String estadoActual,
+            String estadoNuevo,
+            List<CambioEstadoPedido> historialEstados);
+
     // Indica si el producto figura en algún pedido con uno de los estados indicados (por nombre).
     @Query(value = "{ 'lineas.productoId': ?0, 'estado': { '$in': ?1 } }", exists = true)
     boolean existsByProductoIdAndEstadoIn(String productoId, List<String> estados);
 }
-
 

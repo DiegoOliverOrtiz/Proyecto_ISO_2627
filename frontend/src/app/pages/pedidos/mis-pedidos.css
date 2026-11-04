@@ -133,6 +133,7 @@
 
 .boton-primario,
 .boton-secundario,
+.boton-cancelar,
 .logout-button {
   padding: .7rem 1rem;
   border-radius: 4px;
@@ -157,6 +158,18 @@
   border: 1px solid #255b4d;
   background: white;
   color: #255b4d;
+}
+
+.boton-cancelar {
+  margin-left: .5rem;
+  border: 1px solid #c74b35;
+  color: #a63120;
+  background: #fff;
+}
+
+.estado-cancelado {
+  background: #fff0ed;
+  color: #a63120;
 }
 
 button:disabled {
@@ -284,6 +297,14 @@ td {
   border-radius: 4px;
   background: #fff0ed;
   color: #a63120;
+}
+
+.mensaje-exito {
+  padding: 1rem;
+  border: 1px solid #b8d5ca;
+  border-radius: 4px;
+  background: #e5f3eb;
+  color: #255b4d;
 }
 
 @media (max-width: 640px) {

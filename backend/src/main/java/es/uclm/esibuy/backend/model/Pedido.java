@@ -82,6 +82,12 @@ public class Pedido {
     return cambiarEstado(EstadoPedido.PAGADO_COMPLETADO, fechaPago);
     }
 
+    public Pedido cancelar(Instant fecha) {
+        if (estado == null || !estado.permiteTransicionA(EstadoPedido.CANCELADO)) {
+            throw new IllegalStateException("El pedido no se puede cancelar en su estado actual.");
+        }
+        return cambiarEstado(EstadoPedido.CANCELADO, fecha);
+    }
 
     public Pedido cambiarEstado(EstadoPedido nuevoEstado, Instant fecha) {
     if (nuevoEstado == null || fecha == null) {
@@ -108,17 +114,8 @@ public class Pedido {
     }
 
     private boolean transicionPermitida(EstadoPedido nuevoEstado) {
-    if (estado == null) {
-        return false;
+        return estado != null && estado.permiteTransicionA(nuevoEstado);
     }
-
-    return switch (estado) {
-        case EN_PROCESO -> nuevoEstado == EstadoPedido.PAGADO_COMPLETADO;
-        case PAGADO_COMPLETADO -> nuevoEstado == EstadoPedido.TRAMITADO_ENVIADO;
-        case TRAMITADO_ENVIADO -> nuevoEstado == EstadoPedido.FINALIZADO;
-        case FINALIZADO -> false;
-    };
-}
 
     public Pedido desvinculadoCliente() {
         Pedido pedidoAnonimizado = new Pedido(id, null, lineas, estado, importe,

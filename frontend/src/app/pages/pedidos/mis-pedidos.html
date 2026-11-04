@@ -26,6 +26,12 @@
   @if (errorSesion()) {
     <p class="mensaje-error" role="alert">{{ errorSesion() }}</p>
   }
+  @if (resultadoCancelacion()) {
+    <p class="mensaje-exito" role="status">{{ resultadoCancelacion() }}</p>
+  }
+  @if (errorCancelacion()) {
+    <p class="mensaje-error" role="alert">{{ errorCancelacion() }}</p>
+  }
 
   <div class="encabezado">
     <div>
@@ -74,6 +80,15 @@
             <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
               Ver detalle y seguimiento
             </button>
+            @if (puedeCancelar(pedido.estado)) {
+              <button
+                type="button"
+                class="boton-cancelar"
+                [disabled]="pedidoCancelandoId() !== null"
+                (click)="cancelarPedido(pedido)">
+                {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+              </button>
+            }
           </article>
         }
       </div>
@@ -101,7 +116,9 @@
                 <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                 <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
               </div>
-              <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+              <span class="estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
+                {{ textoEstado(pedido.estado) }}
+              </span>
             </div>
 
             <div class="resumen">
@@ -139,6 +156,15 @@
       </div>
 
       <p><strong>Estado actual:</strong> {{ textoEstado(pedido.estado) }}</p>
+      @if (puedeCancelar(pedido.estado)) {
+        <button
+          type="button"
+          class="boton-cancelar"
+          [disabled]="pedidoCancelandoId() !== null"
+          (click)="cancelarPedido(pedido)">
+          {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+        </button>
+      }
 
       <h3>Productos</h3>
       <div class="tabla-contenedor">
