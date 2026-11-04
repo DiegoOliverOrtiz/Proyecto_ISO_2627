@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.services;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ import es.uclm.esibuy.backend.dto.CrearProductoResponse;
 import es.uclm.esibuy.backend.dto.DatosProductoRequest;
 import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
 import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
+import es.uclm.esibuy.backend.dto.ProductoAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
@@ -39,6 +41,10 @@ public class ProductoService {
     // Pedidos en curso que impiden eliminar un producto: los carritos (EN_PROCESO) y los finalizados no cuentan.
     private static final List<String> ESTADOS_PEDIDO_EN_CURSO = List.of(
             EstadoPedido.PAGADO_COMPLETADO.name(), EstadoPedido.TRAMITADO_ENVIADO.name());
+    // Listado del administrador: por vendedor y después por nombre, sin distinguir mayúsculas.
+    private static final Comparator<Producto> ORDEN_ADMINISTRACION = Comparator
+            .comparing(Producto::getVendedor, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+            .thenComparing(Producto::getNombre, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
 
     private final ProductoDAO productoDAO;
     private final VendedorDAO vendedorDAO;
@@ -71,6 +77,14 @@ public class ProductoService {
 
         return productoDAO.findByVendedor(vendedor.getNombreComercial()).stream()
                 .map(this::aConsultarProductosResponse)
+                .toList();
+    }
+
+    // HU-34: el administrador ve todos los productos (también los desactivados) en solo lectura.
+    public List<ProductoAdministracionResponse> consultarProductosParaAdministrador() {
+        return productoDAO.findAll().stream()
+                .sorted(ORDEN_ADMINISTRACION)
+                .map(this::aProductoAdministracionResponse)
                 .toList();
     }
 
@@ -191,6 +205,22 @@ public class ProductoService {
                 producto.isEsVisible(),
                 producto.getImagen(),
                 producto.isSoloPremium());
+    }
+
+    private ProductoAdministracionResponse aProductoAdministracionResponse(Producto producto) {
+        return new ProductoAdministracionResponse(
+                producto.getId(),
+                producto.getNombre(),
+                producto.getCategoria(),
+                producto.getStock(),
+                producto.getDescripcion(),
+                producto.getPrecio(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                producto.isEsVisible(),
+                producto.getImagen(),
+                producto.isSoloPremium(),
+                producto.getVendedor());
     }
 
     public CrearProductoResponse crearProducto(
