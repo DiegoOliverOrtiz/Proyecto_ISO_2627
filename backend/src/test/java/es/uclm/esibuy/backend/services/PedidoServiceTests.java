@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import es.uclm.esibuy.backend.dao.*;
 import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
+import es.uclm.esibuy.backend.exceptions.CancelacionPedidoException;
 import es.uclm.esibuy.backend.model.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -193,6 +195,136 @@ class PedidoServiceTests {
         verify(pedidos).findByIdAndClienteId("pedido-ajeno", "cliente-a");
         verify(pedidos, never()).findById(anyString());
         verify(pedidos, never()).save(any(Pedido.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoPedido.class, names = {"EN_PROCESO", "PAGADO_COMPLETADO"})
+    void cancelaPedidosPermitidosYReponeStockSoloSiEstabaPagado(EstadoPedido estado) {
+        cuenta();
+        Pedido pedido = pedidoConEstado("pedido-cancelable", estado);
+        when(pedidos.findByIdAndClienteId("pedido-cancelable", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidos.cancelarPedido(
+                eq("pedido-cancelable"),
+                eq("cliente-a"),
+                eq(estado.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(1L);
+
+        PedidoConsultaResponse respuesta = servicio.cancelarPedido("pedido-cancelable");
+
+        assertEquals(EstadoPedido.CANCELADO, respuesta.estado());
+        assertEquals(EstadoPedido.CANCELADO,
+                respuesta.historialEstados().getLast().estado());
+        verify(pedidos).cancelarPedido(
+                eq("pedido-cancelable"),
+                eq("cliente-a"),
+                eq(estado.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+
+        if (estado == EstadoPedido.PAGADO_COMPLETADO) {
+            verify(productos, times(1)).reponerStock("producto-1", 1);
+        } else {
+            verify(productos, never()).reponerStock(anyString(), anyInt());
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoPedido.class, names = {
+            "TRAMITADO_ENVIADO", "FINALIZADO", "CANCELADO"
+    })
+    void rechazaPedidoEnviadoFinalizadoOYaCancelado(EstadoPedido estado) {
+        cuenta();
+        Pedido pedido = estado == EstadoPedido.CANCELADO
+                ? pedidoConEstado("pedido-no-cancelable", EstadoPedido.PAGADO_COMPLETADO)
+                        .cancelar(Instant.parse("2026-11-04T10:02:00Z"))
+                : pedidoConEstado("pedido-no-cancelable", estado);
+        when(pedidos.findByIdAndClienteId("pedido-no-cancelable", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+
+        CancelacionPedidoException error = assertThrows(
+                CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-no-cancelable"));
+
+        assertFalse(error.getMessage().isBlank());
+        verify(pedidos, never()).cancelarPedido(
+                anyString(), anyString(), anyString(), anyString(), anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pedido-ajeno", "pedido-inexistente"})
+    void pedidoAjenoOInexistenteDevuelve404SinReponerStock(String pedidoId) {
+        cuenta();
+        when(pedidos.findByIdAndClienteId(pedidoId, "cliente-a"))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
+                () -> servicio.cancelarPedido(pedidoId));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verify(pedidos).findByIdAndClienteId(pedidoId, "cliente-a");
+        verify(pedidos, never()).findById(anyString());
+        verify(pedidos, never()).cancelarPedido(
+                anyString(), anyString(), anyString(), anyString(), anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
+    }
+
+    @Test
+    void segundoIntentoDeCancelacionNoReponeStockOtraVez() {
+        cuenta();
+        Pedido pagado = pedidoConEstado("pedido-duplicado", EstadoPedido.PAGADO_COMPLETADO);
+        Pedido cancelado = pagado.cancelar(Instant.parse("2026-11-04T10:02:00Z"));
+        when(pedidos.findByIdAndClienteId("pedido-duplicado", "cliente-a"))
+                .thenReturn(Optional.of(pagado), Optional.of(cancelado));
+        when(pedidos.cancelarPedido(
+                eq("pedido-duplicado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(1L);
+
+        servicio.cancelarPedido("pedido-duplicado");
+        assertThrows(CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-duplicado"));
+
+        verify(pedidos, times(1)).cancelarPedido(
+                eq("pedido-duplicado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+        verify(productos, times(1)).reponerStock("producto-1", 1);
+    }
+
+    @Test
+    void conflictoConcurrenteNoReponeStock() {
+        cuenta();
+        Pedido pedido = pedidoConEstado("pedido-concurrente", EstadoPedido.PAGADO_COMPLETADO);
+        when(pedidos.findByIdAndClienteId("pedido-concurrente", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidos.cancelarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(0L);
+
+        assertThrows(CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-concurrente"));
+
+        verify(pedidos).cancelarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
     }
 
     @ParameterizedTest

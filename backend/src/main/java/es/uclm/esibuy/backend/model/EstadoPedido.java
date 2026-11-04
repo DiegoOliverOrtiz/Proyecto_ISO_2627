@@ -4,10 +4,17 @@ public enum EstadoPedido {
     EN_PROCESO,
     PAGADO_COMPLETADO,
     TRAMITADO_ENVIADO,
-    FINALIZADO;
+    FINALIZADO,
+    CANCELADO;
 
     // Los estados avanzan de uno en uno, en el orden declarado: no se permiten saltos ni retrocesos.
     public boolean permiteTransicionA(EstadoPedido destino) {
-        return destino != null && destino.ordinal() == ordinal() + 1;
+        if (destino == null) {
+            return false;
+        }
+        if (destino == CANCELADO) {
+            return this == EN_PROCESO || this == PAGADO_COMPLETADO;
+        }
+        return this != CANCELADO && destino.ordinal() == ordinal() + 1;
     }
 }

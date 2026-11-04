@@ -31,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.CambioEstadoPedidoResponse;
 import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
+import es.uclm.esibuy.backend.exceptions.CancelacionPedidoException;
 import es.uclm.esibuy.backend.model.Direccion;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
@@ -49,6 +50,12 @@ class PedidoControllerTests {
     private MockHttpServletRequestBuilder peticion(String contenido) {
         return post("/cliente/pedidos").with(user("a@example.com").roles("CLIENTE"))
                 .with(csrf()).contentType(MediaType.APPLICATION_JSON).content(contenido);
+    }
+
+    private MockHttpServletRequestBuilder peticionCancelacion(String pedidoId) {
+        return post("/cliente/pedidos/" + pedidoId + "/cancelar")
+                .with(user("a@example.com").roles("CLIENTE"))
+                .with(csrf());
     }
 
     private PedidoConsultaResponse respuestaConsulta() {
@@ -126,6 +133,45 @@ class PedidoControllerTests {
 
         mvc.perform(get("/cliente/pedidos/pedido-ajeno").with(user("a@example.com").roles("CLIENTE")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelaPedidoConSesionYDevuelveSuEstadoActualizado() throws Exception {
+        Instant fecha = Instant.parse("2026-11-04T10:02:00Z");
+        PedidoConsultaResponse cancelado = new PedidoConsultaResponse(
+                "pedido-1",
+                List.of(new LineaPedido("p1", "Teclado", new BigDecimal("20.00"),
+                        1, "v1", "Tienda")),
+                EstadoPedido.CANCELADO,
+                new BigDecimal("20.00"),
+                fecha.minusSeconds(120),
+                fecha.minusSeconds(60),
+                null,
+                List.of(new CambioEstadoPedidoResponse(
+                        EstadoPedido.EN_PROCESO, fecha.minusSeconds(120)),
+                        new CambioEstadoPedidoResponse(
+                                EstadoPedido.PAGADO_COMPLETADO, fecha.minusSeconds(60)),
+                        new CambioEstadoPedidoResponse(EstadoPedido.CANCELADO, fecha)));
+        when(servicio.cancelarPedido("pedido-1")).thenReturn(cancelado);
+
+        mvc.perform(peticionCancelacion("pedido-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("pedido-1"))
+                .andExpect(jsonPath("$.estado").value("CANCELADO"))
+                .andExpect(jsonPath("$.historialEstados[2].estado").value("CANCELADO"));
+
+        verify(servicio).cancelarPedido("pedido-1");
+    }
+
+    @Test
+    void rechazoDeCancelacionDevuelve409ConElMotivo() throws Exception {
+        String motivo = "No se puede cancelar: el pedido ya ha sido enviado.";
+        when(servicio.cancelarPedido("pedido-1"))
+                .thenThrow(new CancelacionPedidoException(motivo));
+
+        mvc.perform(peticionCancelacion("pedido-1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value(motivo));
     }
 
     @Test

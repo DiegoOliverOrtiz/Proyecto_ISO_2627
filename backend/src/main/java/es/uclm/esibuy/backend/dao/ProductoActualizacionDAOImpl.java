@@ -50,6 +50,19 @@ public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
         }
     }
 
+    @Override
+    public void reponerStock(String productoId, int cantidad) {
+        if (productoId == null || productoId.isBlank() || cantidad <= 0) {
+            throw new IllegalArgumentException("El producto y la cantidad deben ser válidos.");
+        }
+
+        long modificados = mongoTemplate.updateFirst(
+                Query.query(Criteria.where("id").is(productoId)),
+                new Update().inc("stock", cantidad),
+                Producto.class).getModifiedCount();
+        comprobarActualizacion(modificados);
+    }
+
     private Criteria valorPredeterminadoCompatible(String campo, Object valor, Object predeterminado) {
         if (!predeterminado.equals(valor)) return Criteria.where(campo).is(valor);
         // Spring conserva el valor predeterminado del primitivo si el campo no existe

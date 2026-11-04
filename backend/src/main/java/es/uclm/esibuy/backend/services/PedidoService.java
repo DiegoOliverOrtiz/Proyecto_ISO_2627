@@ -25,8 +25,10 @@ import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
+import es.uclm.esibuy.backend.exceptions.CancelacionPedidoException;
 import es.uclm.esibuy.backend.exceptions.OperacionPedidoConflictivaException;
 import es.uclm.esibuy.backend.model.Carrito;
+import es.uclm.esibuy.backend.model.CambioEstadoPedido;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Direccion;
 import es.uclm.esibuy.backend.model.EstadoPedido;
@@ -74,6 +76,67 @@ public class PedidoService {
                 if (intento >= 2 || !esTransitoria(exception)) throw exception;
             }
         }
+    }
+
+    public PedidoConsultaResponse cancelarPedido(String pedidoId) {
+        validarIdentificador(pedidoId, "El identificador del pedido es obligatorio.");
+        Cliente cliente = carritoService.obtenerClienteAutenticado();
+
+        for (int intento = 0; ; intento++) {
+            try {
+                return transaccion.execute(status ->
+                        cancelarPedidoEnTransaccion(pedidoId, cliente.getId()));
+            } catch (RuntimeException exception) {
+                if (intento >= 2 || !esTransitoria(exception)) {
+                    throw exception;
+                }
+            }
+        }
+    }
+
+    private PedidoConsultaResponse cancelarPedidoEnTransaccion(
+            String pedidoId,
+            String clienteId) {
+        Pedido pedido = pedidoDAO.findByIdAndClienteId(pedidoId, clienteId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+
+        EstadoPedido estadoActual = pedido.getEstado();
+        if (estadoActual == null || !estadoActual.permiteTransicionA(EstadoPedido.CANCELADO)) {
+            String motivo = estadoActual == null
+                    ? "El pedido no tiene un estado válido y no se puede cancelar."
+                    : switch (estadoActual) {
+                        case EN_PROCESO, PAGADO_COMPLETADO ->
+                                "El pedido ha cambiado mientras se cancelaba. Actualízalo e inténtalo de nuevo.";
+                        case TRAMITADO_ENVIADO ->
+                                "No se puede cancelar: el pedido ya ha sido enviado.";
+                        case FINALIZADO ->
+                                "No se puede cancelar: el pedido ya está finalizado.";
+                        case CANCELADO ->
+                                "El pedido ya ha sido cancelado.";
+                    };
+            throw new CancelacionPedidoException(motivo);
+        }
+
+        Pedido cancelado = pedido.cancelar(Instant.now());
+        long modificados = pedidoDAO.cancelarPedido(
+                pedidoId,
+                clienteId,
+                estadoActual.name(),
+                EstadoPedido.CANCELADO.name(),
+                cancelado.getHistorialEstados());
+        if (modificados != 1) {
+            throw new CancelacionPedidoException(
+                    "El pedido ha cambiado mientras se cancelaba. Actualízalo e inténtalo de nuevo.");
+        }
+
+        if (estadoActual == EstadoPedido.PAGADO_COMPLETADO) {
+            for (LineaPedido linea : pedido.getLineas()) {
+                productoDAO.reponerStock(linea.productoId(), linea.cantidad());
+            }
+        }
+
+        return PedidoConsultaResponse.de(cancelado);
     }
 
     private Pedido comprar(String direccionId, String metodoPagoId, String operacionId) {

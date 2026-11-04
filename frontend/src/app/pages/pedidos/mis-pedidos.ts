@@ -35,6 +35,9 @@ export class MisPedidos implements OnInit {
   readonly pedidoSeleccionado = signal<PedidoCliente | null>(null);
   readonly cargandoDetalle = signal(false);
   readonly errorDetalle = signal('');
+  readonly pedidoCancelandoId = signal<string | null>(null);
+  readonly resultadoCancelacion = signal('');
+  readonly errorCancelacion = signal('');
 
   readonly estadosSeguimiento: EstadoPedido[] = [
     'EN_PROCESO',
@@ -105,6 +108,46 @@ export class MisPedidos implements OnInit {
     this.cargandoDetalle.set(false);
   }
 
+  cancelarPedido(pedido: PedidoCliente): void {
+    if (this.pedidoCancelandoId() !== null || !this.puedeCancelar(pedido.estado)) {
+      return;
+    }
+
+    const confirmado = window.confirm(
+      `¿Quieres cancelar el pedido #${this.referenciaPedido(pedido.id)}?`
+    );
+    if (!confirmado) {
+      return;
+    }
+
+    this.pedidoCancelandoId.set(pedido.id);
+    this.resultadoCancelacion.set('');
+    this.errorCancelacion.set('');
+
+    this.servicio.cancelarPedido(pedido.id).subscribe({
+      next: (pedidoCancelado) => {
+        this.pedidosActivos.update((pedidos) =>
+          pedidos.filter((actual) => actual.id !== pedidoCancelado.id)
+        );
+        if (this.pedidoSeleccionado()?.id === pedidoCancelado.id) {
+          this.cerrarDetalle();
+        }
+        this.resultadoCancelacion.set(
+          `El pedido #${this.referenciaPedido(pedidoCancelado.id)} se ha cancelado correctamente.`
+        );
+        this.pedidoCancelandoId.set(null);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorCancelacion.set(this.mensajeErrorCancelacion(error));
+        this.pedidoCancelandoId.set(null);
+      }
+    });
+  }
+
+  puedeCancelar(estado: EstadoPedido): boolean {
+    return estado === 'EN_PROCESO' || estado === 'PAGADO_COMPLETADO';
+  }
+
   cerrarSesion(): void {
     this.cerrandoSesion.set(true);
     this.errorSesion.set('');
@@ -133,6 +176,8 @@ export class MisPedidos implements OnInit {
         return 'Tramitado / Enviado';
       case 'FINALIZADO':
         return 'Finalizado';
+      case 'CANCELADO':
+        return 'Cancelado';
     }
   }
 
@@ -151,6 +196,31 @@ export class MisPedidos implements OnInit {
   ): boolean {
     return this.cambioEstado(historial, estado) !== undefined
       && this.cambioEstado(historial, siguienteEstado) !== undefined;
+  }
+
+  private mensajeErrorCancelacion(error: HttpErrorResponse): string {
+    if (error.status === 401) {
+      void this.router.navigate(['/login'], {
+        queryParams: { motivo: 'sesion-expirada' }
+      });
+      return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
+    }
+
+    const cuerpo = error.error;
+    if (typeof cuerpo === 'object' && cuerpo !== null
+      && 'error' in cuerpo && typeof cuerpo.error === 'string') {
+      return cuerpo.error;
+    }
+
+    if (error.status === 404) {
+      return 'El pedido no existe o no está disponible.';
+    }
+
+    return 'No se pudo cancelar el pedido. Inténtalo de nuevo.';
   }
 
   private mensajeError(error: HttpErrorResponse): string {
