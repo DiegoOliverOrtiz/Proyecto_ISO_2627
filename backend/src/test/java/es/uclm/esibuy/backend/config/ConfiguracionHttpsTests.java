@@ -17,8 +17,14 @@ class ConfiguracionHttpsTests {
     @Test
     void laApiEscuchaEnElPuertoHttpsConTlsActivado() throws IOException {
         Properties props = configuracion();
-        assertEquals("8443", props.getProperty("server.port"));
-        assertEquals("true", props.getProperty("server.ssl.enabled"));
+
+        // Por defecto escucha en 8443, pero Render puede definir PORT.
+        assertEquals("${PORT:8443}", props.getProperty("server.port"));
+
+        // HTTPS está activo por defecto y puede configurarse
+        // cuando Render termina TLS en su proxy.
+        assertEquals("${SSL_ENABLED:true}", props.getProperty("server.ssl.enabled"));
+
         assertEquals("PKCS12", props.getProperty("server.ssl.key-store-type"));
         assertEquals("TLSv1.2,TLSv1.3", props.getProperty("server.ssl.enabled-protocols"));
     }
@@ -33,9 +39,20 @@ class ConfiguracionHttpsTests {
     @Test
     void lasCookiesDeSesionSonSecureYHttpOnly() throws IOException {
         Properties props = configuracion();
-        assertEquals("true", props.getProperty("server.servlet.session.cookie.secure"));
-        assertEquals("true", props.getProperty("app.security.cookies.secure"));
-        assertEquals("true", props.getProperty("server.servlet.session.cookie.http-only"));
+
+        // Las cookies son seguras por defecto.
+        assertEquals(
+                "${SESSION_COOKIE_SECURE:true}",
+                props.getProperty("server.servlet.session.cookie.secure"));
+
+        assertEquals(
+                "${SESSION_COOKIE_SECURE:true}",
+                props.getProperty("app.security.cookies.secure"));
+
+        // HttpOnly permanece activado.
+        assertEquals(
+                "true",
+                props.getProperty("server.servlet.session.cookie.http-only"));
     }
 
     @Test

@@ -116,7 +116,7 @@ export const routes: Routes = [
     data: { rol: 'CLIENTE' }
   },
   {
-    path: 'cliente/carrito',
+    path: 'carrito',
     component: Carrito,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }

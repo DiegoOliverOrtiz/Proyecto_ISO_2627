@@ -9,6 +9,7 @@ trigger:
     - main                 # Rama de producción
     - develop             # Rama de integración
     - feature/*           # Ramas de nuevas features (HU)
+    - release/*           # Ramas de releases
     - hotfix/*            # Ramas de correcciones urgentes
   paths:
     exclude:
@@ -22,6 +23,7 @@ pr:
     - main
     - develop
     - feature/*
+    - release/*
 
 pool:
   name: Default             # Agente propio (WSL Ubuntu); ver documents/sprint2/instruccionesCI-CD.md
