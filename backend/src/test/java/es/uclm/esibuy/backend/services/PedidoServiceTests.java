@@ -583,4 +583,77 @@ class PedidoServiceTests {
         verify(pedidos, never()).save(any(Pedido.class));
         verifyNoInteractions(productos);
     }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoPedido.class, names = {
+            "EN_PROCESO",
+            "PAGADO_COMPLETADO",
+            "FINALIZADO",
+            "CANCELADO"
+    })
+    void noPermiteConfirmarRecepcionSiPedidoNoEstaEnviado(
+            EstadoPedido estado) {
+        cuenta();
+
+        Pedido pedido = estado == EstadoPedido.CANCELADO
+                ? pedidoConEstado(
+                        "pedido-no-enviado",
+                        EstadoPedido.PAGADO_COMPLETADO)
+                        .cancelar(Instant.parse("2026-11-04T10:02:00Z"))
+                : pedidoConEstado("pedido-no-enviado", estado);
+
+        when(pedidos.findByIdAndClienteId(
+                "pedido-no-enviado", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
+                () -> servicio.confirmarRecepcion("pedido-no-enviado"));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+
+        verify(pedidos, never()).finalizarPedido(
+                anyString(), anyString(), anyString(),
+                anyString(), anyList());
+
+        verify(pedidos, never()).save(any(Pedido.class));
+        verifyNoInteractions(productos);
+    }
+
+    @Test
+    void conflictoConcurrenteImpideFinalizarPedido() {
+        cuenta();
+
+        Pedido pedido = pedidoConEstado(
+                "pedido-concurrente",
+                EstadoPedido.TRAMITADO_ENVIADO);
+
+        when(pedidos.findByIdAndClienteId(
+                "pedido-concurrente", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+
+        when(pedidos.finalizarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.TRAMITADO_ENVIADO.name()),
+                eq(EstadoPedido.FINALIZADO.name()),
+                anyList()))
+                .thenReturn(0L);
+
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
+                () -> servicio.confirmarRecepcion("pedido-concurrente"));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+
+        verify(pedidos).finalizarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.TRAMITADO_ENVIADO.name()),
+                eq(EstadoPedido.FINALIZADO.name()),
+                anyList());
+
+        verify(pedidos, never()).save(any(Pedido.class));
+        verifyNoInteractions(productos);
+    }
 }
