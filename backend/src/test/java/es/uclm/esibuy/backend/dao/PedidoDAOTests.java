@@ -40,4 +40,17 @@ class PedidoDAOTests {
     void elCambioDeEstadoDevuelveElNumeroDeDocumentosModificados() throws Exception {
         assertEquals(long.class, actualizarEstado().getReturnType());
     }
+
+    // HU-33: comprobación de pedidos en curso antes de eliminar un producto.
+    @Test
+    void laComprobacionDePedidosFiltraPorProductoYEstados() throws Exception {
+        Query query = PedidoDAO.class
+                .getMethod("existsByProductoIdAndEstadoIn", String.class, java.util.List.class)
+                .getAnnotation(Query.class);
+        String filtro = query.value().replace(" ", "");
+
+        assertTrue(query.exists());
+        assertTrue(filtro.contains("'lineas.productoId':?0"));
+        assertTrue(filtro.contains("'estado':{'$in':?1}"));
+    }
 }

@@ -18,4 +18,8 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
     @Query("{ '_id': ?0, 'estado': ?1, 'lineas.vendedorId': ?2 }")
     @Update("{ '$set': { 'estado': ?3 } }")
     long actualizarEstado(String pedidoId, String estadoActual, String vendedorId, String estadoNuevo);
+
+    // Indica si el producto figura en algún pedido con uno de los estados indicados (por nombre).
+    @Query(value = "{ 'lineas.productoId': ?0, 'estado': { '$in': ?1 } }", exists = true)
+    boolean existsByProductoIdAndEstadoIn(String productoId, List<String> estados);
 }
