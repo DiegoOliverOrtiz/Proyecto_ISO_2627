@@ -94,6 +94,58 @@ public class PedidoService {
         }
     }
 
+    public PedidoConsultaResponse confirmarRecepcion(String pedidoId) {
+        validarIdentificador(
+                pedidoId, "El identificador del pedido es obligatorio.");
+
+        Cliente cliente = carritoService.obtenerClienteAutenticado();
+
+        for (int intento = 0; ; intento++) {
+            try {
+                return transaccion.execute(status ->
+                        confirmarRecepcionEnTransaccion(
+                                pedidoId, cliente.getId()));
+            } catch (RuntimeException exception) {
+                if (intento >= 2 || !esTransitoria(exception)) {
+                    throw exception;
+                }
+            }
+        }
+    }
+
+    private PedidoConsultaResponse confirmarRecepcionEnTransaccion(
+            String pedidoId, String clienteId) {
+
+        Pedido pedido = pedidoDAO.findByIdAndClienteId(
+                pedidoId, clienteId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+
+        if (pedido.getEstado() != EstadoPedido.TRAMITADO_ENVIADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Solo se puede confirmar la recepción de un pedido enviado.");
+        }
+
+        Pedido finalizado = pedido.cambiarEstado(
+                EstadoPedido.FINALIZADO, Instant.now());
+
+        long modificados = pedidoDAO.finalizarPedido(
+                pedidoId,
+                clienteId,
+                EstadoPedido.TRAMITADO_ENVIADO.name(),
+                EstadoPedido.FINALIZADO.name(),
+                finalizado.getHistorialEstados());
+
+        if (modificados != 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El pedido ha cambiado. Actualízalo e inténtalo de nuevo.");
+        }
+
+        return PedidoConsultaResponse.de(finalizado);
+    }
+
     private PedidoConsultaResponse cancelarPedidoEnTransaccion(
             String pedidoId,
             String clienteId) {
