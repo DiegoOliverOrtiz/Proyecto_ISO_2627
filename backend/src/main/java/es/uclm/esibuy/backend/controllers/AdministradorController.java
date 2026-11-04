@@ -1,5 +1,7 @@
 package es.uclm.esibuy.backend.controllers;
 
+import java.util.List;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
+import es.uclm.esibuy.backend.dto.ProductoAdministracionResponse;
 import es.uclm.esibuy.backend.dto.RegistroAdministradorRequest;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
@@ -28,6 +31,7 @@ import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.AutoEliminacionAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.services.AdministradorService;
+import es.uclm.esibuy.backend.services.ProductoService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -35,11 +39,25 @@ import jakarta.validation.Valid;
 public class AdministradorController {
 
 	private final AdministradorService administradorService;
+	private final ProductoService productoService;
 
 	public AdministradorController(
-			AdministradorService administradorService) {
+			AdministradorService administradorService,
+			ProductoService productoService) {
 
 		this.administradorService = administradorService;
+		this.productoService = productoService;
+	}
+
+	/*
+	 * HU-34 - Consultar productos en modo solo lectura: solo hay GET, ninguna escritura.
+	 */
+	@PreAuthorize("hasRole('ADMIN')")
+	@GetMapping("/productos")
+	public ResponseEntity<List<ProductoAdministracionResponse>> consultarProductos() {
+
+		return ResponseEntity.ok(
+				productoService.consultarProductosParaAdministrador());
 	}
 
 	@PreAuthorize("hasRole('ADMIN')")

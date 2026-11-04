@@ -12,6 +12,7 @@ import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 import { Administradores } from './pages/admin/administradores';
 import { CrearAdministrador } from './pages/admin/crear-administrador';
+import { ProductosAdmin } from './pages/admin/productos-admin';
 import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
@@ -98,6 +99,13 @@ export const routes: Routes = [
   {
     path: 'admin/administradores/nuevo',
     component: CrearAdministrador,
+    canActivate: [rolGuard],
+    data: { rol: 'ADMIN' }
+  },
+  {
+    // HU-34: catálogo de todos los vendedores en solo lectura.
+    path: 'admin/productos',
+    component: ProductosAdmin,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },

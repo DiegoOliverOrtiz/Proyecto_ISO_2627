@@ -26,6 +26,7 @@ import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = { AuthController.class, AdministradorController.class })
@@ -47,6 +48,9 @@ class AdministradorEliminacionSeguridadTests {
 
 	@MockitoBean
 	private AdministradorService administradorService;
+
+	@MockitoBean
+	private ProductoService productoService;
 
 	@MockitoBean
 	private AuthService authService;

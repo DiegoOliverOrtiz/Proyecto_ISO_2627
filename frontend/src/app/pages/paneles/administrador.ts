@@ -64,6 +64,17 @@ import { AuthService } from '../login/auth.service';
 
           <article>
             <span class="card-label">Área activa</span>
+            <strong>Productos</strong>
+            <small>Consulta en solo lectura</small>
+
+            <a routerLink="/admin/productos">
+              Abrir productos
+              <span aria-hidden="true">→</span>
+            </a>
+          </article>
+
+          <article>
+            <span class="card-label">Área activa</span>
             <strong>Administradores</strong>
             <small>Gestión interna</small>
 

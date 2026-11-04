@@ -1,0 +1,117 @@
+<main class="admin-shell">
+  <section class="admin-content">
+    <header class="topbar">
+      <span>Gestión / Productos de los vendedores</span>
+      <a routerLink="/admin">Panel administrador</a>
+    </header>
+
+    <div class="productos-page">
+      <a class="back-link" routerLink="/admin">Volver al panel</a>
+
+      <header class="page-header">
+        <p class="eyebrow">Supervisión del catálogo</p>
+        <h1>Productos de los vendedores</h1>
+        <p class="subtitle">
+          Consulta todos los productos de ESIBuy, incluidos los desactivados que los clientes no ven.
+        </p>
+        <p class="aviso-solo-lectura" role="note">
+          <strong>Modo solo lectura.</strong>
+          Desde aquí no se pueden crear, modificar ni eliminar productos.
+        </p>
+      </header>
+
+      @if (cargando()) {
+        <p class="estado-carga" role="status">Cargando productos...</p>
+      } @else if (mensajeError()) {
+        <div class="mensaje-error" role="alert">
+          <p>{{ mensajeError() }}</p>
+          <button type="button" class="boton-reintentar" (click)="cargarProductos()">Reintentar</button>
+        </div>
+      } @else if (productos().length === 0) {
+        <p class="estado-vacio">Todavía no hay productos de ningún vendedor en ESIBuy.</p>
+      } @else {
+        <form class="filtros-catalogo" role="search" aria-label="Buscar y filtrar productos"
+          (submit)="$event.preventDefault()">
+          <div class="campo-filtro campo-busqueda">
+            <label for="busqueda-producto-admin">Buscar por nombre</label>
+            <input id="busqueda-producto-admin" type="search" autocomplete="off" [value]="terminoBusqueda()"
+              (input)="actualizarBusqueda($event)" />
+          </div>
+          <div class="campo-filtro">
+            <label for="filtro-vendedor-admin">Vendedor</label>
+            <select id="filtro-vendedor-admin" [value]="vendedorFiltro()" (change)="actualizarVendedorFiltro($event)">
+              <option value="">Todos</option>
+              @for (vendedor of vendedoresDisponibles(); track vendedor) {
+                <option [value]="vendedor">{{ vendedor }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo-filtro">
+            <label for="filtro-categoria-admin">Categoría</label>
+            <select id="filtro-categoria-admin" [value]="categoriaFiltro()" (change)="actualizarCategoriaFiltro($event)">
+              <option value="">Todas</option>
+              @for (categoria of categoriasDisponibles(); track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo-filtro">
+            <label for="filtro-estado-admin">Estado</label>
+            <select id="filtro-estado-admin" [value]="estadoFiltro()" (change)="actualizarEstadoFiltro($event)">
+              <option value="todos">Todos</option>
+              <option value="activos">Activos</option>
+              <option value="desactivados">Desactivados</option>
+            </select>
+          </div>
+          @if (hayFiltrosActivos()) {
+            <button type="button" class="boton-limpiar" (click)="limpiarFiltros()">Limpiar filtros</button>
+          }
+        </form>
+
+        <p class="resumen" role="status">
+          {{ productosFiltrados().length }} de {{ productos().length }} productos
+        </p>
+
+        @if (productosFiltrados().length === 0) {
+          <p class="estado-vacio">No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
+        } @else {
+          <ul class="lista-productos">
+            @for (producto of productosFiltrados(); track producto.id) {
+              <li class="tarjeta-producto" [class.producto-desactivado]="!producto.esVisible">
+                @if (producto.imagen) {
+                  <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre"
+                    width="320" height="180" />
+                }
+                <div class="cuerpo-producto">
+                  <span class="estado-producto" [class.estado-activo]="producto.esVisible">
+                    Estado: {{ producto.esVisible ? 'Activo' : 'Desactivado' }}
+                  </span>
+                  <h2>{{ producto.nombre }}</h2>
+                  <p class="vendedor-producto">
+                    Vendedor: <strong>{{ producto.vendedor || 'Sin vendedor' }}</strong>
+                  </p>
+                  <dl class="datos-producto">
+                    <div><dt>Categoría</dt><dd>{{ producto.categoria }}</dd></div>
+                    <div>
+                      <dt>Precio</dt>
+                      <dd>{{ producto.precio !== null ? producto.precio + ' €' : 'Sin precio' }}</dd>
+                    </div>
+                    <div><dt>Stock</dt><dd>{{ producto.stock }}</dd></div>
+                    <div><dt>Descuento</dt><dd>{{ producto.descuento }} %</dd></div>
+                    <div><dt>Descuento Premium</dt><dd>{{ producto.descuentoPremium }} %</dd></div>
+                  </dl>
+                  @if (producto.soloPremium) {
+                    <p class="etiqueta-premium">Solo premium</p>
+                  }
+                  @if (producto.descripcion) {
+                    <p class="descripcion-producto">{{ producto.descripcion }}</p>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </div>
+  </section>
+</main>
