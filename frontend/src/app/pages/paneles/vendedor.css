@@ -367,12 +367,25 @@ li.producto-desactivado h2 {
   background: #255b4d;
 }
 
-.boton-estado:focus-visible {
+.boton-eliminar {
+  padding: .55rem .9rem;
+  border: 1px solid #a63120;
+  border-radius: 4px;
+  color: #fff;
+  background: #a63120;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.boton-estado:focus-visible,
+.boton-eliminar:focus-visible {
   outline: 2px solid #d36b54;
   outline-offset: 2px;
 }
 
-.boton-estado:disabled {
+.boton-estado:disabled,
+.boton-eliminar:disabled {
   opacity: .55;
   cursor: not-allowed;
 }

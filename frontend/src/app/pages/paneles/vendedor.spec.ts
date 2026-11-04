@@ -39,6 +39,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     consultarProductosPropios: vi.fn(),
     activarProducto: vi.fn(),
     desactivarProducto: vi.fn(),
+    eliminarProducto: vi.fn(),
     crearProducto: vi.fn(),
     modificarProducto: vi.fn(),
     urlImagen: vi.fn()
@@ -50,6 +51,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     );
     productoServiceMock.activarProducto.mockReturnValue(of(void 0));
     productoServiceMock.desactivarProducto.mockReturnValue(of(void 0));
+    productoServiceMock.eliminarProducto.mockReturnValue(of(void 0));
 
     await TestBed.configureTestingModule({
       imports: [PanelVendedor],
@@ -305,7 +307,11 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       const acciones = Array.from(
         fixture.nativeElement.querySelectorAll('ul[aria-label="Mis productos"] .acciones-producto button')
       ).map((boton) => (boton as HTMLButtonElement).getAttribute('aria-label'));
-      expect(acciones).toEqual(['Modificar Ratón inalámbrico', 'Activar Ratón inalámbrico']);
+      expect(acciones).toEqual([
+        'Modificar Ratón inalámbrico',
+        'Activar Ratón inalámbrico',
+        'Eliminar Ratón inalámbrico'
+      ]);
     });
 
     it('activar un producto desde un listado filtrado actúa sobre ese producto y conserva el filtro', () => {
@@ -746,6 +752,119 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       component.formularioProducto.patchValue({ stock: 0 });
 
       expect(component.formularioProducto.controls.stock.valid).toBe(false);
+    });
+  });
+
+  describe('eliminar producto (HU-33)', () => {
+    function botonesEliminar(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('button.boton-eliminar'));
+    }
+
+    it('muestra la acción Eliminar en cada producto', () => {
+      expect(botonesEliminar().map((boton) => boton.getAttribute('aria-label'))).toEqual([
+        'Eliminar Teclado',
+        'Eliminar Ratón'
+      ]);
+    });
+
+    it('pide confirmación nombrando el producto antes de eliminarlo', () => {
+      const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      botonesEliminar()[0].click();
+
+      expect(confirmar).toHaveBeenCalledWith(expect.stringContaining('«Teclado»'));
+    });
+
+    it('elimina el producto confirmado, informa del resultado y recarga el catálogo', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.consultarProductosPropios.mockReturnValue(of([productoDesactivado]));
+
+      botonesEliminar()[0].click();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.eliminarProducto).toHaveBeenCalledWith('producto-1');
+      expect(component.mensajeExito()).toBe('Producto eliminado correctamente.');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
+      expect(fixture.nativeElement.textContent).not.toContain('Teclado');
+      expect(component.productoEliminando()).toBeNull();
+    });
+
+    it('no elimina nada si se cancela la confirmación', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      botonesEliminar()[0].click();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.eliminarProducto).not.toHaveBeenCalled();
+      expect(component.mensajeExito()).toBe('');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(1);
+    });
+
+    it('muestra el motivo del backend si el producto tiene pedidos en curso', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const motivo =
+        'No se puede eliminar el producto porque figura en pedidos en curso (pagados o enviados).';
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { error: motivo } }))
+      );
+
+      botonesEliminar()[0].click();
+      fixture.detectChanges();
+
+      expect(component.mensajeError()).toBe(motivo);
+      expect(component.mensajeExito()).toBe('');
+      expect(fixture.nativeElement.textContent).toContain(motivo);
+    });
+
+    it('muestra el mensaje del backend si el producto ya no existe y recarga el catálogo', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 404,
+              error: { error: 'No se ha encontrado el producto solicitado.' }
+            })
+        )
+      );
+
+      botonesEliminar()[0].click();
+
+      expect(component.mensajeError()).toBe('No se ha encontrado el producto solicitado.');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
+    });
+
+    it('usa un mensaje genérico si el backend no indica el motivo', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 500 }))
+      );
+
+      botonesEliminar()[0].click();
+
+      expect(component.mensajeError()).toBe('No se pudo eliminar el producto.');
+    });
+
+    it('muestra un mensaje de conexión si el servicio no responde', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 0 }))
+      );
+
+      botonesEliminar()[0].click();
+
+      expect(component.mensajeError()).toBe('No se pudo conectar con el servicio. Inténtalo de nuevo.');
+    });
+
+    it('cierra el formulario si se elimina el producto que se estaba modificando', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      component.editarProducto(productoActivo);
+      fixture.detectChanges();
+
+      component.eliminarProducto(productoActivo);
+
+      expect(component.productoEnEdicion()).toBeNull();
+      expect(component.mostrandoFormulario()).toBe(false);
     });
   });
 });
