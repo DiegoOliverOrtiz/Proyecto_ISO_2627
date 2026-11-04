@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from '../login/auth.service';
@@ -854,6 +854,31 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       botonesEliminar()[0].click();
 
       expect(component.mensajeError()).toBe('No se pudo conectar con el servicio. Inténtalo de nuevo.');
+    });
+
+    it('si no puede eliminarse, el producto sigue en el catálogo con sus acciones', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { error: 'Pedidos en curso' } }))
+      );
+
+      botonesEliminar()[0].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Teclado');
+      expect(botonesEliminar()[0].disabled).toBe(false);
+    });
+
+    it('desactiva el botón mientras se procesa la eliminación', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(new Subject<void>());
+
+      botonesEliminar()[0].click();
+      fixture.detectChanges();
+
+      expect(botonesEliminar()[0].disabled).toBe(true);
+      expect(botonesEliminar()[0].textContent?.trim()).toBe('Eliminando...');
+      expect(botonesEliminar()[1].disabled).toBe(false);
     });
 
     it('cierra el formulario si se elimina el producto que se estaba modificando', () => {

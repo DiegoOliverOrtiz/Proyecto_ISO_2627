@@ -1,14 +1,23 @@
 package es.uclm.esibuy.backend.services;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +37,9 @@ import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.exceptions.ProductoAjenoException;
 import es.uclm.esibuy.backend.exceptions.ProductoConPedidosEnCursoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
+import es.uclm.esibuy.backend.model.EstadoPedido;
+import es.uclm.esibuy.backend.model.LineaPedido;
+import es.uclm.esibuy.backend.model.Pedido;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
@@ -40,6 +52,7 @@ class ProductoServiceHU33Tests {
     private static final String ID_PRODUCTO = "producto-1";
     private static final String IMAGEN = "/product-images/teclado.png";
     private static final List<String> ESTADOS_EN_CURSO = List.of("PAGADO_COMPLETADO", "TRAMITADO_ENVIADO");
+    private static final Instant FECHA = Instant.parse("2026-11-03T10:00:00Z");
 
     @Mock
     private ProductoDAO productoDAO;
@@ -158,6 +171,168 @@ class ProductoServiceHU33Tests {
         productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
 
         verify(productoDAO).delete(producto);
+    }
+
+    // Condiciones de satisfacción: la consulta del DAO se simula sobre pedidos reales del modelo.
+
+    @Test
+    void sinPedidosElProductoSeEliminaYDejaDeAparecerEnElCatalogoDelVendedor() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        prepararEliminacion(producto, List.of());
+        when(productoDAO.findByVendedor(NOMBRE_COMERCIAL)).thenReturn(List.of());
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        verify(productoDAO).delete(producto);
+        assertTrue(productoService.consultarProductosPropios(EMAIL_VENDEDOR).isEmpty());
+    }
+
+    @Test
+    void conUnPedidoPagadoNoSeEliminaNiSeTocaLaImagen() {
+        prepararEliminacion(crearProducto(NOMBRE_COMERCIAL), List.of(pedidoCon(EstadoPedido.PAGADO_COMPLETADO)));
+
+        ProductoConPedidosEnCursoException error = assertThrows(
+                ProductoConPedidosEnCursoException.class,
+                () -> productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO));
+
+        assertEquals(
+                "No se puede eliminar el producto porque figura en pedidos en curso (pagados o enviados).",
+                error.getMessage());
+        verify(productoDAO, never()).delete(any());
+        verifyNoInteractions(productoImagenService);
+    }
+
+    @Test
+    void conUnPedidoEnviadoNoSeElimina() {
+        prepararEliminacion(crearProducto(NOMBRE_COMERCIAL), List.of(pedidoCon(EstadoPedido.TRAMITADO_ENVIADO)));
+
+        assertThrows(
+                ProductoConPedidosEnCursoException.class,
+                () -> productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO));
+
+        verify(productoDAO, never()).delete(any());
+    }
+
+    @Test
+    void unPedidoFinalizadoEntreOtrosEnCursoNoPermiteEliminar() {
+        prepararEliminacion(crearProducto(NOMBRE_COMERCIAL), List.of(
+                pedidoCon(EstadoPedido.FINALIZADO), pedidoCon(EstadoPedido.PAGADO_COMPLETADO)));
+
+        assertThrows(
+                ProductoConPedidosEnCursoException.class,
+                () -> productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO));
+    }
+
+    @Test
+    void siSoloFiguraEnPedidosFinalizadosSeEliminaConSuImagen() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        prepararEliminacion(producto, List.of(pedidoCon(EstadoPedido.FINALIZADO), pedidoCon(EstadoPedido.FINALIZADO)));
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        verify(productoDAO).delete(producto);
+        verify(productoImagenService).eliminar(IMAGEN);
+    }
+
+    @Test
+    void unCarritoEnProcesoNoImpideEliminar() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        prepararEliminacion(producto, List.of(pedidoCon(EstadoPedido.EN_PROCESO)));
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        verify(productoDAO).delete(producto);
+    }
+
+    @Test
+    void elPedidoHistoricoConservaLosDatosDelProductoEliminado() {
+        Pedido finalizado = pedidoCon(EstadoPedido.FINALIZADO);
+        prepararEliminacion(crearProducto(NOMBRE_COMERCIAL), List.of(finalizado));
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        // Solo se consulta: el pedido no se modifica ni se borra.
+        verify(pedidoDAO).existsByProductoIdAndEstadoIn(ID_PRODUCTO, ESTADOS_EN_CURSO);
+        verifyNoMoreInteractions(pedidoDAO);
+        LineaPedido linea = finalizado.getLineas().get(0);
+        assertEquals(ID_PRODUCTO, linea.productoId());
+        assertEquals("Teclado", linea.nombreProducto());
+        assertEquals(new BigDecimal("49.99"), linea.precioCompra());
+        assertEquals(EstadoPedido.FINALIZADO, finalizado.getEstado());
+    }
+
+    @Test
+    void losPedidosDeOtrosProductosNoImpidenEliminar() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        Pedido pedidoDeOtroProducto = new Pedido("pedido-2", "cliente-1",
+                List.of(new LineaPedido("otro-producto", "Ratón", new BigDecimal("9.99"), 1,
+                        "vendedor-1", NOMBRE_COMERCIAL)),
+                EstadoPedido.PAGADO_COMPLETADO, new BigDecimal("9.99"), FECHA, FECHA, null, "metodo-1");
+        prepararEliminacion(producto, List.of(pedidoDeOtroProducto));
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        verify(productoDAO).delete(producto);
+    }
+
+    @Test
+    void unProductoDeOtroVendedorNoSeEliminaAunqueNoTengaPedidos() {
+        when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(crearProducto("Otra tienda")));
+
+        ProductoAjenoException error = assertThrows(
+                ProductoAjenoException.class,
+                () -> productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO));
+
+        assertEquals("No puedes eliminar productos de otro vendedor.", error.getMessage());
+        verify(productoDAO, never()).delete(any());
+        verifyNoInteractions(productoImagenService);
+    }
+
+    @Test
+    void unProductoYaEliminadoNoSePuedeEliminarDeNuevo() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        prepararEliminacion(producto, List.of());
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ProductoNoEncontradoException.class,
+                () -> productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO));
+
+        verify(productoDAO, times(1)).delete(any());
+    }
+
+    @Test
+    void unProductoSinImagenSeEliminaSinError() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setImagen(null);
+        prepararEliminacion(producto, List.of());
+
+        productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
+
+        verify(productoDAO).delete(producto);
+        verify(productoImagenService).eliminar(null);
+    }
+
+    private void prepararEliminacion(Producto producto, List<Pedido> pedidos) {
+        when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
+        // Mismo criterio que la consulta de PedidoDAO: alguna línea del producto y estado dentro de la lista.
+        lenient().when(pedidoDAO.existsByProductoIdAndEstadoIn(eq(ID_PRODUCTO), anyList()))
+                .thenAnswer(invocacion -> {
+                    List<String> estados = invocacion.getArgument(1);
+                    return pedidos.stream().anyMatch(pedido -> estados.contains(pedido.getEstado().name())
+                            && pedido.getLineas().stream().anyMatch(l -> ID_PRODUCTO.equals(l.productoId())));
+                });
+    }
+
+    private static Pedido pedidoCon(EstadoPedido estado) {
+        return new Pedido("pedido-1", "cliente-1",
+                List.of(new LineaPedido(ID_PRODUCTO, "Teclado", new BigDecimal("49.99"), 1,
+                        "vendedor-1", NOMBRE_COMERCIAL)),
+                estado, new BigDecimal("49.99"), FECHA,
+                estado == EstadoPedido.EN_PROCESO ? null : FECHA, null, "metodo-1");
     }
 
     private Vendedor crearVendedor(boolean activado, boolean bloqueado) {
