@@ -12,6 +12,7 @@ import { Usuarios } from './pages/usuarios/usuarios';
 import { Categorias } from './pages/categorias/categorias';
 import { Administradores } from './pages/admin/administradores';
 import { CrearAdministrador } from './pages/admin/crear-administrador';
+import { ProductosAdmin } from './pages/admin/productos-admin';
 import { Perfil } from './pages/perfil/perfil';
 import { autenticadoGuard } from './pages/login/autenticado.guard';
 import { Carrito } from './pages/carrito/carrito';
@@ -22,6 +23,7 @@ import { Listas } from './pages/listas/listas';
 import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
 import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
+import { MisPedidos } from './pages/pedidos/mis-pedidos';
 
 export const routes: Routes = [
   {
@@ -101,6 +103,13 @@ export const routes: Routes = [
     data: { rol: 'ADMIN' }
   },
   {
+    // HU-34: catálogo de todos los vendedores en solo lectura.
+    path: 'admin/productos',
+    component: ProductosAdmin,
+    canActivate: [rolGuard],
+    data: { rol: 'ADMIN' }
+  },
+  {
     path: 'cliente/favoritos',
     component: Favoritos,
     canActivate: [rolGuard],
@@ -115,6 +124,12 @@ export const routes: Routes = [
   {
     path: 'cliente/checkout',
     component: Checkout,
+    canActivate: [rolGuard],
+    data: { rol: 'CLIENTE' }
+  },
+  {
+    path: 'cliente/pedidos',
+    component: MisPedidos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },

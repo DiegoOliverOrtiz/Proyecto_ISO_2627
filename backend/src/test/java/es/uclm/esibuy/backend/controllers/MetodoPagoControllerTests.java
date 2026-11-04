@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,6 +37,7 @@ import es.uclm.esibuy.backend.dto.TipoMetodoPagoResponse;
 import es.uclm.esibuy.backend.exceptions.MetodoPagoDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.MetodoPagoInvalidoException;
 import es.uclm.esibuy.backend.services.PagoSimuladoService;
+import es.uclm.esibuy.backend.exceptions.MetodoPagoNoEncontradoException;
 
 @WebMvcTest(controllers = MetodoPagoController.class)
 @Import(SecurityConfiguration.class)
@@ -194,6 +197,50 @@ class MetodoPagoControllerTests {
 		mockMvc.perform(get(URL).with(user("otro@example.com").roles("ADMIN")))
 				.andExpect(status().isForbidden());
 		mockMvc.perform(get(URL)).andExpect(status().isForbidden());
+
+		verifyNoInteractions(pagoSimuladoService);
+	}
+
+		@Test
+	void eliminaUnMetodoDePagoYDevuelve204() throws Exception {
+		mockMvc.perform(delete(URL + "/{id}", "mp-1")
+						.with(user(EMAIL).roles("CLIENTE"))
+						.with(csrf()))
+				.andExpect(status().isNoContent());
+
+		verify(pagoSimuladoService).eliminarMetodoPago(EMAIL, "mp-1");
+	}
+
+	@Test
+	void metodoInexistenteOAjeno_devuelve404ConElMotivo() throws Exception {
+		doThrow(new MetodoPagoNoEncontradoException())
+				.when(pagoSimuladoService).eliminarMetodoPago(EMAIL, "mp-ajeno");
+
+		mockMvc.perform(delete(URL + "/{id}", "mp-ajeno")
+						.with(user(EMAIL).roles("CLIENTE"))
+						.with(csrf()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.error").value("No se encontró el método de pago indicado."));
+	}
+
+	@Test
+	void sinTokenCsrf_laBajaDevuelve403() throws Exception {
+		mockMvc.perform(delete(URL + "/{id}", "mp-1").with(user(EMAIL).roles("CLIENTE")))
+				.andExpect(status().isForbidden());
+
+		verifyNoInteractions(pagoSimuladoService);
+	}
+
+	@Test
+	void vendedoresAdministradoresYAnonimos_noPuedenEliminarMetodosDePago() throws Exception {
+		for (String rol : List.of("VENDEDOR", "ADMIN")) {
+			mockMvc.perform(delete(URL + "/{id}", "mp-1")
+							.with(user("otro@example.com").roles(rol))
+							.with(csrf()))
+					.andExpect(status().isForbidden());
+		}
+		mockMvc.perform(delete(URL + "/{id}", "mp-1").with(csrf()))
+				.andExpect(status().isForbidden());
 
 		verifyNoInteractions(pagoSimuladoService);
 	}

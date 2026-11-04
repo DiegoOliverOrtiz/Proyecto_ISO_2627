@@ -245,6 +245,12 @@
                     {{ producto.esVisible ? 'Desactivar' : 'Activar' }}
                     }
                 </button>
+                <button type="button" class="boton-eliminar"
+                    [disabled]="productoEliminando() === producto.id"
+                    [attr.aria-label]="'Eliminar ' + producto.nombre"
+                    (click)="eliminarProducto(producto)">
+                    {{ productoEliminando() === producto.id ? 'Eliminando...' : 'Eliminar' }}
+                </button>
             </div>
         </li>
         }

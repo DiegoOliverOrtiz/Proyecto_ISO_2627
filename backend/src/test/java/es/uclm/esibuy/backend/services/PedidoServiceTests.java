@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,17 +17,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.MongoTransactionManager;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import es.uclm.esibuy.backend.dao.*;
+import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
+import es.uclm.esibuy.backend.exceptions.CancelacionPedidoException;
 import es.uclm.esibuy.backend.model.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +54,7 @@ class PedidoServiceTests {
     void configurar() {
         servicio = new PedidoService(new CarritoService(carritos, clientes, productos), carritos, productos,
                 metodos, vendedores, pedidos, transacciones);
-        when(transacciones.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        lenient().when(transacciones.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         cliente = new Cliente();
         cliente.setId("cliente-a");
         cliente.setActivada(true);
@@ -101,6 +107,225 @@ class PedidoServiceTests {
     }
 
     private Pedido pagar() { return servicio.realizarPedido("direccion-a", "metodo-a", operacion); }
+
+    private Pedido pedidoConEstado(String id, EstadoPedido estadoFinal) {
+        Instant fechaInicial = Instant.parse("2026-11-01T10:00:00Z");
+        Pedido pedido = new Pedido(id, "cliente-a",
+                List.of(new LineaPedido("producto-1", "Teclado", new BigDecimal("20.00"),
+                        1, "vendedor-1", "Tienda")),
+                EstadoPedido.EN_PROCESO, new BigDecimal("20.00"),
+                fechaInicial, null, null, null);
+        EstadoPedido[] camino = {
+                EstadoPedido.EN_PROCESO,
+                EstadoPedido.PAGADO_COMPLETADO,
+                EstadoPedido.TRAMITADO_ENVIADO,
+                EstadoPedido.FINALIZADO
+        };
+        for (int indice = 1; indice < camino.length; indice++) {
+            if (camino[indice - 1] == estadoFinal) {
+                break;
+            }
+            pedido = pedido.cambiarEstado(camino[indice], fechaInicial.plusSeconds(indice * 60L));
+        }
+        return pedido;
+    }
+
+    @Test
+    void consultaSeparaPedidosActivosEHistoricosYConservaSeguimientoSinEscribir() {
+        cuenta();
+        List<Pedido> delCliente = List.of(
+                pedidoConEstado("pedido-proceso", EstadoPedido.EN_PROCESO),
+                pedidoConEstado("pedido-pagado", EstadoPedido.PAGADO_COMPLETADO),
+                pedidoConEstado("pedido-enviado", EstadoPedido.TRAMITADO_ENVIADO),
+                pedidoConEstado("pedido-finalizado", EstadoPedido.FINALIZADO));
+        when(pedidos.findByClienteId("cliente-a")).thenReturn(delCliente);
+
+        List<PedidoConsultaResponse> activos = servicio.consultarPedidosActivos();
+        List<PedidoConsultaResponse> historico = servicio.consultarHistoricoPedidos();
+
+        assertEquals(List.of("pedido-proceso", "pedido-pagado", "pedido-enviado"),
+                activos.stream().map(PedidoConsultaResponse::id).toList());
+        assertEquals(List.of("pedido-finalizado"),
+                historico.stream().map(PedidoConsultaResponse::id).toList());
+        assertEquals(List.of(EstadoPedido.EN_PROCESO, EstadoPedido.PAGADO_COMPLETADO,
+                        EstadoPedido.TRAMITADO_ENVIADO, EstadoPedido.FINALIZADO),
+                historico.getFirst().historialEstados().stream()
+                        .map(cambio -> cambio.estado()).toList());
+        assertEquals(4, historico.getFirst().historialEstados().size());
+
+        verify(pedidos, times(2)).findByClienteId("cliente-a");
+        verify(pedidos, never()).save(any(Pedido.class));
+        verify(pedidos, never()).delete(any(Pedido.class));
+    }
+
+    @Test
+    void consultasSinPedidosDevuelvenListasVacias() {
+        cuenta();
+        when(pedidos.findByClienteId("cliente-a")).thenReturn(List.of());
+
+        assertTrue(servicio.consultarPedidosActivos().isEmpty());
+        assertTrue(servicio.consultarHistoricoPedidos().isEmpty());
+
+        verify(pedidos, times(2)).findByClienteId("cliente-a");
+        verify(pedidos, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void detalleDevuelveHistorialPropioYOcultaPedidoAjenoComoNoEncontrado() {
+        cuenta();
+        Pedido propio = pedidoConEstado("pedido-propio", EstadoPedido.FINALIZADO);
+        when(pedidos.findByIdAndClienteId("pedido-propio", "cliente-a"))
+                .thenReturn(Optional.of(propio));
+        when(pedidos.findByIdAndClienteId("pedido-ajeno", "cliente-a"))
+                .thenReturn(Optional.empty());
+
+        PedidoConsultaResponse detalle = servicio.consultarPedido("pedido-propio");
+
+        assertEquals("pedido-propio", detalle.id());
+        assertEquals(EstadoPedido.FINALIZADO, detalle.estado());
+        assertEquals(4, detalle.historialEstados().size());
+        assertEquals(Instant.parse("2026-11-01T10:03:00Z"),
+                detalle.historialEstados().getLast().fecha());
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> servicio.consultarPedido("pedido-ajeno"));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+
+        verify(pedidos).findByIdAndClienteId("pedido-propio", "cliente-a");
+        verify(pedidos).findByIdAndClienteId("pedido-ajeno", "cliente-a");
+        verify(pedidos, never()).findById(anyString());
+        verify(pedidos, never()).save(any(Pedido.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoPedido.class, names = {"EN_PROCESO", "PAGADO_COMPLETADO"})
+    void cancelaPedidosPermitidosYReponeStockSoloSiEstabaPagado(EstadoPedido estado) {
+        cuenta();
+        Pedido pedido = pedidoConEstado("pedido-cancelable", estado);
+        when(pedidos.findByIdAndClienteId("pedido-cancelable", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidos.cancelarPedido(
+                eq("pedido-cancelable"),
+                eq("cliente-a"),
+                eq(estado.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(1L);
+
+        PedidoConsultaResponse respuesta = servicio.cancelarPedido("pedido-cancelable");
+
+        assertEquals(EstadoPedido.CANCELADO, respuesta.estado());
+        assertEquals(EstadoPedido.CANCELADO,
+                respuesta.historialEstados().getLast().estado());
+        verify(pedidos).cancelarPedido(
+                eq("pedido-cancelable"),
+                eq("cliente-a"),
+                eq(estado.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+
+        if (estado == EstadoPedido.PAGADO_COMPLETADO) {
+            verify(productos, times(1)).reponerStock("producto-1", 1);
+        } else {
+            verify(productos, never()).reponerStock(anyString(), anyInt());
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoPedido.class, names = {
+            "TRAMITADO_ENVIADO", "FINALIZADO", "CANCELADO"
+    })
+    void rechazaPedidoEnviadoFinalizadoOYaCancelado(EstadoPedido estado) {
+        cuenta();
+        Pedido pedido = estado == EstadoPedido.CANCELADO
+                ? pedidoConEstado("pedido-no-cancelable", EstadoPedido.PAGADO_COMPLETADO)
+                        .cancelar(Instant.parse("2026-11-04T10:02:00Z"))
+                : pedidoConEstado("pedido-no-cancelable", estado);
+        when(pedidos.findByIdAndClienteId("pedido-no-cancelable", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+
+        CancelacionPedidoException error = assertThrows(
+                CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-no-cancelable"));
+
+        assertFalse(error.getMessage().isBlank());
+        verify(pedidos, never()).cancelarPedido(
+                anyString(), anyString(), anyString(), anyString(), anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pedido-ajeno", "pedido-inexistente"})
+    void pedidoAjenoOInexistenteDevuelve404SinReponerStock(String pedidoId) {
+        cuenta();
+        when(pedidos.findByIdAndClienteId(pedidoId, "cliente-a"))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException error = assertThrows(
+                ResponseStatusException.class,
+                () -> servicio.cancelarPedido(pedidoId));
+
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verify(pedidos).findByIdAndClienteId(pedidoId, "cliente-a");
+        verify(pedidos, never()).findById(anyString());
+        verify(pedidos, never()).cancelarPedido(
+                anyString(), anyString(), anyString(), anyString(), anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
+    }
+
+    @Test
+    void segundoIntentoDeCancelacionNoReponeStockOtraVez() {
+        cuenta();
+        Pedido pagado = pedidoConEstado("pedido-duplicado", EstadoPedido.PAGADO_COMPLETADO);
+        Pedido cancelado = pagado.cancelar(Instant.parse("2026-11-04T10:02:00Z"));
+        when(pedidos.findByIdAndClienteId("pedido-duplicado", "cliente-a"))
+                .thenReturn(Optional.of(pagado), Optional.of(cancelado));
+        when(pedidos.cancelarPedido(
+                eq("pedido-duplicado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(1L);
+
+        servicio.cancelarPedido("pedido-duplicado");
+        assertThrows(CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-duplicado"));
+
+        verify(pedidos, times(1)).cancelarPedido(
+                eq("pedido-duplicado"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+        verify(productos, times(1)).reponerStock("producto-1", 1);
+    }
+
+    @Test
+    void conflictoConcurrenteNoReponeStock() {
+        cuenta();
+        Pedido pedido = pedidoConEstado("pedido-concurrente", EstadoPedido.PAGADO_COMPLETADO);
+        when(pedidos.findByIdAndClienteId("pedido-concurrente", "cliente-a"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidos.cancelarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList()))
+                .thenReturn(0L);
+
+        assertThrows(CancelacionPedidoException.class,
+                () -> servicio.cancelarPedido("pedido-concurrente"));
+
+        verify(pedidos).cancelarPedido(
+                eq("pedido-concurrente"),
+                eq("cliente-a"),
+                eq(EstadoPedido.PAGADO_COMPLETADO.name()),
+                eq(EstadoPedido.CANCELADO.name()),
+                anyList());
+        verify(productos, never()).reponerStock(anyString(), anyInt());
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

@@ -2,14 +2,18 @@ package es.uclm.esibuy.backend.services;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
@@ -18,10 +22,14 @@ import es.uclm.esibuy.backend.dto.CrearProductoResponse;
 import es.uclm.esibuy.backend.dto.DatosProductoRequest;
 import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
 import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
+import es.uclm.esibuy.backend.dto.ProductoAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
+import es.uclm.esibuy.backend.exceptions.ProductoAjenoException;
+import es.uclm.esibuy.backend.exceptions.ProductoConPedidosEnCursoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
+import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -29,12 +37,22 @@ import jakarta.validation.Validator;
 
 @Service
 public class ProductoService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProductoService.class);
+    // Pedidos en curso que impiden eliminar un producto: los carritos (EN_PROCESO) y los finalizados no cuentan.
+    private static final List<String> ESTADOS_PEDIDO_EN_CURSO = List.of(
+            EstadoPedido.PAGADO_COMPLETADO.name(), EstadoPedido.TRAMITADO_ENVIADO.name());
+    // Listado del administrador: por vendedor y después por nombre, sin distinguir mayúsculas.
+    private static final Comparator<Producto> ORDEN_ADMINISTRACION = Comparator
+            .comparing(Producto::getVendedor, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+            .thenComparing(Producto::getNombre, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+
     private final ProductoDAO productoDAO;
     private final VendedorDAO vendedorDAO;
     private final CategoriaDAO categoriaDAO;
     private final Validator validar;
     private final ProductoImagenService productoImagenService;
     private final ClienteDAO clienteDAO;
+    private final PedidoDAO pedidoDAO;
 
     public ProductoService(
             ProductoDAO productoDAO,
@@ -42,13 +60,15 @@ public class ProductoService {
             CategoriaDAO categoriaDAO,
             Validator validar,
             ProductoImagenService productoImagenService,
-            ClienteDAO clienteDAO) {
+            ClienteDAO clienteDAO,
+            PedidoDAO pedidoDAO) {
         this.productoDAO = productoDAO;
         this.vendedorDAO = vendedorDAO;
         this.categoriaDAO = categoriaDAO;
         this.validar = validar;
         this.productoImagenService = productoImagenService;
         this.clienteDAO = clienteDAO;
+        this.pedidoDAO = pedidoDAO;
     }
 
     public List<ConsultarProductosResponse> consultarProductosPropios(String emailVendedor) {
@@ -57,6 +77,14 @@ public class ProductoService {
 
         return productoDAO.findByVendedor(vendedor.getNombreComercial()).stream()
                 .map(this::aConsultarProductosResponse)
+                .toList();
+    }
+
+    // HU-34: el administrador ve todos los productos (también los desactivados) en solo lectura.
+    public List<ProductoAdministracionResponse> consultarProductosParaAdministrador() {
+        return productoDAO.findAll().stream()
+                .sorted(ORDEN_ADMINISTRACION)
+                .map(this::aProductoAdministracionResponse)
                 .toList();
     }
 
@@ -177,6 +205,22 @@ public class ProductoService {
                 producto.isEsVisible(),
                 producto.getImagen(),
                 producto.isSoloPremium());
+    }
+
+    private ProductoAdministracionResponse aProductoAdministracionResponse(Producto producto) {
+        return new ProductoAdministracionResponse(
+                producto.getId(),
+                producto.getNombre(),
+                producto.getCategoria(),
+                producto.getStock(),
+                producto.getDescripcion(),
+                producto.getPrecio(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                producto.isEsVisible(),
+                producto.getImagen(),
+                producto.isSoloPremium(),
+                producto.getVendedor());
     }
 
     public CrearProductoResponse crearProducto(
@@ -342,5 +386,27 @@ public class ProductoService {
         // La desactivación es lógica: solo cambia el estado, el producto nunca se elimina.
         producto.setEsVisible(activo);
         productoDAO.actualizarVisibilidad(producto.getId(), activo);
+    }
+
+    public void eliminarProducto(String emailVendedor, String idProducto) {
+        Vendedor vendedor = obtenerVendedorActivo(
+                emailVendedor, "Solo un vendedor activo puede eliminar sus productos.");
+        Producto producto = productoDAO.findById(idProducto)
+                .orElseThrow(ProductoNoEncontradoException::new);
+        if (!vendedor.getNombreComercial().equals(producto.getVendedor())) {
+            throw new ProductoAjenoException();
+        }
+        // Los pedidos finalizados no lo impiden: sus líneas guardan los datos del producto (T-26.3).
+        if (pedidoDAO.existsByProductoIdAndEstadoIn(producto.getId(), ESTADOS_PEDIDO_EN_CURSO)) {
+            throw new ProductoConPedidosEnCursoException();
+        }
+
+        productoDAO.delete(producto);
+        // La imagen se borra después del producto: si falla, solo queda un archivo huérfano.
+        try {
+            productoImagenService.eliminar(producto.getImagen());
+        } catch (RuntimeException exception) {
+            LOGGER.warn("No se pudo limpiar la imagen de un producto eliminado.");
+        }
     }
 }
