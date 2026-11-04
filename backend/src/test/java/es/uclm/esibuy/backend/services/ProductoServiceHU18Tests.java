@@ -28,6 +28,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
@@ -67,12 +68,15 @@ class ProductoServiceHU18Tests {
     @Mock
     private ClienteDAO clienteDAO;
 
+    @Mock
+    private PedidoDAO pedidoDAO;
+
     private ProductoService productoService;
 
     @BeforeEach
     void setUp() {
         productoService = new ProductoService(
-                productoDAO, vendedorDAO, categoriaDAO, validator, productoImagenService, clienteDAO);
+                productoDAO, vendedorDAO, categoriaDAO, validator, productoImagenService, clienteDAO, pedidoDAO);
     }
 
     @Test
