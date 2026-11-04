@@ -29,6 +29,7 @@ export class PanelVendedor implements OnInit {
   readonly cargandoProductos = signal(true);
   readonly errorCatalogo = signal('');
   readonly productoCambiandoEstado = signal<string | null>(null);
+  readonly productoEliminando = signal<string | null>(null);
   readonly productoEnEdicion = signal<ProductoPropio | null>(null);
 
   // Búsqueda y filtros del catálogo (HU-15): se aplican en memoria sobre los productos del vendedor.
@@ -359,6 +360,40 @@ export class PanelVendedor implements OnInit {
           error.status === 0
             ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
             : mensajeBackend ?? 'No se pudo cambiar el estado del producto.'
+        );
+        this.cargarProductos();
+      }
+    });
+  }
+
+  eliminarProducto(producto: ProductoPropio): void {
+    const confirmado = confirm(
+      `¿Seguro que quieres eliminar «${producto.nombre}»? Se eliminará definitivamente junto con su imagen.`
+    );
+    if (!confirmado) {
+      return;
+    }
+
+    this.productoEliminando.set(producto.id);
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
+
+    this.servicioProductos.eliminarProducto(producto.id).subscribe({
+      next: () => {
+        this.productoEliminando.set(null);
+        if (this.productoEnEdicion()?.id === producto.id) {
+          this.cerrarFormulario();
+        }
+        this.mensajeExito.set('Producto eliminado correctamente.');
+        this.cargarProductos();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.productoEliminando.set(null);
+        const mensajeBackend = typeof error.error?.error === 'string' ? error.error.error : null;
+        this.mensajeError.set(
+          error.status === 0
+            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
+            : mensajeBackend ?? 'No se pudo eliminar el producto.'
         );
         this.cargarProductos();
       }

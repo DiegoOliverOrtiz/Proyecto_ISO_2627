@@ -16,6 +16,8 @@ import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
+import es.uclm.esibuy.backend.exceptions.ProductoAjenoException;
+import es.uclm.esibuy.backend.exceptions.ProductoConPedidosEnCursoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import java.util.ArrayList;
@@ -83,6 +85,19 @@ public class RegistrationExceptionHandler {
 	@ExceptionHandler(EstadoProductoException.class)
 	public ResponseEntity<ApiErrorResponse> handleProductStateConflict(EstadoProductoException exception) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(ProductoConPedidosEnCursoException.class)
+	public ResponseEntity<ApiErrorResponse> handleProductWithOrdersInProgress(
+			ProductoConPedidosEnCursoException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(ProductoAjenoException.class)
+	public ResponseEntity<ApiErrorResponse> handleForeignProduct(ProductoAjenoException exception) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 

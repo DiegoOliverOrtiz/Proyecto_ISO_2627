@@ -163,6 +163,16 @@ export class ProductoService {
     return this.cambiarEstado(id, 'desactivar');
   }
 
+  // HU-33: eliminación definitiva; el backend la rechaza si el producto tiene pedidos en curso.
+  eliminarProducto(id: string): Observable<void> {
+    return this.conTokenCsrf((cabeceras) =>
+      this.http.delete<void>(`${environment.apiUrl}/vendedor/productos/${encodeURIComponent(id)}`, {
+        withCredentials: true,
+        headers: cabeceras,
+      })
+    );
+  }
+
   private cambiarEstado(id: string, accion: 'activar' | 'desactivar'): Observable<void> {
     return this.http
       .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true })
