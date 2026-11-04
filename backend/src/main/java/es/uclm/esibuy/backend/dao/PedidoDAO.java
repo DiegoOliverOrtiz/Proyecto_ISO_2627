@@ -1,6 +1,7 @@
 package es.uclm.esibuy.backend.dao;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -14,6 +15,8 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
     @Query("{ 'lineas.vendedorId': ?0 }")
     List<Pedido> findByVendedorId(String vendedorId);
 
+    Optional<Pedido> findByIdAndClienteId(String id, String clienteId);
+
     // Cambio atómico: solo se aplica si el pedido sigue en el estado esperado y contiene productos del vendedor.
     @Query("{ '_id': ?0, 'estado': ?1, 'lineas.vendedorId': ?2 }")
     @Update("{ '$set': { 'estado': ?3 } }")
@@ -23,3 +26,5 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
     @Query(value = "{ 'lineas.productoId': ?0, 'estado': { '$in': ?1 } }", exists = true)
     boolean existsByProductoIdAndEstadoIn(String productoId, List<String> estados);
 }
+
+

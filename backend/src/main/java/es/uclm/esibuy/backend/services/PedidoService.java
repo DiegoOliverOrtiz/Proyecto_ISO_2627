@@ -10,11 +10,15 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.Set;
+
 
 import com.mongodb.MongoException;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import es.uclm.esibuy.backend.dao.CarritoDAO;
 import es.uclm.esibuy.backend.dao.MetodoPagoDAO;
@@ -30,6 +34,7 @@ import es.uclm.esibuy.backend.model.LineaPedido;
 import es.uclm.esibuy.backend.model.Pedido;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
 
 @Service
 public class PedidoService {
@@ -150,5 +155,37 @@ public class PedidoService {
             }
         }
         return transitoria;
+    }
+
+    private static final Set<EstadoPedido> ESTADOS_ACTIVOS = Set.of(
+        EstadoPedido.EN_PROCESO,
+        EstadoPedido.PAGADO_COMPLETADO,
+        EstadoPedido.TRAMITADO_ENVIADO);
+
+    public List<PedidoConsultaResponse> consultarPedidosActivos() {
+        Cliente cliente = carritoService.obtenerClienteAutenticado();
+
+        return pedidoDAO.findByClienteId(cliente.getId()).stream()
+                .filter(pedido -> ESTADOS_ACTIVOS.contains(pedido.getEstado()))
+                .map(PedidoConsultaResponse::de)
+                .toList();
+    }
+
+    public List<PedidoConsultaResponse> consultarHistoricoPedidos() {
+        Cliente cliente = carritoService.obtenerClienteAutenticado();
+
+        return pedidoDAO.findByClienteId(cliente.getId()).stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.FINALIZADO)
+                .map(PedidoConsultaResponse::de)
+                .toList();
+    }
+
+    public PedidoConsultaResponse consultarPedido(String pedidoId) {
+        Cliente cliente = carritoService.obtenerClienteAutenticado();
+
+        return pedidoDAO.findByIdAndClienteId(pedidoId, cliente.getId())
+                .map(PedidoConsultaResponse::de)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
     }
 }
