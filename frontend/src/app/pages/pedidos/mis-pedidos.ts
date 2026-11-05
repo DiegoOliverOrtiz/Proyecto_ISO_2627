@@ -38,6 +38,9 @@ export class MisPedidos implements OnInit {
   readonly pedidoCancelandoId = signal<string | null>(null);
   readonly resultadoCancelacion = signal('');
   readonly errorCancelacion = signal('');
+  readonly pedidoConfirmandoId = signal<string | null>(null);
+  readonly resultadoRecepcion = signal('');
+  readonly errorRecepcion = signal('');
 
   readonly estadosSeguimiento: EstadoPedido[] = [
     'EN_PROCESO',
@@ -146,6 +149,97 @@ export class MisPedidos implements OnInit {
 
   puedeCancelar(estado: EstadoPedido): boolean {
     return estado === 'EN_PROCESO' || estado === 'PAGADO_COMPLETADO';
+  }
+
+  puedeConfirmarRecepcion(estado: EstadoPedido): boolean {
+    return estado === 'TRAMITADO_ENVIADO';
+  }
+
+  confirmarRecepcion(pedido: PedidoCliente): void {
+    if (
+      this.pedidoConfirmandoId() !== null ||
+      this.pedidoCancelandoId() !== null ||
+      !this.puedeConfirmarRecepcion(pedido.estado)
+    ) {
+      return;
+    }
+
+    const confirmado = window.confirm(
+      `¿Confirmas que has recibido el pedido #${this.referenciaPedido(pedido.id)}?`
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    this.pedidoConfirmandoId.set(pedido.id);
+    this.resultadoRecepcion.set('');
+    this.errorRecepcion.set('');
+
+    this.servicio.confirmarRecepcion(pedido.id).subscribe({
+      next: (pedidoFinalizado) => {
+        this.pedidosActivos.update((pedidos) =>
+          pedidos.filter((actual) => actual.id !== pedidoFinalizado.id)
+        );
+
+        this.pedidosHistoricos.update((pedidos) => [
+          pedidoFinalizado,
+          ...pedidos.filter((actual) => actual.id !== pedidoFinalizado.id)
+        ]);
+
+        if (this.pedidoSeleccionado()?.id === pedidoFinalizado.id) {
+          this.pedidoSeleccionado.set(pedidoFinalizado);
+        }
+
+        this.resultadoRecepcion.set(
+          `El pedido #${this.referenciaPedido(pedidoFinalizado.id)} se ha finalizado correctamente.`
+        );
+
+        this.pedidoConfirmandoId.set(null);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorRecepcion.set(this.mensajeErrorRecepcion(error));
+        this.pedidoConfirmandoId.set(null);
+      }
+    });
+  }
+
+  private mensajeErrorRecepcion(error: HttpErrorResponse): string {
+    if (error.status === 401) {
+      void this.router.navigate(['/login'], {
+        queryParams: { motivo: 'sesion-expirada' }
+      });
+      return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
+    }
+
+    const cuerpo = error.error;
+
+    if (
+      typeof cuerpo === 'object' &&
+      cuerpo !== null &&
+      'error' in cuerpo &&
+      typeof cuerpo.error === 'string'
+    ) {
+      return cuerpo.error;
+    }
+
+    if (error.status === 404) {
+      return 'El pedido no existe o no está disponible.';
+    }
+
+    if (error.status === 409) {
+      return 'El pedido ya no está en estado enviado.';
+    }
+
+    if (error.status === 403) {
+      return 'No tienes permiso para confirmar este pedido.';
+    }
+
+    return 'No se pudo confirmar la recepción. Inténtalo de nuevo.';
   }
 
   cerrarSesion(): void {
