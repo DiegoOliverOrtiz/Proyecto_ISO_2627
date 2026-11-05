@@ -16,7 +16,7 @@ class PedidoDAOTests {
 
     private Method actualizarEstado() throws NoSuchMethodException {
         return PedidoDAO.class.getMethod(
-                "actualizarEstado", String.class, String.class, String.class, String.class);
+                "actualizarEstado", String.class, String.class, String.class, String.class, java.util.List.class);
     }
 
     @Test
@@ -29,11 +29,17 @@ class PedidoDAOTests {
     }
 
     @Test
-    void elCambioDeEstadoSoloModificaElEstado() throws Exception {
-        String actualizacion = actualizarEstado().getAnnotation(Update.class).value().replace(" ", "");
+    void elCambioDeEstadoActualizaEstadoEHistorialSinModificarOtrosDatos()
+            throws Exception {
 
-        // El resto del documento (líneas, importe, fechas, cliente) queda igual que lo ve el cliente.
-        assertEquals("{'$set':{'estado':?3}}", actualizacion);
+        String actualizacion = actualizarEstado()
+                .getAnnotation(Update.class)
+                .value()
+                .replace(" ", "");
+
+        assertEquals(
+                "{'$set':{'estado':?3,'historialEstados':?4}}",
+                actualizacion);
     }
 
     @Test

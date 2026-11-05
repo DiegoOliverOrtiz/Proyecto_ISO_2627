@@ -33,6 +33,18 @@
     <p class="mensaje-error" role="alert">{{ errorCancelacion() }}</p>
   }
 
+  @if (resultadoRecepcion()) {
+    <p class="mensaje-exito" role="status">
+      {{ resultadoRecepcion() }}
+    </p>
+  }
+
+  @if (errorRecepcion()) {
+    <p class="mensaje-error" role="alert">
+      {{ errorRecepcion() }}
+    </p>
+  }
+
   <div class="encabezado">
     <div>
       <h2>Mis compras</h2>
@@ -87,6 +99,17 @@
                 [disabled]="pedidoCancelandoId() !== null"
                 (click)="cancelarPedido(pedido)">
                 {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+              </button>
+            }
+            @if (puedeConfirmarRecepcion(pedido.estado)) {
+              <button
+                type="button"
+                class="boton-primario"
+                [disabled]="pedidoConfirmandoId() !== null"
+                (click)="confirmarRecepcion(pedido)">
+                {{ pedidoConfirmandoId() === pedido.id
+                    ? 'Confirmar recepción (procesando...)'
+                    : 'Confirmar recepción' }}
               </button>
             }
           </article>
@@ -163,6 +186,18 @@
           [disabled]="pedidoCancelandoId() !== null"
           (click)="cancelarPedido(pedido)">
           {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+        </button>
+      }
+
+      @if (puedeConfirmarRecepcion(pedido.estado)) {
+        <button
+          type="button"
+          class="boton-primario"
+          [disabled]="pedidoConfirmandoId() !== null"
+          (click)="confirmarRecepcion(pedido)">
+          {{ pedidoConfirmandoId() === pedido.id
+              ? 'Confirmar recepción (procesando...)'
+              : 'Confirmar recepción' }}
         </button>
       }
 

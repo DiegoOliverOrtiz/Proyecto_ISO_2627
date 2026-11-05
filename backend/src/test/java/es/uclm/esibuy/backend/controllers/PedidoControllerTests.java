@@ -41,6 +41,8 @@ import es.uclm.esibuy.backend.services.PedidoService;
 @WebMvcTest(PedidoController.class)
 @Import(SecurityConfiguration.class)
 class PedidoControllerTests {
+    private static final String RUTA_CONFIRMACION =
+            "/cliente/pedidos/pedido-1/confirmar-recepcion";
     private static final String OPERACION = "0746e76d-70d6-49a8-b972-f08b359474e1";
     private static final String JSON = "{\"direccionId\":\"direccion-a\",\"metodoPagoId\":\"metodo-a\","
             + "\"operacionId\":\"" + OPERACION + "\"}";
@@ -278,5 +280,109 @@ class PedidoControllerTests {
                 .with(csrf().useInvalidToken()).contentType(MediaType.APPLICATION_JSON).content(JSON))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(servicio);
+    }
+
+    @Test
+    void clienteConfirmaRecepcionConSesionYCrsfValido() throws Exception {
+        Instant fecha = Instant.parse("2026-11-05T12:00:00Z");
+
+        PedidoConsultaResponse finalizado = new PedidoConsultaResponse(
+                "pedido-1",
+                List.of(),
+                EstadoPedido.FINALIZADO,
+                new BigDecimal("20.00"),
+                fecha.minusSeconds(7200),
+                fecha.minusSeconds(3600),
+                null,
+                List.of(
+                        new CambioEstadoPedidoResponse(
+                                EstadoPedido.TRAMITADO_ENVIADO,
+                                fecha.minusSeconds(1800)),
+                        new CambioEstadoPedidoResponse(
+                                EstadoPedido.FINALIZADO, fecha)));
+
+        when(servicio.confirmarRecepcion("pedido-1"))
+                .thenReturn(finalizado);
+
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("a@example.com").roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("pedido-1"))
+                .andExpect(jsonPath("$.estado").value("FINALIZADO"))
+                .andExpect(jsonPath("$.historialEstados[1].estado")
+                        .value("FINALIZADO"));
+
+        verify(servicio).confirmarRecepcion("pedido-1");
+    }
+
+    @Test
+    void confirmarRecepcionSinCsrfDevuelve403() throws Exception {
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("a@example.com").roles("CLIENTE")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(servicio);
+    }
+
+    @Test
+    void confirmarRecepcionConCsrfIncorrectoDevuelve403() throws Exception {
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("a@example.com").roles("CLIENTE"))
+                        .with(csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(servicio);
+    }
+
+    @Test
+    void confirmarRecepcionSinAutenticacionDevuelve403() throws Exception {
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(servicio);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VENDEDOR", "ADMIN", "USER"})
+    void soloLosClientesPuedenConfirmarRecepcion(String rol)
+            throws Exception {
+
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("otro@example.com").roles(rol))
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(servicio);
+    }
+
+    @Test
+    void confirmarPedidoAjenoOInexistenteDevuelve404() throws Exception {
+        when(servicio.confirmarRecepcion("pedido-1"))
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("a@example.com").roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+
+        verify(servicio).confirmarRecepcion("pedido-1");
+    }
+
+    @Test
+    void confirmarPedidoEnEstadoIncorrectoDevuelve409() throws Exception {
+        when(servicio.confirmarRecepcion("pedido-1"))
+                .thenThrow(new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Solo se puede confirmar la recepción de un pedido enviado."));
+
+        mvc.perform(post(RUTA_CONFIRMACION)
+                        .with(user("a@example.com").roles("CLIENTE"))
+                        .with(csrf()))
+                .andExpect(status().isConflict());
+
+        verify(servicio).confirmarRecepcion("pedido-1");
     }
 }

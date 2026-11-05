@@ -90,4 +90,23 @@ export class PedidosService {
         )
       );
   }
+
+  confirmarRecepcion(pedidoId: string): Observable<PedidoCliente> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap(({ token }) =>
+          this.http.post<PedidoCliente>(
+            `${this.baseUrl}/${encodeURIComponent(pedidoId)}/confirmar-recepcion`,
+            null,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({ 'X-XSRF-TOKEN': token })
+            }
+          )
+        )
+      );
+  }
 }

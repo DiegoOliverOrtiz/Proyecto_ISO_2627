@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,6 +22,7 @@ import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.PedidoVendedorResponse;
 import es.uclm.esibuy.backend.exceptions.PedidoVendedorNoEncontradoException;
 import es.uclm.esibuy.backend.exceptions.TransicionEstadoPedidoException;
+import es.uclm.esibuy.backend.model.CambioEstadoPedido;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
 import es.uclm.esibuy.backend.model.Pedido;
@@ -328,15 +330,13 @@ class PedidosVendedorServiceTests {
         when(pedidoDAO.findById("pedido-1"))
                 .thenReturn(Optional.of(pagado))
                 .thenReturn(Optional.of(enviado));
-        when(pedidoDAO.actualizarEstado(
-                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+        when(pedidoDAO.actualizarEstado(eq("pedido-1"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_ID), eq("TRAMITADO_ENVIADO"), anyList()))
                 .thenReturn(1L);
 
         PedidoVendedorResponse respuesta = servicio.aceptarPedido(EMAIL, "pedido-1");
 
         assertEquals(EstadoPedido.TRAMITADO_ENVIADO, respuesta.estado());
-        verify(pedidoDAO).actualizarEstado(
-                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO");
+        verify(pedidoDAO).actualizarEstado(eq("pedido-1"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_ID), eq("TRAMITADO_ENVIADO"), anyList());
     }
 
     @Test
@@ -355,8 +355,7 @@ class PedidosVendedorServiceTests {
         when(pedidoDAO.findById("pedido-mixto"))
                 .thenReturn(Optional.of(mixto))
                 .thenReturn(Optional.of(enviado));
-        when(pedidoDAO.actualizarEstado(
-                "pedido-mixto", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+        when(pedidoDAO.actualizarEstado(eq("pedido-mixto"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_ID), eq("TRAMITADO_ENVIADO"), anyList()))
                 .thenReturn(1L);
 
         PedidoVendedorResponse respuesta = servicio.aceptarPedido(EMAIL, "pedido-mixto");
@@ -379,7 +378,7 @@ class PedidosVendedorServiceTests {
                 PedidoVendedorNoEncontradoException.class,
                 () -> servicio.aceptarPedido(EMAIL, "pedido-ajeno"));
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -391,7 +390,7 @@ class PedidosVendedorServiceTests {
                 PedidoVendedorNoEncontradoException.class,
                 () -> servicio.aceptarPedido(EMAIL, "no-existe"));
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -408,7 +407,7 @@ class PedidosVendedorServiceTests {
                 PedidoVendedorNoEncontradoException.class,
                 () -> servicio.aceptarPedido(EMAIL, "pedido-pendiente"));
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -425,7 +424,7 @@ class PedidosVendedorServiceTests {
                 TransicionEstadoPedidoException.class,
                 () -> servicio.aceptarPedido(EMAIL, "pedido-enviado"));
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -442,7 +441,7 @@ class PedidosVendedorServiceTests {
                 TransicionEstadoPedidoException.class,
                 () -> servicio.aceptarPedido(EMAIL, "pedido-finalizado"));
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -454,8 +453,7 @@ class PedidosVendedorServiceTests {
 
         when(pedidoDAO.findById("pedido-1"))
                 .thenReturn(Optional.of(pagado));
-        when(pedidoDAO.actualizarEstado(
-                "pedido-1", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO"))
+        when(pedidoDAO.actualizarEstado(eq("pedido-1"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_ID), eq("TRAMITADO_ENVIADO"), anyList()))
                 .thenReturn(0L);
 
         assertThrows(
@@ -520,14 +518,13 @@ class PedidosVendedorServiceTests {
 
         when(pedidoDAO.findById("pedido-mixto"))
                 .thenReturn(Optional.of(mixto));
-        when(pedidoDAO.actualizarEstado(any(), any(), any(), any()))
+        when(pedidoDAO.actualizarEstado(any(), any(), any(), any(), anyList()))
                 .thenReturn(1L);
 
         servicio.aceptarPedido(EMAIL, "pedido-mixto");
 
-        verify(pedidoDAO).actualizarEstado(
-                "pedido-mixto", "PAGADO_COMPLETADO", VENDEDOR_ID, "TRAMITADO_ENVIADO");
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), eq(OTRO_VENDEDOR), any());
+        verify(pedidoDAO).actualizarEstado(eq("pedido-mixto"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_ID), eq("TRAMITADO_ENVIADO"), anyList());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), eq(OTRO_VENDEDOR), any(), anyList());
     }
 
     @Test
@@ -557,7 +554,7 @@ class PedidosVendedorServiceTests {
         when(pedidoDAO.findById("pedido-1"))
                 .thenReturn(Optional.of(pagado))
                 .thenReturn(Optional.empty());
-        when(pedidoDAO.actualizarEstado(any(), any(), any(), any()))
+        when(pedidoDAO.actualizarEstado(any(), any(), any(), any(), anyList()))
                 .thenReturn(1L);
 
         assertThrows(
@@ -580,5 +577,52 @@ class PedidosVendedorServiceTests {
                 () -> servicio.aceptarPedido(EMAIL, "pedido-1"));
 
         verifyNoInteractions(pedidoDAO);
+    }
+
+    @Test
+    void aceptarPedidoRegistraLaTransicionEnElHistorial() {
+        Pedido pagado = pedido(
+                "pedido-historial",
+                EstadoPedido.PAGADO_COMPLETADO,
+                linea("producto-1", VENDEDOR_ID, 1, "15.00"));
+
+        Pedido enviado = pagado.cambiarEstado(
+                EstadoPedido.TRAMITADO_ENVIADO,
+                Instant.parse("2026-11-05T10:00:00Z"));
+
+        when(pedidoDAO.findById("pedido-historial"))
+                .thenReturn(Optional.of(pagado))
+                .thenReturn(Optional.of(enviado));
+
+        when(pedidoDAO.actualizarEstado(
+                eq("pedido-historial"),
+                eq("PAGADO_COMPLETADO"),
+                eq(VENDEDOR_ID),
+                eq("TRAMITADO_ENVIADO"),
+                anyList()))
+                .thenReturn(1L);
+
+        servicio.aceptarPedido(EMAIL, "pedido-historial");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CambioEstadoPedido>> captor =
+                ArgumentCaptor.forClass(List.class);
+
+        verify(pedidoDAO).actualizarEstado(
+                eq("pedido-historial"),
+                eq("PAGADO_COMPLETADO"),
+                eq(VENDEDOR_ID),
+                eq("TRAMITADO_ENVIADO"),
+                captor.capture());
+
+        List<CambioEstadoPedido> historial = captor.getValue();
+
+        assertFalse(historial.isEmpty());
+
+        assertEquals(
+                EstadoPedido.TRAMITADO_ENVIADO,
+                historial.getLast().estado());
+
+        assertNotNull(historial.getLast().fecha());
     }
 }

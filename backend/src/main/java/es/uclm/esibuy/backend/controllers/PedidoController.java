@@ -50,4 +50,10 @@ public class PedidoController {
     public PedidoConsultaResponse cancelarPedido(@PathVariable String pedidoId) {
         return pedidoService.cancelarPedido(pedidoId);
     }
+
+    @PostMapping("/{pedidoId}/confirmar-recepcion")
+    public PedidoConsultaResponse confirmarRecepcion(
+            @PathVariable String pedidoId) {
+        return pedidoService.confirmarRecepcion(pedidoId);
+    }
 }
