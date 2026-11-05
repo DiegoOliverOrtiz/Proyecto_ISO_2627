@@ -20,8 +20,13 @@ public interface PedidoDAO extends MongoRepository<Pedido, String> {
 
     // Cambio atómico: solo se aplica si el pedido sigue en el estado esperado y contiene productos del vendedor.
     @Query("{ '_id': ?0, 'estado': ?1, 'lineas.vendedorId': ?2 }")
-    @Update("{ '$set': { 'estado': ?3 } }")
-    long actualizarEstado(String pedidoId, String estadoActual, String vendedorId, String estadoNuevo);
+    @Update("{ '$set': { 'estado': ?3, 'historialEstados': ?4 } }")
+    long actualizarEstado(
+            String pedidoId,
+            String estadoActual,
+            String vendedorId,
+            String estadoNuevo,
+            List<CambioEstadoPedido> historialEstados);
 
     @Query("{ '_id': ?0, 'clienteId': ?1, 'estado': ?2 }")
     @Update("{ '$set': { 'estado': ?3, 'historialEstados': ?4 } }")

@@ -16,7 +16,7 @@ class PedidoDAOTests {
 
     private Method actualizarEstado() throws NoSuchMethodException {
         return PedidoDAO.class.getMethod(
-                "actualizarEstado", String.class, String.class, String.class, String.class);
+                "actualizarEstado", String.class, String.class, String.class, String.class, java.util.List.class);
     }
 
     @Test
