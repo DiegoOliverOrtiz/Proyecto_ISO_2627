@@ -104,6 +104,8 @@ public class SecurityConfiguration {
                                                                 HttpMethod.POST,
                                                                 "/usuarios/login",
                                                                 "/usuarios/login/2fa",
+                                                                "/usuarios/recuperar-contrasena",
+                                                                "/usuarios/recuperar-contrasena/confirmar",
                                                                 "/cliente/register",
                                                                 "/vendedor/register")
                                                 .permitAll()
