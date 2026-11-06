@@ -212,3 +212,12 @@ td {
         padding: .75rem;
     }
 }
+
+/* A6: la referencia completa no cabe en una línea a 320 px. */
+.cabecera-detalle > div {
+    min-width: 0;
+}
+
+.cabecera-detalle p {
+    overflow-wrap: anywhere;
+}

@@ -387,6 +387,72 @@ describe('PanelCliente - catálogo HU-19', () => {
     }
   });
 
+  describe('detalle de producto con teclado (C2)', () => {
+    async function abrirDetalle(): Promise<HTMLButtonElement> {
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos`)
+        .flush([crearProducto('teclado-1', false, true, 6)]);
+      fixture.detectChanges();
+
+      const verDetalle: HTMLButtonElement = fixture.nativeElement
+        .querySelector('.product-actions .secondary-button');
+      verDetalle.focus();
+      verDetalle.click();
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos/teclado-1`)
+        .flush({ ...crearProducto('teclado-1', false, true, 6), esVisible: true });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      return verDetalle;
+    }
+
+    const pulsar = (key: string, shiftKey = false): KeyboardEvent => {
+      const evento = new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true });
+      (document.activeElement ?? document.body).dispatchEvent(evento);
+      fixture.detectChanges();
+      return evento;
+    };
+
+    it('al abrirse lleva el foco al botón «Cerrar» del diálogo', async () => {
+      await abrirDetalle();
+
+      expect(document.activeElement?.classList).toContain('detail-close');
+    });
+
+    it('Escape cierra el detalle y devuelve el foco a «Ver detalle»', async () => {
+      const verDetalle = await abrirDetalle();
+
+      pulsar('Escape');
+
+      expect(fixture.nativeElement.querySelector('.product-detail')).toBeNull();
+      expect(document.activeElement).toBe(verDetalle);
+    });
+
+    it('cerrar con el botón también devuelve el foco a «Ver detalle»', async () => {
+      const verDetalle = await abrirDetalle();
+
+      fixture.nativeElement.querySelector('.detail-close').click();
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(verDetalle);
+    });
+
+    it('Tab no sale del diálogo: del último vuelve al primero y Mayús+Tab al revés', async () => {
+      await abrirDetalle();
+      const dialogo: HTMLElement = fixture.nativeElement.querySelector('.product-detail');
+      const enfocables = Array.from(dialogo.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+
+      ultimo.focus();
+      expect(pulsar('Tab').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(primero);
+
+      expect(pulsar('Tab', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(ultimo);
+    });
+  });
+
   describe('listas de productos HU-39', () => {
     const urlListas = `${environment.apiUrl}/usuarios/listas`;
     const listas: ResumenLista[] = [

@@ -119,7 +119,7 @@ export class PedidosVendedor implements OnInit {
       next: (aceptado) => {
         this.pedidoEnProceso.set(null);
         this.mensajeExito.set(
-          `Pedido ${aceptado.id} aceptado. El envío (simulado) está en curso.`
+          `Pedido #${this.referenciaPedido(aceptado.id)} aceptado. El envío (simulado) está en curso.`
         );
 
         if (this.pedidoSeleccionado()?.id === aceptado.id) {
@@ -138,6 +138,11 @@ export class PedidosVendedor implements OnInit {
         }
       }
     });
+  }
+
+  // M6: igual que en «Mis pedidos» del cliente; el detalle muestra la referencia completa.
+  referenciaPedido(id: string): string {
+    return id.slice(-6).toUpperCase();
   }
 
   textoEstado(estado: PedidoVendedor['estado']): string {

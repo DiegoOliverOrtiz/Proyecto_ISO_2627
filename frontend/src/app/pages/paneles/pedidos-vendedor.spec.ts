@@ -100,9 +100,24 @@ describe('PedidosVendedor - HU-35', () => {
     expect(servicioMock.consultarActivos).toHaveBeenCalledTimes(1);
     expect(componente.pedidos()).toEqual([pedido]);
     expect(componente.pestana()).toBe('activos');
-    expect(texto()).toContain('Pedido pedido-mixto');
+    expect(texto()).toContain('Pedido #-MIXTO');
     expect(texto()).toContain('Cliente: cliente eliminado');
     expect(texto()).toContain('5.00 €');
+  });
+
+  it('muestra la referencia corta en la lista y la completa en el detalle (M6)', () => {
+    const idLargo = 'a'.repeat(58) + 'b1c2d3';
+    servicioMock.consultarActivos.mockReturnValue(of([{ ...pedido, id: idLargo }]));
+    componente.cargarPedidos();
+    fixture.detectChanges();
+
+    const titulo: HTMLElement = fixture.nativeElement.querySelector('.tarjeta-pedido h3');
+    expect(titulo.textContent?.trim()).toBe('Pedido #B1C2D3');
+    expect(texto()).not.toContain(idLargo);
+
+    componente.pedidoSeleccionado.set({ ...pedido, id: idLargo });
+    fixture.detectChanges();
+    expect(texto()).toContain(`Referencia: ${idLargo}`);
   });
 
   it('cambia al histórico y muestra los pedidos finalizados', () => {
@@ -206,7 +221,7 @@ describe('PedidosVendedor - HU-35', () => {
     respuesta.complete();
 
     expect(componente.cargando()).toBe(false);
-    expect(texto()).toContain('Pedido pedido-mixto');
+    expect(texto()).toContain('Pedido #-MIXTO');
   });
 
   it('no sobrescribe el histórico con una respuesta antigua', () => {
@@ -282,7 +297,7 @@ describe('PedidosVendedor - HU-35', () => {
       expect(servicioMock.consultarActivos).toHaveBeenCalledTimes(2);
       expect(componente.pedidoEnProceso()).toBeNull();
       expect(texto()).toContain(
-        'Pedido pedido-mixto aceptado. El envío (simulado) está en curso.'
+        'Pedido #-MIXTO aceptado. El envío (simulado) está en curso.'
       );
       expect(componente.pedidos()).toEqual([enviado]);
     });

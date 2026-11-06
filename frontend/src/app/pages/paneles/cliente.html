@@ -375,7 +375,8 @@
 
   @if (detalle(); as producto) {
 
-  <section class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <section class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title"
+    (keydown)="manejarTecladoDetalle($event)">
 
     <!-- ===================================================
            CABECERA DEL MODAL
