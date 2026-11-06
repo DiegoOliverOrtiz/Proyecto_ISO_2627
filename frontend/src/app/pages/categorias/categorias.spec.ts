@@ -522,4 +522,18 @@ describe('Categorias', () => {
       vista.remove();
     });
   });
+  it('si falla la carga ofrece «Reintentar» y vuelve a pedir las categorías (M5)', () => {
+    fixture.detectChanges();
+    httpMock.expectOne(`${environment.apiUrl}/categorias`).flush('error', { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    const vista = fixture.nativeElement as HTMLElement;
+
+    const reintentar = vista.querySelector('.estado[role="alert"] .boton-reintentar') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+    reintentar.click();
+    httpMock.expectOne(`${environment.apiUrl}/categorias`).flush([{ id: 'c1', nombre: 'Hogar', descripcion: 'Casa' }]);
+    fixture.detectChanges();
+
+    expect(vista.querySelector('.categoria-card h2')?.textContent?.trim()).toBe('Hogar');
+  });
 });

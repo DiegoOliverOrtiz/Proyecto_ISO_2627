@@ -171,7 +171,7 @@ export class Usuarios implements OnInit {
     });
   }
 
-  private cargarUsuarios(): void {
+  cargarUsuarios(): void {
     this.cargando.set(true);
     this.mensajeError.set('');
 

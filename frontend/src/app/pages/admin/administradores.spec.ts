@@ -128,4 +128,17 @@ describe('Administradores (UI-admin)', () => {
       expect(vista.querySelectorAll('tbody tr').length).toBe(3);
     });
   });
+  it('si falla la carga ofrece «Reintentar» (M5)', () => {
+    usuariosService.consultarUsuarios.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+    fixture = TestBed.createComponent(Administradores);
+    fixture.detectChanges();
+    const vista = fixture.nativeElement as HTMLElement;
+
+    const reintentar = vista.querySelector('.estado[role="alert"] .boton-reintentar') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(vista.querySelectorAll('tbody tr').length).toBe(3);
+  });
 });

@@ -345,4 +345,19 @@ describe('Usuarios', () => {
       expect(vista.querySelector('.aviso-error')).toBeNull();
     });
   });
+  it('si falla la carga ofrece «Reintentar» y vuelve a consultar (M5)', () => {
+    usuariosServiceMock.consultarUsuarios.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+    fixture.detectChanges();
+    const vista = fixture.nativeElement as HTMLElement;
+
+    const reintentar = vista.querySelector('.estado[role="alert"] .boton-reintentar') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(usuariosServiceMock.consultarUsuarios).toHaveBeenCalledTimes(2);
+    expect(vista.querySelectorAll('tbody tr').length).toBe(1);
+  });
 });

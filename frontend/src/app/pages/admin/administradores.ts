@@ -329,7 +329,7 @@ export class Administradores implements OnInit {
       });
   }
 
-  private cargarAdministradores(): void {
+  cargarAdministradores(): void {
 
     this.cargando.set(true);
     this.mensajeError.set('');

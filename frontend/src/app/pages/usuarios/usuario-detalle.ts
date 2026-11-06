@@ -158,6 +158,13 @@ export class UsuarioDetalle implements OnInit {
 
     });
 
+  /** M5: vuelve a consultar el usuario tras un error de carga. */
+  reintentar(): void {
+    this.cargando.set(true);
+    this.mensajeError.set('');
+    this.ngOnInit();
+  }
+
   ngOnInit(): void {
 
     const id =

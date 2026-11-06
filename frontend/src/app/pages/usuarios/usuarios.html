@@ -81,6 +81,7 @@
   } @else if (mensajeError() && !listado()?.contenido?.length) {
     <div class="estado" role="alert">
       <p class="estado-titulo">{{ mensajeError() }}</p>
+        <button class="boton-secundario boton-reintentar" type="button" (click)="cargarUsuarios()">Reintentar</button>
     </div>
   } @else if (!listado()?.contenido?.length) {
     <div class="estado">

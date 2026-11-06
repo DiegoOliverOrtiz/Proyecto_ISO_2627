@@ -115,4 +115,16 @@ describe('UsuarioDetalle (UI-admin)', () => {
       expect(vista.querySelector('.aviso-exito')?.textContent).toContain('actualizado correctamente');
     });
   });
+  it('si falla la carga permite reintentar y muestra el usuario (M5)', () => {
+    const vista = crear(null);
+    const reintentar = vista.querySelector('.estado[role="alert"] .boton-reintentar') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+
+    servicio.consultarUsuario.mockReturnValue(of(base));
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(vista.querySelector('h1')?.textContent).toContain('Mario');
+    expect(vista.querySelector('.estado')).toBeNull();
+  });
 });
