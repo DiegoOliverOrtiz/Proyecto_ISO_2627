@@ -275,11 +275,12 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
     expect(comentario?.getAttribute('maxlength')).toBe('500');
     expect(boton).not.toBeNull();
 
-    puntuacion!.value = '5';
-    puntuacion!.dispatchEvent(new Event('change'));
-    comentario!.value = 'Buen producto';
-    comentario!.dispatchEvent(new Event('input'));
-    boton!.click();
+    fixture.componentInstance.formularioValoracion('producto-1')!
+      .setValue({ puntuacion: 5, comentario: 'Buen producto' });
+    expect(boton!.disabled).toBe(false);
+    fixture.nativeElement
+      .querySelector('#formulario-valoracion-producto-1')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
     http.expectOne(csrfUrl).flush({ token: 'csrf-token' });
     const peticion = http.expectOne(
