@@ -10,7 +10,7 @@ import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.serv
   selector: 'app-pagos',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
-  styleUrl: './pagos.css',
+  styleUrls: ['../tienda/tienda.css', '../tienda/gestion.css', './pagos.css'],
   templateUrl: './pagos.html'
 })
 export class Pagos {
@@ -83,6 +83,16 @@ export class Pagos {
   cancelarEdicion(): void {
     this.editando.set(false);
     this.mensajeFormulario.set('');
+  }
+
+  /** Nombre legible del tipo (B7): el del catálogo de tipos o, si no está, el código sin mayúsculas. */
+  nombreTipo(codigo: string): string {
+    const tipo = this.tipos().find((t) => t.codigo === codigo);
+    if (tipo?.nombre) {
+      return tipo.nombre;
+    }
+    const texto = (codigo ?? '').toLowerCase();
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
   }
 
   tipoSeleccionado(): string {

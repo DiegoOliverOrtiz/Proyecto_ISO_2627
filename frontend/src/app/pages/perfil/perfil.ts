@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
@@ -26,11 +27,17 @@ const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | 
   return edad >= 18 ? null : { menorDeEdad: true };
 };
 
+const NOMBRES_TIPO_USUARIO: Record<string, string> = {
+  CLIENTE: 'Cliente',
+  VENDEDOR: 'Vendedor',
+  ADMIN: 'Administrador'
+};
+
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, RouterLink],
-  styleUrl: './perfil.css',
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, RouterLink],
+  styleUrls: ['../tienda/tienda.css', './perfil.css'],
   templateUrl: './perfil.html'
 })
 export class Perfil {
@@ -58,6 +65,16 @@ export class Perfil {
   readonly codigoTOTP = signal('');
   readonly mensajeTOTP = signal('');
   readonly errorTOTP = signal('');
+
+  /** Nombre legible del tipo de usuario (el backend envía el valor del enum). */
+  nombreTipoUsuario(tipo: string): string {
+    return NOMBRES_TIPO_USUARIO[tipo] ?? tipo;
+  }
+
+  /** Inicial del avatar, siempre en mayúscula (B9). */
+  inicial(nombre: string | null | undefined): string {
+    return (nombre ?? '').trim().charAt(0).toLocaleUpperCase('es-ES');
+  }
   readonly cargandoTOTP = signal(false);
 
   readonly formulario = this.constructorFormularios.nonNullable.group({

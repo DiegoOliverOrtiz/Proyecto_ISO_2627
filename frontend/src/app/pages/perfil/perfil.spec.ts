@@ -85,7 +85,7 @@ describe('Perfil', () => {
 
     expect(componente.perfil()).toEqual(perfilCliente);
     expect(componente.cargando()).toBe(false);
-    expect(fixture.nativeElement.textContent).toContain('CLIENTE');
+    expect(fixture.nativeElement.querySelector('.profile-type').textContent.trim()).toBe('Cliente');
     expect(fixture.nativeElement.textContent).toContain('Ana García');
     expect(fixture.nativeElement.textContent).toContain('12*******');
   });
@@ -400,5 +400,66 @@ describe('Perfil', () => {
     expect(componente.perfil()?.totpActivado).toBe(false);
     expect(componente.configuracionTOTP()).toEqual(configuracion);
     expect(componente.cargandoTOTP()).toBe(false);
+  });
+  describe('jerarquía y datos legibles (A5, M13, B9)', () => {
+    it('muestra la fecha de nacimiento como dd/MM/aaaa', () => {
+      crearComponente(of({ ...perfilCliente, fechaNacimiento: '2003-11-20' }));
+
+      expect(fixture.nativeElement.textContent).toContain('20/11/2003');
+      expect(fixture.nativeElement.textContent).not.toContain('2003-11-20');
+    });
+
+    it('pone en mayúscula la inicial del avatar', () => {
+      crearComponente(of({ ...perfilAdministrador, nombre: 'ada' }));
+
+      expect(fixture.nativeElement.querySelector('.profile-placeholder').textContent.trim()).toBe('A');
+    });
+
+    it('oculta los datos del administrador que no tienen valor', () => {
+      crearComponente(of({ ...perfilAdministrador, sede: null, fechaIncorporacion: null }));
+
+      const texto = fixture.nativeElement.textContent;
+      expect(texto).not.toContain('No disponible');
+      expect(texto).not.toContain('Fecha de incorporación');
+    });
+
+    it('formatea la fecha de incorporación del administrador', () => {
+      crearComponente(of(perfilAdministrador));
+
+      expect(fixture.nativeElement.textContent).toContain('01/01/2026');
+    });
+
+    it('deja una sola acción en la cabecera y lleva direcciones y pagos junto a los datos', () => {
+      crearComponente(of(perfilCliente));
+
+      const cabecera = fixture.nativeElement.querySelector('.pagina-cabecera');
+      expect(cabecera.querySelectorAll('a, button').length).toBe(1);
+      expect(cabecera.textContent).toContain('Editar perfil');
+      const enlaces = fixture.nativeElement.querySelector('.profile-links');
+      expect(enlaces.textContent).toContain('Mis direcciones');
+      expect(enlaces.textContent).toContain('Mis métodos de pago');
+    });
+
+    it('oculta la ficha de lectura mientras se edita', () => {
+      crearComponente(of(perfilCliente));
+
+      componente.iniciarEdicion();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.profile-data')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.edit-form')).not.toBeNull();
+    });
+
+    it('explica el DNI con una ayuda bajo el campo, no con un placeholder', () => {
+      crearComponente(of(perfilCliente));
+
+      componente.iniciarEdicion();
+      fixture.detectChanges();
+
+      const dni = fixture.nativeElement.querySelector('[formcontrolname="dniNif"]') as HTMLInputElement;
+      expect(dni.getAttribute('placeholder')).toBeNull();
+      expect(fixture.nativeElement.querySelector('#' + dni.getAttribute('aria-describedby')).textContent)
+        .toContain('Déjalo vacío para conservar el actual');
+    });
   });
 });

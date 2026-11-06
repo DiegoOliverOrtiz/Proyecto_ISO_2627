@@ -10,7 +10,7 @@ import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.serv
   selector: 'app-direcciones',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
-  styleUrl: './direcciones.css',
+  styleUrls: ['../tienda/tienda.css', '../tienda/gestion.css', './direcciones.css'],
   templateUrl: './direcciones.html'
 })
 export class Direcciones {

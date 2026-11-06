@@ -29,6 +29,9 @@
   --color-warning-background: #fff2cd;
   --color-warning-border: #e3b24d;        /* decorativo, siempre con texto */
   --color-danger-background: #fbe9e6;     /* --color-danger encima da 5,81:1 */
+  --color-premium: #7a5418;               /* blanco 6,75:1; --color-premium-highlight 5,39:1 (M12) */
+  --color-premium-strong: #5a3d17;        /* inicio del degradado Premium */
+  --color-premium-highlight: #ffe3a1;     /* solo sobre --color-brand o --color-premium (A5) */
 
   font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif;
   color: var(--color-ink);
