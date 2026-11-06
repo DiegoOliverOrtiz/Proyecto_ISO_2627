@@ -269,4 +269,30 @@ describe('ProductosAdmin (HU-34)', () => {
       expect(elemento.querySelectorAll('h1').length).toBe(1);
     });
   });
+  describe('búsqueda sin tildes (M22)', () => {
+    beforeEach(() => {
+      productosAdminServiceMock.consultarProductos.mockReturnValue(of(productos));
+    });
+
+    it('«raton» encuentra «Ratón» sin distinguir mayúsculas', async () => {
+      const elemento = await crearComponente();
+
+      component.terminoBusqueda.set('RATON');
+      fixture.detectChanges();
+
+      expect(nombresMostrados(elemento)).toEqual(['Ratón']);
+    });
+
+    it('«mecánico» con tilde encuentra «Teclado mecánico» y «mecanico» también', async () => {
+      const elemento = await crearComponente();
+
+      component.terminoBusqueda.set('mecanico');
+      fixture.detectChanges();
+      expect(nombresMostrados(elemento)).toEqual(['Teclado mecánico']);
+
+      component.terminoBusqueda.set('mecánico');
+      fixture.detectChanges();
+      expect(nombresMostrados(elemento)).toEqual(['Teclado mecánico']);
+    });
+  });
 });

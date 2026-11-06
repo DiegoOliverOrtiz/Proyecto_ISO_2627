@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { ProductoService } from '../paneles/producto.service';
 import { ProductoAdministracion, ProductosAdminService } from './productos-admin.service';
 
@@ -40,15 +41,15 @@ export class ProductosAdmin implements OnInit {
     this.valoresUnicos(this.productos().map((producto) => producto.vendedor))
   );
   readonly productosFiltrados = computed(() => {
-    // El texto se compara como literal con includes(): nunca se interpreta como expresión regular.
-    const termino = this.terminoBusqueda().trim().toLowerCase();
+    // El texto se compara como literal con includes(), sin tildes ni mayúsculas (M22): nunca es una expresión regular.
+    const termino = normalizarTexto(this.terminoBusqueda().trim());
     const categoria = this.categoriaFiltro();
     const estado = this.estadoFiltro();
     const vendedor = this.vendedorFiltro();
 
     return this.productos().filter(
       (producto) =>
-        producto.nombre.toLowerCase().includes(termino) &&
+        normalizarTexto(producto.nombre).includes(termino) &&
         (categoria === '' || producto.categoria === categoria) &&
         (vendedor === '' || producto.vendedor === vendedor) &&
         (estado === 'todos' || producto.esVisible === (estado === 'activos'))
