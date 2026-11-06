@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -29,7 +30,6 @@ import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
-import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -185,11 +185,76 @@ class RegistrationSecurityTests {
                 null,
                 false);
 
-        assertThrows(
-                DuplicateRegistrationException.class,
+        InvalidRegistrationException exception = assertThrows(
+                InvalidRegistrationException.class,
                 () -> service.registrar(request));
 
+        // A21: mensaje genérico que no revela que el correo ya está en uso.
+        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
+        assertTrue(exception.getFieldErrors().isEmpty());
         verify(clienteDAO, never()).save(any(Cliente.class));
+    }
+
+    @Test
+    void sellerWithEmailAlreadyUsedGetsGenericErrorWithoutPersisting() {
+        String categoriaId = "6abe34098deff53da8a2c052";
+        when(categoriaDAO.existsById(categoriaId)).thenReturn(true);
+        when(vendedorDAO.existsByNombreComercial("Tienda Segura")).thenReturn(false);
+        when(usuarioDAO.existsByEmail("tienda@example.com")).thenReturn(true);
+
+        VendedorService service = new VendedorService(
+                vendedorDAO,
+                categoriaDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+
+        RegistroVendedorRequest request = new RegistroVendedorRequest(
+                "Ana",
+                "García",
+                "12345678Z",
+                "tienda@example.com",
+                "SeguraVenta9!",
+                categoriaId,
+                "Tienda Segura",
+                null,
+                null);
+
+        InvalidRegistrationException exception = assertThrows(
+                InvalidRegistrationException.class,
+                () -> service.registrar(request));
+
+        // A21: el mismo mensaje genérico que en el registro de cliente.
+        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
+        assertTrue(exception.getFieldErrors().isEmpty());
+        verify(vendedorDAO, never()).save(any(Vendedor.class));
+    }
+
+    @Test
+    void concurrentDuplicateEmailAlsoGetsGenericError() {
+        when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false);
+        when(clienteDAO.save(any(Cliente.class)))
+                .thenThrow(new DuplicateKeyException("uq_usuario_email"));
+
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
+
+        RegistroClienteRequest request = new RegistroClienteRequest(
+                "Ana",
+                "García",
+                LocalDate.of(1998, Month.APRIL, 12),
+                "12345678Z",
+                "ana@example.com",
+                "ClaveSegura9!",
+                null,
+                null,
+                false);
+
+        InvalidRegistrationException exception = assertThrows(
+                InvalidRegistrationException.class,
+                () -> service.registrar(request));
+
+        // A21: la carrera con el índice único tampoco revela el motivo.
+        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
+        assertTrue(exception.getFieldErrors().isEmpty());
     }
 
     @Test
@@ -268,9 +333,14 @@ class RegistrationSecurityTests {
         when(vendedorDAO.existsByNombreComercial("Tienda Segura"))
                 .thenReturn(true);
 
-        assertThrows(
-                DuplicateRegistrationException.class,
+        InvalidRegistrationException exception = assertThrows(
+                InvalidRegistrationException.class,
                 () -> service.registrar(request));
+
+        // El nombre comercial es público: se indica en su campo.
+        assertEquals(
+                List.of("Ese nombre comercial ya está en uso. Elige otro."),
+                exception.getFieldErrors().get("nombreComercial"));
     }
 
     @Test

@@ -9,7 +9,6 @@ import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
-import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Vendedor;
 
@@ -77,8 +76,11 @@ public class VendedorService {
             throw new InvalidRegistrationException();
         }
 
+        // El nombre comercial es público, así que sí se indica que está en uso.
         if (vendedorDAO.existsByNombreComercial(nombreComercial)) {
-            throw new DuplicateRegistrationException();
+            throw new InvalidRegistrationException(
+                    "nombreComercial",
+                    "Ese nombre comercial ya está en uso. Elige otro.");
         }
         soporteRegistro.comprobarCorreoDisponible(email);
 
