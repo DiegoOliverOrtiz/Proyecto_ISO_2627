@@ -164,8 +164,8 @@ class AuthControllerSecurityTests {
                 .getContentAsString();
 
         assertEquals(respuestaExistente, respuestaInexistente);
-        verify(recuperacionContrasenaService).solicitar("cliente@example.com");
-        verify(recuperacionContrasenaService).solicitar("desconocido@example.com");
+        verify(recuperacionContrasenaService).solicitar("cliente@example.com", "127.0.0.1");
+        verify(recuperacionContrasenaService).solicitar("desconocido@example.com", "127.0.0.1");
     }
 
     @Test

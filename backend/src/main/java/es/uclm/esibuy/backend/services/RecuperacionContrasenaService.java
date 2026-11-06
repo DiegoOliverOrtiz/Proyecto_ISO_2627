@@ -12,13 +12,10 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.HexFormat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.client.RestClientException;
 
 import es.uclm.esibuy.backend.dao.TokenRecuperacionDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
@@ -30,8 +27,6 @@ import es.uclm.esibuy.backend.model.Usuario;
 @Service
 public class RecuperacionContrasenaService {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(RecuperacionContrasenaService.class);
     private static final long MINUTOS_VALIDEZ_TOKEN = 30;
 
     private final UsuarioDAO usuarioDAO;
@@ -40,6 +35,8 @@ public class RecuperacionContrasenaService {
     private final PasswordPolicy passwordPolicy;
     private final SesionService sesionService;
     private final BrevoEmailService brevoEmailService;
+    private final LimiteSolicitudesRecuperacion limiteSolicitudes;
+    private final AuditoriaService auditoriaService;
     private final TransactionTemplate transaccion;
     private final String urlFrontend;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -51,6 +48,8 @@ public class RecuperacionContrasenaService {
             PasswordPolicy passwordPolicy,
             SesionService sesionService,
             BrevoEmailService brevoEmailService,
+            LimiteSolicitudesRecuperacion limiteSolicitudes,
+            AuditoriaService auditoriaService,
             MongoTransactionManager transactionManager,
             @org.springframework.beans.factory.annotation.Value(
                     "${app.frontend-url:https://localhost:4200}") String urlFrontend) {
@@ -60,12 +59,24 @@ public class RecuperacionContrasenaService {
         this.passwordPolicy = passwordPolicy;
         this.sesionService = sesionService;
         this.brevoEmailService = brevoEmailService;
+        this.limiteSolicitudes = limiteSolicitudes;
+        this.auditoriaService = auditoriaService;
         this.transaccion = new TransactionTemplate(transactionManager);
         this.urlFrontend = urlFrontend.replaceAll("/+$", "");
     }
 
-    public void solicitar(String email) {
+    public void solicitar(String email, String ip) {
         String emailNormalizado = email.trim().toLowerCase(Locale.ROOT);
+
+        // Por encima del límite no se crea token ni se envía correo, pero la
+        // respuesta al cliente es la misma para no revelar nada.
+        if (!limiteSolicitudes.permitir(emailNormalizado, ip)) {
+            auditoriaService.registrarSolicitudRecuperacion(true);
+            return;
+        }
+        // Se registra antes de buscar el usuario, exista o no.
+        auditoriaService.registrarSolicitudRecuperacion(false);
+
         Optional<Usuario> usuarioEncontrado = usuarioDAO.findByEmail(emailNormalizado);
 
         if (usuarioEncontrado.isEmpty()) {
@@ -85,12 +96,8 @@ public class RecuperacionContrasenaService {
                 calcularHash(token), usuario.getId(), caducidad));
 
         String enlace = urlFrontend + "/recuperar-contrasena?token=" + token;
-        try {
-            brevoEmailService.enviarRecuperacion(usuario.getEmail(), enlace);
-        } catch (RestClientException | IllegalStateException exception) {
-            // Se mantiene una respuesta genérica al cliente para no revelar si el correo existe.
-            LOGGER.error("No se pudo enviar el correo de recuperación mediante Brevo.", exception);
-        }
+        // Sin esperar a Brevo: el tiempo de respuesta no revela si el correo existe.
+        brevoEmailService.enviarRecuperacionEnSegundoPlano(usuario.getEmail(), enlace);
     }
 
     public void completar(String token, String nuevaContrasena) {
@@ -133,6 +140,7 @@ public class RecuperacionContrasenaService {
         });
 
         sesionService.cerrarSesiones(usuario.getEmail());
+        auditoriaService.registrarRestablecimientoContrasena(usuario.getId());
     }
 
     private String calcularHash(String token) {

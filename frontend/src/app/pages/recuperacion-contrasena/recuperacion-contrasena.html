@@ -122,7 +122,11 @@
                 id="confirm-password"
                 [type]="confirmacionOculta ? 'password' : 'text'"
                 formControlName="confirmarContrasena"
-                autocomplete="new-password"
+                autocomplete="off"
+                (paste)="$event.preventDefault()"
+                (copy)="$event.preventDefault()"
+                (cut)="$event.preventDefault()"
+                (drop)="$event.preventDefault()"
                 [attr.aria-invalid]="restablecimientoForm.hasError('passwordMismatch') && restablecimientoForm.controls.confirmarContrasena.touched"
               />
               <button
