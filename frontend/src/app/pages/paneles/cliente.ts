@@ -29,7 +29,6 @@ export class PanelCliente implements OnInit {
   readonly errorCarrito = signal('');
   readonly importeCarrito = signal<number | null>(null);
 
-  readonly cerrandoSesion = signal(false);
   readonly mensajeError = signal('');
 
   readonly productos = signal<ProductoCatalogo[]>([]);
@@ -720,44 +719,5 @@ export class PanelCliente implements OnInit {
         }
       }
     });
-  }
-
-  /* =========================================================
-     CERRAR SESIÓN
-     ========================================================= */
-
-  cerrarSesion(): void {
-
-    this.cerrandoSesion.set(true);
-
-    this.mensajeError.set('');
-
-
-    this.servicioAutenticacion
-      .cerrarSesion()
-      .subscribe({
-
-        next: () => {
-
-          this.cerrandoSesion.set(false);
-
-          void this.enrutador
-            .navigateByUrl('/login');
-        },
-
-
-        error: (
-          error: HttpErrorResponse
-        ) => {
-
-          this.cerrandoSesion.set(false);
-
-          this.mensajeError.set(
-            error.status === 0
-              ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
-              : 'No se pudo cerrar la sesión. Inténtalo de nuevo.'
-          );
-        }
-      });
   }
 }

@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import {
   PedidoVendedor,
@@ -13,7 +13,7 @@ type PestanaPedidos = 'activos' | 'historico';
 @Component({
   selector: 'app-pedidos-vendedor',
   standalone: true,
-  imports: [RouterLink, DatePipe],
+  imports: [DatePipe],
   templateUrl: './pedidos-vendedor.html',
   styleUrl: './pedidos-vendedor.css'
 })

@@ -5,34 +5,6 @@
   color: #1f2937;
 }
 
-.lists-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.25rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.lists-header h1 {
-  margin: 0;
-  color: #1d4ed8;
-}
-
-.lists-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-}
-
-.lists-header a {
-  color: #1d4ed8;
-  font-weight: 600;
-  text-decoration: none;
-}
-
 .lists-page {
   max-width: 1100px;
   margin: 0 auto;

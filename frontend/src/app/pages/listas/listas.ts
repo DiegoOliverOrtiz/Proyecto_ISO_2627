@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { ProductoService } from '../paneles/producto.service';
 import type { ProductoFavorito } from '../favoritos/favoritos.service';
@@ -25,7 +25,7 @@ function crearControlNombre(): FormControl<string> {
 @Component({
   selector: 'app-listas',
   standalone: true,
-  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [DecimalPipe, ReactiveFormsModule],
   templateUrl: './listas.html',
   styleUrl: './listas.css'
 })

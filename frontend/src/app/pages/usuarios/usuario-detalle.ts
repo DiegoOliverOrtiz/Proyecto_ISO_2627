@@ -81,13 +81,6 @@ function mayorDeEdadValidator(
     <main class="detalle-page">
 
       <header class="topbar">
-        <a
-          class="brand"
-          routerLink="/admin"
-        >
-          EsiBuy
-        </a>
-
         <span>
           Gestión /
           {{ modoEdicion() ? 'Modificar usuario' : 'Detalle' }}
@@ -620,10 +613,6 @@ function mayorDeEdadValidator(
       color: #255B4D;
       font-weight: 700;
       text-decoration: none;
-    }
-
-    .brand {
-      font-size: 1.2rem;
     }
 
     .content {

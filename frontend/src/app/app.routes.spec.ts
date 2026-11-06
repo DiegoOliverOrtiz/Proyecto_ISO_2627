@@ -15,4 +15,12 @@ describe('rutas de la aplicación (A4)', () => {
 
     expect(new Set(titulos).size).toBe(titulos.length);
   });
+
+  it('oculta la cabecera común solo en las rutas públicas', () => {
+    const sinCabecera = routes
+      .filter((ruta) => ruta.data?.['cabecera'] === false)
+      .map((ruta) => ruta.path);
+
+    expect(sinCabecera).toEqual(['', 'login', 'registro', 'recuperar-contrasena', '**']);
+  });
 });

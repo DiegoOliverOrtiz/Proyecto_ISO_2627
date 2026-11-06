@@ -84,6 +84,13 @@ describe('Perfil', () => {
     expect(fixture.nativeElement.textContent).toContain('12*******');
   });
 
+  it('no repite «Volver al panel»: esa navegación está en la cabecera común (A18)', () => {
+    crearComponente(of(perfilCliente));
+
+    expect(fixture.nativeElement.textContent).not.toContain('Volver al panel');
+    expect(fixture.nativeElement.textContent).toContain('Mis direcciones');
+  });
+
   it('requiere un codigo antes de solicitar la desactivacion de TOTP', () => {
     crearComponente(of({ ...perfilCliente, totpActivado: true }));
     componente.desactivarTOTP();
