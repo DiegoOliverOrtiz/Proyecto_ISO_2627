@@ -161,6 +161,22 @@ describe('Register', () => {
     ).toBeTruthy();
   });
 
+  it('usa la etiqueta «DNI/NIF» también en el formulario de cliente (B10)', () => {
+    const etiqueta = fixture.nativeElement.querySelector('[formControlName="dniNif"]')
+      .closest('label').querySelector('.campo-etiqueta');
+
+    expect(etiqueta.textContent.trim()).toBe('DNI/NIF');
+  });
+
+  it('no repite bajo la lista de requisitos el error de longitud de la contraseña (B10)', () => {
+    const contrasena = component.clienteForm.controls.contrasena;
+    contrasena.setValue('Ab1!');
+    contrasena.markAsTouched();
+
+    expect(component.controlError(component.clienteForm, 'contrasena'))
+      .toBe('La contraseña debe cumplir todos los requisitos indicados.');
+  });
+
   it('toggles password visibility independently for all registration password fields', () => {
     const fields = [
       'contrasena',
@@ -172,16 +188,18 @@ describe('Register', () => {
         `[formControlName="${field}"]`
       ) as HTMLInputElement;
       const toggle = input.parentElement?.querySelector(
-        '.eye-button'
+        '.boton-ojo'
       ) as HTMLButtonElement;
 
       expect(input.type).toBe('password');
       expect(toggle.type).toBe('button');
+      expect(toggle.getAttribute('aria-pressed')).toBe('false');
 
       toggle.click();
       fixture.detectChanges();
 
       expect(input.type).toBe('text');
+      expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
       toggle.click();
       fixture.detectChanges();
@@ -202,7 +220,7 @@ describe('Register', () => {
         `[formControlName="${field}"]`
       ) as HTMLInputElement;
       const toggle = input.parentElement?.querySelector(
-        '.eye-button'
+        '.boton-ojo'
       ) as HTMLButtonElement;
 
       expect(input.type).toBe('password');
