@@ -85,16 +85,19 @@ class RegistrationSecurityTests {
     @Test
     void rejectsPasswordContainingNormalizedPersonalDataOrApplicationName() {
         PasswordPolicy policy = new PasswordPolicy();
+        List<String> customerIdentifiers = List.of("Ana", "García", "ana@example.com");
+        List<String> otherIdentifiers = List.of("Otra persona");
+        List<String> sellerIdentifiers = List.of("Tienda Luna");
 
         assertThrows(
                 InvalidRegistrationException.class,
-                () -> policy.validate("GarcíaClave9!", List.of("Ana", "García", "ana@example.com")));
+                () -> policy.validate("GarcíaClave9!", customerIdentifiers));
         assertThrows(
                 InvalidRegistrationException.class,
-                () -> policy.validate("MiEsibuyClave9!", List.of("Otra persona")));
+                () -> policy.validate("MiEsibuyClave9!", otherIdentifiers));
         assertThrows(
                 InvalidRegistrationException.class,
-                () -> policy.validate("TiendaLunaClave9!", List.of("Tienda Luna")));
+                () -> policy.validate("TiendaLunaClave9!", sellerIdentifiers));
         policy.validate("ClaveSegura9!", List.of("Ana", "García", "ana@example.com", "Tienda Luna"));
     }
 
@@ -229,7 +232,7 @@ class RegistrationSecurityTests {
                 "García",
                 "12345678Z",
                 "tienda@example.com",
-                "SeguraVenta9!",
+                "V4!qZ8#nLp",
                 categoriaId,
                 "Tienda Segura",
                 null,
