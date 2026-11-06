@@ -771,9 +771,8 @@ function mayorDeEdadValidator(
     }
 
     .field input:focus {
-      outline:
-        2px solid
-        rgba(37, 91, 77, .18);
+      outline: 3px solid var(--color-focus);
+      outline-offset: 2px;
       border-color: #255B4D;
     }
 
