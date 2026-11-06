@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 import java.util.Optional;
 
@@ -41,11 +42,14 @@ class AuthServiceTests {
     @Mock
     private LoginAttemptService loginAttemptService;
 
+    @Mock
+    private AuditoriaService auditoriaService;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(usuarioDAO, passwordEncoder, loginAttemptService);
+        authService = new AuthService(usuarioDAO, passwordEncoder, loginAttemptService, auditoriaService);
     }
 
     @Test
@@ -59,6 +63,7 @@ class AuthServiceTests {
         assertSame(cliente, autenticado);
         verify(usuarioDAO).findByEmail(CORREO);
         verify(passwordEncoder).matches(CONTRASENA, HASH);
+        verifyNoInteractions(auditoriaService);
     }
 
     @Test
@@ -72,7 +77,7 @@ class AuthServiceTests {
 
         assertEquals("Correo o contraseña incorrectos.", errorCorreo.getMessage());
         assertEquals(errorCorreo.getMessage(), errorContrasena.getMessage());
-        verifyNoInteractions(usuarioDAO, passwordEncoder, loginAttemptService);
+        verifyNoInteractions(usuarioDAO, passwordEncoder, loginAttemptService, auditoriaService);
     }
 
     @Test
@@ -84,6 +89,7 @@ class AuthServiceTests {
                 () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
 
         assertEquals("Correo o contraseña incorrectos.", error.getMessage());
+        verify(auditoriaService).registrarIntentoLoginFallido();
     }
 
     @Test
@@ -98,6 +104,21 @@ class AuthServiceTests {
 
         assertEquals("Correo o contraseña incorrectos.", error.getMessage());
         verify(loginAttemptService).registrarFallo(CORREO);
+        verify(auditoriaService).registrarIntentoLoginFallido();
+    }
+
+    @Test
+    void registraBloqueoCuandoElLimiteSeAlcanzaAntesDeConsultarLaCuenta() {
+        doThrow(new LoginRateLimitException(30))
+                .when(loginAttemptService).reservarIntento("127.0.0.1", CORREO);
+
+        assertEquals(30, assertThrows(
+                LoginRateLimitException.class,
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"))
+                .getRetryAfterSeconds());
+
+        verify(auditoriaService).registrarBloqueoLogin(30);
+        verifyNoInteractions(usuarioDAO);
     }
 
     @Test
@@ -111,6 +132,8 @@ class AuthServiceTests {
                 LoginRateLimitException.class,
                 () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"))
                 .getRetryAfterSeconds());
+        verify(auditoriaService).registrarIntentoLoginFallido();
+        verify(auditoriaService).registrarBloqueoLogin(30);
     }
 
             @Test
@@ -122,7 +145,7 @@ class AuthServiceTests {
                 "test-pepper-that-is-never-used-outside-tests-123456", 4);
             when(usuarioDAO.findByEmail(CORREO)).thenReturn(Optional.of(cliente));
 
-            AuthService service = new AuthService(usuarioDAO, pepperedEncoder, loginAttemptService);
+            AuthService service = new AuthService(usuarioDAO, pepperedEncoder, loginAttemptService, auditoriaService);
             service.autenticar(CORREO, CONTRASENA, "127.0.0.1");
 
             assertTrue(cliente.getContrasenaHash().startsWith("{bcrypt-pepper-v1}"));

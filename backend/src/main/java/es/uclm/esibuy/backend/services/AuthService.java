@@ -19,14 +19,17 @@ public class AuthService {
     private final UsuarioDAO usuarioDAO;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
+    private final AuditoriaService auditoriaService;
 
     public AuthService(
             UsuarioDAO usuarioDAO,
             PasswordEncoder passwordEncoder,
-            LoginAttemptService loginAttemptService) {
+            LoginAttemptService loginAttemptService,
+            AuditoriaService auditoriaService) {
         this.usuarioDAO = usuarioDAO;
         this.passwordEncoder = passwordEncoder;
         this.loginAttemptService = loginAttemptService;
+        this.auditoriaService = auditoriaService;
     }
 
     public Usuario autenticar(String correo, String contrasena, String ip) {
@@ -35,14 +38,21 @@ public class AuthService {
         }
 
         String correoNormalizado = correo.trim().toLowerCase(Locale.ROOT);
-        loginAttemptService.reservarIntento(ip, correoNormalizado);
+        try {
+            loginAttemptService.reservarIntento(ip, correoNormalizado);
+        } catch (LoginRateLimitException exception) {
+            auditoriaService.registrarBloqueoLogin(exception.getRetryAfterSeconds());
+            throw exception;
+        }
         Usuario usuario = usuarioDAO.findByEmail(correoNormalizado)
                 .orElse(null);
 
         if (usuario == null || usuario.getContrasenaHash() == null
                 || !passwordEncoder.matches(contrasena, usuario.getContrasenaHash())) {
             int retryAfter = loginAttemptService.registrarFallo(correoNormalizado);
+            auditoriaService.registrarIntentoLoginFallido();
             if (retryAfter > 0) {
+                auditoriaService.registrarBloqueoLogin(retryAfter);
                 throw new LoginRateLimitException(retryAfter);
             }
             throw new BadCredentialsException(MENSAJE_ERROR_CREDENCIALES);
