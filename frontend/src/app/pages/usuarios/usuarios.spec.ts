@@ -280,15 +280,16 @@ describe('Usuarios', () => {
 
       expect(fila().querySelector('.chip')?.classList).toContain('chip-aviso');
       const activar = fila().querySelector('button.boton-principal') as HTMLButtonElement;
-      expect(activar.textContent?.trim()).toBe('Activar');
+      expect(activar.getAttribute('title')).toBe('Activar');
       expect(activar.getAttribute('aria-label')).toBe('Activar a Mario Muñoz');
     });
 
-    it('las acciones son enlaces y botones con texto visible y nombre accesible', () => {
+    it('las acciones son iconos con título y nombre accesible', () => {
       fixture.detectChanges();
 
       const acciones = Array.from(fila().querySelectorAll('.accion')) as HTMLElement[];
-      expect(acciones.map((a) => a.textContent?.trim())).toEqual(['Ver detalle', 'Modificar', 'Bloquear']);
+      expect(acciones.map((a) => a.getAttribute('title'))).toEqual(['Ver detalle', 'Modificar', 'Bloquear']);
+      expect(acciones.every((a) => a.classList.contains('accion-icono'))).toBe(true);
       expect(acciones.map((a) => a.getAttribute('aria-label'))).toEqual([
         'Ver detalle de Mario Muñoz',
         'Modificar a Mario Muñoz',

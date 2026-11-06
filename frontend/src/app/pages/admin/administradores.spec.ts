@@ -52,7 +52,7 @@ describe('Administradores (UI-admin)', () => {
   });
 
   const filas = () => Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
-  const botones = (fila: Element) => Array.from(fila.querySelectorAll('.user-actions .accion')).map((b) => b.textContent?.trim());
+  const botones = (fila: Element) => Array.from(fila.querySelectorAll('.user-actions .accion')).map((b) => b.getAttribute('title'));
 
   it('muestra el estado como texto en un chip, no solo como un icono', () => {
     const chips = filas().map((f) => f.querySelector('.chip')?.textContent?.trim());
@@ -62,10 +62,10 @@ describe('Administradores (UI-admin)', () => {
     expect(filas()[1].querySelector('.chip')?.classList).toContain('chip-peligro');
   });
 
-  it('las acciones son botones con texto y 44 px, con el nombre accesible de la persona', () => {
+  it('las acciones son iconos con título y con el nombre accesible de la persona', () => {
     const bloquear = filas()[2].querySelector('button.boton-peligro') as HTMLButtonElement;
 
-    expect(bloquear.textContent?.trim()).toBe('Bloquear');
+    expect(bloquear.getAttribute('title')).toBe('Bloquear');
     expect(bloquear.getAttribute('aria-label')).toBe('Bloquear a Carla Admin');
     expect(bloquear.classList).toContain('accion');
   });
