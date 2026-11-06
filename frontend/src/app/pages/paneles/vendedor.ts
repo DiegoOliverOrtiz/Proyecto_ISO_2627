@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
@@ -84,9 +84,10 @@ export class PanelVendedor implements OnInit {
     categoria: ['', Validators.required],
     descripcion: [''],
     esVisible: [true],
-    precio: [0, [Validators.required, Validators.min(0.01)]],
+    // M14: precio y stock empiezan vacíos (con placeholder), no con un 0 que hay que borrar.
+    precio: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
     // Al crear el stock debe ser mayor que 0; al modificar (HU18) se admite 0.
-    stock: [0, [Validators.required, Validators.min(1)]],
+    stock: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
     descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
@@ -119,8 +120,8 @@ export class PanelVendedor implements OnInit {
       categoria: '',
       descripcion: '',
       esVisible: true,
-      precio: 0,
-      stock: 0,
+      precio: null,
+      stock: null,
       descuento: 0,
       descuentoPremium: 0,
     });
@@ -255,7 +256,7 @@ export class PanelVendedor implements OnInit {
     }
 
     this.servicioProductos.crearProducto(
-      { ...this.formularioProducto.getRawValue(), soloPremium: this.soloPremium.value },
+      { ...this.valoresValidos(), soloPremium: this.soloPremium.value },
       this.imagenSeleccionada()
     ).subscribe({
       next: () => {
@@ -282,9 +283,15 @@ export class PanelVendedor implements OnInit {
     });
   }
 
+  /** Valores del formulario ya validado: precio y stock son obligatorios, así que no son nulos. */
+  private valoresValidos() {
+    const valores = this.formularioProducto.getRawValue();
+    return { ...valores, precio: valores.precio as number, stock: valores.stock as number };
+  }
+
   private modificarProducto(id: string): void {
     const { nombre, categoria, descripcion, precio, stock, descuento, descuentoPremium } =
-      this.formularioProducto.getRawValue();
+      this.valoresValidos();
 
     this.servicioProductos.modificarProducto(
       id,

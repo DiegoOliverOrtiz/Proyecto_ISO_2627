@@ -46,10 +46,6 @@
   resize: vertical;
 }
 
-.campo input[type='file'] {
-  padding: .55rem;
-}
-
 .vista-previa-imagen,
 .vista-previa-imagen {
   width: min(100%, 320px);
@@ -57,9 +53,49 @@
   margin-top: .25rem;
 }
 
-.campo small {
+.ayuda-campo {
+  color: var(--color-text-secondary);
+  font-size: .875rem;
+}
+
+.error-campo {
   color: var(--color-danger);
   font-size: .875rem;
+  font-weight: 600;
+}
+
+/* M14: selector de archivo con el nombre visible. El input sigue siendo accesible por teclado. */
+.campo input.archivo-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.selector-archivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+
+.selector-archivo label {
+  font-weight: 700;
+}
+
+.campo-imagen:has(input:focus-visible) .selector-archivo label {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.nombre-archivo {
+  min-width: 0;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .fila-campos {

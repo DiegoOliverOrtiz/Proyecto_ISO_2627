@@ -1024,4 +1024,67 @@ describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
 
     expect(vista.querySelectorAll('li').length).toBe(1);
   });
+  describe('formulario de producto (M14, B11)', () => {
+    function abrirFormulario(): HTMLElement {
+      const vista = crear([producto()]);
+      (vista.querySelector('button.añadirProductos') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return vista;
+    }
+
+    it('precio y stock empiezan vacíos y con placeholder, no con un 0', () => {
+      const vista = abrirFormulario();
+
+      const precio = vista.querySelector('#precio-producto') as HTMLInputElement;
+      const stock = vista.querySelector('#stock-producto') as HTMLInputElement;
+      expect(precio.value).toBe('');
+      expect(precio.placeholder).toBe('0,00');
+      expect(stock.value).toBe('');
+      expect(stock.placeholder).toBe('Unidades');
+    });
+
+    it('no deja crear el producto con precio y stock vacíos', () => {
+      abrirFormulario();
+
+      fixture.componentInstance.guardarProducto();
+
+      expect(servicioProductos.crearProducto).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.formularioProducto.controls.precio.hasError('required')).toBe(true);
+      expect(fixture.componentInstance.formularioProducto.controls.stock.hasError('required')).toBe(true);
+    });
+
+    it('la ayuda del formato de imagen va en texto secundario y el error en rojo', () => {
+      const vista = abrirFormulario();
+
+      const ayuda = vista.querySelector('#ayuda-imagen') as HTMLElement;
+      expect(ayuda.classList).toContain('ayuda-campo');
+      expect(ayuda.classList).not.toContain('error-campo');
+
+      fixture.componentInstance.errorImagen.set('La imagen debe ser PNG, JPG o GIF.');
+      fixture.detectChanges();
+      const error = vista.querySelector('.campo-imagen .error-campo') as HTMLElement;
+      expect(error.getAttribute('role')).toBe('alert');
+    });
+
+    it('muestra el nombre del fichero elegido junto al botón «Elegir imagen»', () => {
+      const vista = abrirFormulario();
+      expect(vista.querySelector('.nombre-archivo')?.textContent).toContain('Ningún archivo seleccionado');
+      expect(vista.querySelector('.selector-archivo label')?.textContent).toContain('Elegir imagen');
+
+      fixture.componentInstance.imagenSeleccionada.set(new File([new Uint8Array([1])], 'teclado.png', { type: 'image/png' }));
+      fixture.detectChanges();
+
+      expect(vista.querySelector('.nombre-archivo')?.textContent).toContain('teclado.png');
+    });
+
+    it('los errores de campo usan la clase de error (0,875 rem)', () => {
+      const vista = abrirFormulario();
+
+      fixture.componentInstance.guardarProducto();
+      fixture.detectChanges();
+
+      const errores = vista.querySelectorAll('.campo .error-campo');
+      expect(errores.length).toBeGreaterThan(0);
+    });
+  });
 });
