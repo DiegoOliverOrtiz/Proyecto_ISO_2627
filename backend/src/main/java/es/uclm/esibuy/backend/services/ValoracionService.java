@@ -1,5 +1,6 @@
 package es.uclm.esibuy.backend.services;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -10,6 +11,8 @@ import org.springframework.web.server.ResponseStatusException;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ValoracionDAO;
+import es.uclm.esibuy.backend.dto.ValoracionPublicaResponse;
+import es.uclm.esibuy.backend.dto.ValoracionesProductoResponse;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.Pedido;
@@ -91,6 +94,19 @@ public class ValoracionService {
                 .mapToInt(Valoracion::puntuacion)
                 .average()
                 .orElse(0.0);
+    }
+
+    public ValoracionesProductoResponse consultarValoracionesProducto(String productoId) {
+        validarIdentificador(productoId, "El producto es obligatorio.");
+        List<Valoracion> valoraciones = valoracionDAO.findByProductoId(productoId);
+        double media = valoraciones.stream()
+                .mapToInt(Valoracion::puntuacion)
+                .average()
+                .orElse(0.0);
+        List<ValoracionPublicaResponse> respuestas = valoraciones.stream()
+                .map(ValoracionPublicaResponse::de)
+                .toList();
+        return new ValoracionesProductoResponse(media, respuestas.size(), respuestas);
     }
 
     public boolean estaValorado(String emailCliente, String pedidoId, String productoId) {
