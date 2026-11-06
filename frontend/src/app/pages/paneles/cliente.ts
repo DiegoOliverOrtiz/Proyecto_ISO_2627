@@ -4,6 +4,7 @@ import {
   afterNextRender,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   Injector,
@@ -22,7 +23,7 @@ import { FiltrosCatalogo, ProductoCatalogo, ProductoService } from './producto.s
   selector: 'app-panel-cliente',
   standalone: true,
   imports: [DecimalPipe, RouterLink],
-  styleUrl: './cliente.css',
+  styleUrls: ['../tienda/tienda.css', './cliente.css'],
   templateUrl: './cliente.html'
 })
 export class PanelCliente implements OnInit {
@@ -74,6 +75,19 @@ export class PanelCliente implements OnInit {
       .sort((a, b) => a.localeCompare(b, 'es'))
   );
 
+  // A14: en móvil los filtros (salvo el buscador) se pliegan tras «Filtros (n)».
+  readonly filtrosAbiertos = signal(false);
+  readonly numeroFiltrosAvanzados = computed(() =>
+    [this.categoriaFiltro() !== '', this.precioMinimo() !== '', this.precioMaximo() !== '',
+      this.disponibilidadFiltro() !== 'todos', this.soloFavoritos()].filter(Boolean).length
+  );
+
+  // M7: productos cuya imagen no se ha podido cargar; se muestra un marcador neutro.
+  readonly imagenesFallidas = signal<ReadonlySet<string>>(new Set<string>());
+
+  // M22: la búsqueda por nombre se aplica al escribir, con 300 ms de espera.
+  private temporizadorBusqueda: ReturnType<typeof setTimeout> | undefined;
+
   readonly hayFiltrosActivos = computed(() =>
     this.terminoBusqueda().trim() !== '' ||
     this.categoriaFiltro() !== '' ||
@@ -105,6 +119,11 @@ export class PanelCliente implements OnInit {
   /* =========================================================
      INICIALIZACIÓN
      ========================================================= */
+
+  constructor() {
+    // No deja búsquedas pendientes si se abandona la pantalla.
+    inject(DestroyRef).onDestroy(() => this.cancelarBusquedaPendiente());
+  }
 
   ngOnInit(): void {
     this.cargarProductos({});
@@ -176,6 +195,27 @@ export class PanelCliente implements OnInit {
     this.terminoBusqueda.set(
       (evento.target as HTMLInputElement).value
     );
+
+    this.cancelarBusquedaPendiente();
+    this.temporizadorBusqueda = setTimeout(() => {
+      this.temporizadorBusqueda = undefined;
+      this.aplicarFiltros(new Event('submit'));
+    }, 300);
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos.update(abiertos => !abiertos);
+  }
+
+  marcarImagenFallida(idProducto: string): void {
+    this.imagenesFallidas.update(ids => new Set([...ids, idProducto]));
+  }
+
+  private cancelarBusquedaPendiente(): void {
+    if (this.temporizadorBusqueda !== undefined) {
+      clearTimeout(this.temporizadorBusqueda);
+      this.temporizadorBusqueda = undefined;
+    }
   }
 
 
@@ -216,6 +256,7 @@ export class PanelCliente implements OnInit {
 
   limpiarFiltros(): void {
 
+    this.cancelarBusquedaPendiente();
     this.terminoBusqueda.set('');
     this.categoriaFiltro.set('');
     this.precioMinimo.set('');
@@ -230,6 +271,7 @@ export class PanelCliente implements OnInit {
   aplicarFiltros(evento: Event): void {
 
     evento.preventDefault();
+    this.cancelarBusquedaPendiente();
 
     const minimo =
       this.precioMinimo().trim();
