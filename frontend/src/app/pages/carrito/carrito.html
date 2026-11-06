@@ -1,8 +1,3 @@
-<header class="cart-header">
-  <a class="brand" routerLink="/cliente" aria-label="ESIBuy, catálogo"><span>ESI<span>Buy</span></span></a>
-  <a class="catalog-link" routerLink="/cliente">Catálogo</a>
-  <a class="profile-link" routerLink="/perfil" aria-label="Abrir mi perfil"><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path></svg>Mi perfil</a>
-</header>
 <main class="cart-page" [attr.aria-busy]="cargando() || operacion() !== null">
   <div class="cart-heading"><div><p class="eyebrow">Compra segura en ESIBuy</p><h1>Mi carrito</h1><p>Revisa tus productos, modifica cantidades o elimínalos.</p></div><a class="back-link" routerLink="/cliente">Volver al catálogo</a></div>
   @if (error()) { <p class="status-message error-message" role="alert">{{ error() }}</p> }

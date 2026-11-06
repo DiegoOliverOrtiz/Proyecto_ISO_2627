@@ -1,53 +1,6 @@
 <header class="client-header">
-  <h1>ESIBuy</h1>
-
-  <h2>Catálogo de productos</h2>
-
-  <nav class="client-actions" aria-label="Cuenta">
-    <a class="profile-link" routerLink="/perfil" aria-label="Abrir mi perfil">
-      <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <circle cx="12" cy="8" r="3.5"></circle>
-
-        <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
-      </svg>
-
-      Mi perfil
-    </a>
-
-    <button class="logout-button" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
-      {{
-      cerrandoSesion()
-      ? 'Cerrando sesión...'
-      : 'Cerrar sesión'
-      }}
-    </button>
-  </nav>
+  <h1>Catálogo de productos</h1>
 </header>
-
-<nav class="client-actions favorites-access" aria-label="Acceso a favoritos">
-  <a class="profile-link" routerLink="/cliente/pedidos">
-    Mis pedidos
-  </a>
-  <a class="profile-link" routerLink="/cliente/favoritos">
-    <span aria-hidden="true">♥</span>
-    Mis favoritos
-  </a>
-  <a class="profile-link" routerLink="/listas">
-    <span aria-hidden="true">☰</span>
-    Mis listas
-  </a>
-</nav>
-
-<nav class="client-actions cart-access" aria-label="Carrito de compra">
-  <a class="profile-link" routerLink="/carrito">
-    <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M3 3h2l2.4 11.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6"></path>
-      <circle cx="10" cy="20" r="1"></circle>
-      <circle cx="19" cy="20" r="1"></circle>
-    </svg>
-    Mi carrito
-  </a>
-</nav>
 
 
 <main class="client-content">

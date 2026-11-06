@@ -1,31 +1,8 @@
 <header class="cabecera">
-  <a routerLink="/cliente" class="marca">ESIBuy</a>
-
   <h1>Mis pedidos</h1>
-
-  <nav aria-label="Navegación del cliente">
-    <a class="enlace-cliente" routerLink="/cliente">Catálogo</a>
-    <a class="enlace-cliente" routerLink="/perfil" aria-label="Abrir mi perfil">
-      <svg class="icono-perfil" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <circle cx="12" cy="8" r="3.5"></circle>
-        <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
-      </svg>
-      Mi perfil
-    </a>
-    <button
-      class="logout-button"
-      type="button"
-      [disabled]="cerrandoSesion()"
-      (click)="cerrarSesion()">
-      {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
-    </button>
-  </nav>
 </header>
 
 <main class="contenedor">
-  @if (errorSesion()) {
-    <p class="mensaje-error" role="alert">{{ errorSesion() }}</p>
-  }
   @if (resultadoCancelacion()) {
     <p class="mensaje-exito" role="status">{{ resultadoCancelacion() }}</p>
   }

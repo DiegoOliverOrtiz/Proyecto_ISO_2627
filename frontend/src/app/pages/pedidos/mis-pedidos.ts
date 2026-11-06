@@ -3,7 +3,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 
-import { AuthService } from '../login/auth.service';
 import {
   CambioEstadoPedido,
   EstadoPedido,
@@ -20,11 +19,8 @@ import {
 })
 export class MisPedidos implements OnInit {
   private readonly servicio = inject(PedidosService);
-  private readonly servicioAutenticacion = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly cerrandoSesion = signal(false);
-  readonly errorSesion = signal('');
   readonly pedidosActivos = signal<PedidoCliente[]>([]);
   readonly pedidosHistoricos = signal<PedidoCliente[]>([]);
   readonly cargandoActivos = signal(false);
@@ -240,24 +236,6 @@ export class MisPedidos implements OnInit {
     }
 
     return 'No se pudo confirmar la recepción. Inténtalo de nuevo.';
-  }
-
-  cerrarSesion(): void {
-    this.cerrandoSesion.set(true);
-    this.errorSesion.set('');
-
-    this.servicioAutenticacion.cerrarSesion().subscribe({
-      next: () => {
-        this.cerrandoSesion.set(false);
-        void this.router.navigateByUrl('/login');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cerrandoSesion.set(false);
-        this.errorSesion.set(error.status === 0
-          ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
-          : 'No se pudo cerrar la sesión. Inténtalo de nuevo.');
-      }
-    });
   }
 
   textoEstado(estado: EstadoPedido): string {
