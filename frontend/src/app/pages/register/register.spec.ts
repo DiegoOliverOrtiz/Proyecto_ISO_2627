@@ -280,7 +280,7 @@ describe('Register', () => {
     ).toContain('revisará tus datos');
   });
 
-  it('shows the safe backend message when registration conflicts', () => {
+  it('shows a generic message that does not reveal an existing email (A21)', () => {
     component.clienteForm.setValue({
       nombre: 'Ada',
       apellidos: 'Lovelace',
@@ -300,19 +300,21 @@ describe('Register', () => {
       'https://localhost:8443/cliente/register'
     ).flush(
       {
-        error: 'Ya existe un usuario con los datos únicos indicados.'
+        error: 'Los datos introducidos no son correctos.',
+        errores: {}
       },
       {
-        status: 409,
-        statusText: 'Conflict'
+        status: 400,
+        statusText: 'Bad Request'
       }
     );
 
     fixture.detectChanges();
 
-    expect(
-      fixture.nativeElement.querySelector('output').textContent
-    ).toContain('Ya existe un usuario');
+    const message = fixture.nativeElement.querySelector('output').textContent;
+    expect(message).toContain('Los datos introducidos no son correctos.');
+    expect(message).not.toContain('existe');
+    expect(message).not.toContain('correo');
   });
 
   it('shows all field errors returned together by the backend', () => {

@@ -12,13 +12,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
-import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
 @Service
 public class SoporteRegistro {
+	// Mensaje genérico: el registro no debe revelar si un correo ya está en uso.
+	public static final String MENSAJE_DATOS_NO_VALIDOS = "Los datos introducidos no son correctos.";
+
 	private final UsuarioDAO usuarioDAO;
 	private final PasswordEncoder codificadorContrasena;
 	private final PasswordPolicy politicaContrasenas;
@@ -60,7 +62,7 @@ public class SoporteRegistro {
 
 	public void comprobarCorreoDisponible(String correo) {
 		if (usuarioDAO.existsByEmail(correo)) {
-			throw new DuplicateRegistrationException();
+			throw new InvalidRegistrationException(MENSAJE_DATOS_NO_VALIDOS);
 		}
 	}
 
@@ -72,7 +74,7 @@ public class SoporteRegistro {
 		try {
 			return operacion.get();
 		} catch (DuplicateKeyException excepcion) {
-			throw new DuplicateRegistrationException();
+			throw new InvalidRegistrationException(MENSAJE_DATOS_NO_VALIDOS);
 		}
 	}
 }
