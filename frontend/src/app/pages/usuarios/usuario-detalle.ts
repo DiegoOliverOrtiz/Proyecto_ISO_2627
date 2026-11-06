@@ -653,7 +653,7 @@ function mayorDeEdadValidator(
 
     .eyebrow {
       margin: 0 0 .35rem;
-      color: #D36B54;
+      color: var(--color-danger);
       font-size: .8rem;
       font-weight: 700;
       letter-spacing: .08em;

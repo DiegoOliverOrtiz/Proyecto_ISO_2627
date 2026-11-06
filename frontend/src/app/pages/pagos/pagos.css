@@ -1,7 +1,7 @@
 :host { display: block; min-height: 100vh; color: #173042; background: linear-gradient(135deg, #f4f7f8 0%, #e8f0ed 55%, #f9f3ef 100%); }
 .profile-page { width: min(920px, calc(100% - 4rem)); margin: 0 auto; padding: 3rem 0 4rem; }
 .profile-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
-.eyebrow { margin: 0 0 .4rem; color: #c65339; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.eyebrow { margin: 0 0 .4rem; color: var(--color-danger); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 h1 { margin: 0 0 .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.05; letter-spacing: -.03em; }
 .profile-header p:not(.eyebrow) { margin: 0; color: #536a75; font-size: 1.05rem; }
 .header-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
@@ -14,7 +14,7 @@ h1 { margin: 0 0 .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem); 
 .card-actions { display: flex; gap: .75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #d9e3e6; }
 
 .primary-button, .secondary-button { padding: .75rem 1rem; border-radius: 7px; font: inherit; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; text-decoration: none; display: inline-block; text-align: center; }
-.primary-button { border: 1px solid #c65339; color: #fff; background: #c65339; }
+.primary-button { border: 1px solid var(--color-accent); color: #fff; background: var(--color-accent); }
 .primary-button:hover { background: #a9412d; transform: translateY(-1px); }
 .primary-button:disabled, .secondary-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 .secondary-button { border: 1px solid #255b4d; color: #255b4d; background: rgba(255, 255, 255, .9); }

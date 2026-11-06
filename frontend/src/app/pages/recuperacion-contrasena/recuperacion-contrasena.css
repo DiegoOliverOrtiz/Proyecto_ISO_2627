@@ -5,7 +5,7 @@
   --paper: #fbfcf8;
   --leaf: #245f52;
   --leaf-light: #e6f0e9;
-  --coral: #d36b50;
+  --coral: var(--color-accent);
   display: block;
   min-height: 100vh;
   color: var(--ink);
@@ -253,7 +253,7 @@ a:focus-visible {
   border-radius: 7px;
   color: white;
   background: var(--coral);
-  box-shadow: 0 3px 0 #b9553e;
+  box-shadow: 0 3px 0 var(--color-accent-hover);
   font: inherit;
   font-weight: 800;
   text-align: center;

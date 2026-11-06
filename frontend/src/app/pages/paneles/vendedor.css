@@ -88,9 +88,9 @@
 
 .añadirProductos,
 .boton-primario {
-  border: 1px solid #d36b54;
+  border: 1px solid var(--color-accent);
   color: #fff;
-  background: #d36b54;
+  background: var(--color-accent);
   box-shadow: 0 2px 0 #a94b39;
   transition: background .18s ease;
 }

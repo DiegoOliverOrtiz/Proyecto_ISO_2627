@@ -55,7 +55,7 @@
 
 .eyebrow {
   margin: 0 0 .35rem;
-  color: #D36B54;
+  color: var(--color-danger);
   font-size: .8rem;
   font-weight: 700;
   letter-spacing: .08em;
@@ -86,8 +86,8 @@ h1 {
 }
 
 .primary-button {
-  border: 1px solid #D36B54;
-  background: #D36B54;
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
   color: #fff;
 }
 
@@ -104,7 +104,7 @@ h1 {
 }
 
 .primary-button:hover:not(:disabled) {
-  background: #BC5943;
+  background: var(--color-accent-hover);
 }
 
 
@@ -262,7 +262,7 @@ textarea:focus {
 
 .categoria-label {
   margin: 0 0 .35rem;
-  color: #D36B54;
+  color: var(--color-danger);
   font-size: .75rem;
   font-weight: 700;
   letter-spacing: .08em;

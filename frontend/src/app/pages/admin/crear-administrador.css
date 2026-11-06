@@ -6,7 +6,7 @@
 .form-page { width: min(720px, calc(100% - 4rem)); margin: 0 auto; padding: 2rem 0 3rem; }
 .back-link { color: #255B4D; font-weight: 600; text-decoration: none; }
 .page-header { margin: 1.75rem 0 1.5rem; }
-.eyebrow { margin: 0 0 .35rem; color: #D36B54; font-size: .8rem; font-weight: 700; text-transform: uppercase; }
+.eyebrow { margin: 0 0 .35rem; color: var(--color-danger); font-size: .8rem; font-weight: 700; text-transform: uppercase; }
 h1 { margin: 0; color: #173042; font-size: clamp(1.8rem, 4vw, 2.8rem); }
 .subtitle { color: #536a75; }
 .admin-form { padding: 2rem; border: 1px solid #D9E3DE; background: #fff; box-shadow: 0 5px 18px rgba(37, 91, 77, .05); border-top: 4px solid #255B4D; }
@@ -25,7 +25,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear, input[typ
 .field-error { color: #A63C28; font-size: .8rem; margin-top: 4px; font-weight: 500; }
 
 /* Requisitos de la contraseña (importado del registro) */
-.password-requirements { padding: 12px 14px; border: 1px solid #d36b50; border-radius: 12px; color: #d36b50; background: #e9f0f3; font-family: "Trebuchet MS", "Segoe UI", sans-serif; font-size: 14px; margin-top: 8px; }
+.password-requirements { padding: 12px 14px; border: 1px solid #d36b50; border-radius: 12px; color: var(--color-danger); background: #e9f0f3; font-family: "Trebuchet MS", "Segoe UI", sans-serif; font-size: 14px; margin-top: 8px; }
 .password-requirements > strong { display: block; margin-bottom: 8px; font-size: 16px; }
 .password-requirements ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
 .password-requirements li { display: flex; align-items: center; gap: 9px; color: #d92727; }
@@ -33,9 +33,9 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear, input[typ
 .requirement-status { display: inline-grid; width: 25px; height: 25px; flex: 0 0 25px; place-items: center; border-radius: 50%; color: #d92727; background: #f4e5e7; font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
 .password-requirements li.met .requirement-status { color: #18833b; background: #dcefe4; }
 
-.submit-button { width: 100%; min-height: 46px; margin-top: 2rem; border: none; background: #D36B54; color: white; font-weight: 700; font-size: 1rem; border-radius: 4px; cursor: pointer; }
+.submit-button { width: 100%; min-height: 46px; margin-top: 2rem; border: none; background: var(--color-accent); color: white; font-weight: 700; font-size: 1rem; border-radius: 4px; cursor: pointer; }
 .submit-button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.submit-button:hover:not(:disabled) { background: #BC5943; }
+.submit-button:hover:not(:disabled) { background: var(--color-accent-hover); }
 .feedback.error { padding: 1rem; margin-bottom: 1.5rem; background: #FFF1F0; color: #A63C28; border-left: 4px solid #A63C28; font-weight: 600; }
 @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .field-wide { grid-column: auto; } }

@@ -90,7 +90,7 @@
 
 .eyebrow {
   margin: 0 0 .4rem;
-  color: #c65339;
+  color: var(--color-danger);
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .12em;
@@ -177,7 +177,7 @@
 .quantity-selector button:last-child { border-left: 1px solid #d9e3e6; }
 
 .logout-button { border: 1px solid #c74b35; color: #a63120; background: #fff; cursor: pointer; }
-.primary-button { border: 1px solid #d36b54; color: #fff; background: #d36b54; box-shadow: 0 2px 0 #b9553e; cursor: pointer; }
+.primary-button { border: 1px solid var(--color-accent); color: #fff; background: var(--color-accent); box-shadow: 0 2px 0 #b9553e; cursor: pointer; }
 .primary-button:hover:not(:disabled) { background: #b9553e; }
 
 .cart-summary { padding: 1.25rem; }

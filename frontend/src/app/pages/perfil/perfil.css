@@ -1,7 +1,7 @@
 .profile-page { width: min(920px, calc(100% - 4rem)); margin: 0 auto; padding: 3rem 0 4rem; }
 :host { display: block; min-height: 100vh; color: #173042; background: linear-gradient(135deg, #f4f7f8 0%, #e8f0ed 55%, #f9f3ef 100%); }
 .profile-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
-.eyebrow { margin: 0 0 .4rem; color: #c65339; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.eyebrow { margin: 0 0 .4rem; color: var(--color-danger); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.05; letter-spacing: -.03em; }
 .profile-header p:not(.eyebrow) { color: #536a75; font-size: 1.05rem; }
@@ -11,7 +11,7 @@ h1 { margin-bottom: .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem
 .profile-image, .profile-placeholder { width: 4.5rem; height: 4.5rem; border-radius: 50%; }
 .profile-image { object-fit: cover; border: 4px solid #dcebe5; box-shadow: 0 5px 14px rgba(37, 91, 77, .16); }
 .profile-placeholder { display: grid; place-items: center; color: #fff; background: linear-gradient(145deg, #255b4d, #2c8a74); font-size: 1.7rem; font-weight: 800; box-shadow: 0 5px 14px rgba(37, 91, 77, .2); }
-.profile-type { margin-bottom: .35rem; color: #c65339; font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
+.profile-type { margin-bottom: .35rem; color: var(--color-danger); font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
 h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .profile-data, .account-benefits-grid, .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .profile-data { margin: 0; padding-top: 1.75rem; }
@@ -40,7 +40,7 @@ h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .account-type-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 .account-benefits { margin-top: 1rem; padding: 1.25rem; border: 1px solid #dce7e5; border-radius: 12px; background: #f8fbfa; }
 .account-benefits-heading { margin-bottom: 1rem; }
-.account-benefits-heading .account-type-kicker { color: #c65339; }
+.account-benefits-heading .account-type-kicker { color: var(--color-danger); }
 .account-benefits-heading h3 { margin: 0 0 .3rem; color: #173042; font-size: 1.2rem; }
 .account-benefits-heading > p:last-child { margin-bottom: 0; color: #536a75; }
 .benefit-item { display: flex; gap: .75rem; padding: 1rem; border: 1px solid #dce7e5; border-radius: 9px; background: #fff; }
@@ -48,7 +48,7 @@ h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .benefit-positive { border-color: #b7d8ca; }
 .benefit-positive .benefit-mark { background: #2f806b; }
 .benefit-warning { border-color: #ead2a0; }
-.benefit-warning .benefit-mark { background: #c65339; }
+.benefit-warning .benefit-mark { background: var(--color-accent); }
 .benefit-item h4 { margin: 0 0 .45rem; color: #173042; }
 .benefit-item p { margin: 0 0 .35rem; color: #536a75; font-size: .9rem; line-height: 1.4; }
 .benefit-item p:last-child { margin-bottom: 0; }
@@ -74,7 +74,7 @@ dd { margin: 0; color: #173042; font-size: 1.02rem; overflow-wrap: anywhere; }
 .error-message { color: #a63120; }
 .status-message + .secondary-button { margin-top: 1rem; }
 .header-actions, .form-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
-.primary-button { padding: .75rem 1rem; border: 1px solid #c65339; border-radius: 7px; color: #fff; background: #c65339; font: inherit; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; }
+.primary-button { padding: .75rem 1rem; border: 1px solid var(--color-accent); border-radius: 7px; color: #fff; background: var(--color-accent); font: inherit; font-weight: 700; cursor: pointer; transition: background .18s ease, transform .18s ease; }
 .primary-button:hover { background: #a9412d; transform: translateY(-1px); }
 .primary-button:disabled, .secondary-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 .success-message { margin-bottom: 1rem; color: #205b49; border-color: #a8d1c1; background: #edf8f3; }
