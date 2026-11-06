@@ -142,4 +142,85 @@ describe('PedidosService - HU-38 confirmar recepción', () => {
 
     expect(codigoError).toBe(409);
   });
+
+  it('consulta si el producto del pedido ya está valorado', () => {
+    let resultado: { valorada: boolean } | undefined;
+
+    servicio.consultarEstadoValoracion('pedido-1', 'producto-1')
+      .subscribe(estado => resultado = estado);
+
+    const peticion = http.expectOne(
+      `${baseUrl}/pedido-1/productos/producto-1/valoraciones/estado`
+    );
+
+    expect(peticion.request.method).toBe('GET');
+    expect(peticion.request.withCredentials).toBe(true);
+
+    peticion.flush({ valorada: true });
+
+    expect(resultado).toEqual({ valorada: true });
+  });
+
+  it('obtiene el token CSRF antes de enviar una valoración', () => {
+    let resultado: { id: string; puntuacion: number } | undefined;
+
+    servicio.valorarProducto('pedido-1', 'producto-1', {
+      puntuacion: 5,
+      comentario: 'Buen producto'
+    }).subscribe(valoracion => resultado = valoracion);
+
+    const csrf = http.expectOne(csrfUrl);
+    expect(csrf.request.method).toBe('GET');
+    expect(csrf.request.withCredentials).toBe(true);
+    http.expectNone(
+      `${baseUrl}/pedido-1/productos/producto-1/valoraciones`
+    );
+
+    csrf.flush({ token: 'token-seguro' });
+
+    const peticion = http.expectOne(
+      `${baseUrl}/pedido-1/productos/producto-1/valoraciones`
+    );
+
+    expect(peticion.request.method).toBe('POST');
+    expect(peticion.request.withCredentials).toBe(true);
+    expect(peticion.request.headers.get('X-XSRF-TOKEN'))
+      .toBe('token-seguro');
+    expect(peticion.request.body).toEqual({
+      puntuacion: 5,
+      comentario: 'Buen producto'
+    });
+
+    const respuesta = {
+      id: 'valoracion-1',
+      pedidoId: 'pedido-1',
+      productoId: 'producto-1',
+      puntuacion: 5,
+      comentario: 'Buen producto'
+    };
+    peticion.flush(respuesta);
+
+    expect(resultado).toEqual(respuesta);
+  });
+
+  it('no envía la valoración si falla la obtención del CSRF', () => {
+    let codigoError: number | undefined;
+
+    servicio.valorarProducto('pedido-1', 'producto-1', {
+      puntuacion: 4,
+      comentario: ''
+    }).subscribe({
+      error: error => codigoError = error.status
+    });
+
+    http.expectOne(csrfUrl).flush(
+      { error: 'Error al obtener CSRF' },
+      { status: 500, statusText: 'Internal Server Error' }
+    );
+
+    http.expectNone(
+      `${baseUrl}/pedido-1/productos/producto-1/valoraciones`
+    );
+    expect(codigoError).toBe(500);
+  });
 });
