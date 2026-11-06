@@ -57,7 +57,7 @@
         <article class="tarjeta-pedido">
             <div class="cabecera-pedido">
                 <div>
-                    <h3>Pedido {{ pedido.id }}</h3>
+                    <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                     <p>
                         Fecha:
                         {{ (pedido.fechaPago || pedido.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}
