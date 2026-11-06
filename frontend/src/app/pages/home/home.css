@@ -1,7 +1,7 @@
 :host { display: block; min-height: 100vh; color: #173042; background: #f4f7f8; }
 
 .header { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.1rem clamp(1rem, 5vw, 4.5rem); border-bottom: 1px solid #d9e3e6; background: rgba(255, 255, 255, .9); box-shadow: 0 4px 18px rgba(23, 48, 66, .04); }
-.logo { color: #255b4d; font-family: 'Playfair Display', Georgia, serif; font-size: 1.7rem; font-weight: 600; letter-spacing: -.03em; }
+.logo { color: #255b4d; text-decoration: none; font-family: 'Playfair Display', Georgia, serif; font-size: 1.7rem; font-weight: 600; letter-spacing: -.03em; }
 .navigation { display: flex; gap: 1.7rem; margin-left: auto; }
 .navigation a { position: relative; color: #536a75; font-size: .92rem; font-weight: 600; text-decoration: none; }
 .navigation a::after { position: absolute; right: 0; bottom: -.45rem; left: 0; height: 2px; background: #d36b54; content: ''; transform: scaleX(0); transition: transform .18s ease; }
