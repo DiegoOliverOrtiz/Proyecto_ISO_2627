@@ -41,6 +41,7 @@ class RecuperacionContrasenaServiceTests {
     private static final String EMAIL = "cliente@example.com";
     private static final String TOKEN = "token-valido-para-recuperacion";
     private static final String NUEVA_CONTRASENA = "NuevaClaveSegura9!";
+    private static final String IP = "203.0.113.5";
 
     @Mock
     private UsuarioDAO usuarioDAO;
@@ -54,6 +55,8 @@ class RecuperacionContrasenaServiceTests {
     private SesionService sesionService;
     @Mock
     private BrevoEmailService brevoEmailService;
+    @Mock
+    private LimiteSolicitudesRecuperacion limiteSolicitudes;
     @Mock
     private MongoTransactionManager transactionManager;
 
@@ -69,8 +72,10 @@ class RecuperacionContrasenaServiceTests {
                 passwordPolicy,
                 sesionService,
                 brevoEmailService,
+                limiteSolicitudes,
                 transactionManager,
                 "https://esibuy.example/");
+        lenient().when(limiteSolicitudes.permitir(anyString(), anyString())).thenReturn(true);
         lenient().when(transactionManager.getTransaction(any()))
                 .thenReturn(new SimpleTransactionStatus());
         cliente = new Cliente();
@@ -82,10 +87,21 @@ class RecuperacionContrasenaServiceTests {
     void solicitarNormalizaCorreoYNoDaIndicacionDeSiNoExiste() {
         when(usuarioDAO.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
-        servicio.solicitar("  CLIENTE@EXAMPLE.COM ");
+        servicio.solicitar("  CLIENTE@EXAMPLE.COM ", IP);
 
+        verify(limiteSolicitudes).permitir(EMAIL, IP);
         verify(usuarioDAO).findByEmail(EMAIL);
         verifyNoInteractions(tokenDAO, brevoEmailService);
+    }
+
+    @Test
+    void solicitarPorEncimaDelLimiteNoCreaTokenNiEnviaCorreo() {
+        when(limiteSolicitudes.permitir(EMAIL, IP)).thenReturn(false);
+
+        servicio.solicitar(EMAIL, IP);
+
+        // A24: misma respuesta (no lanza nada), pero sin efectos.
+        verifyNoInteractions(usuarioDAO, tokenDAO, brevoEmailService);
     }
 
     @Test
@@ -95,7 +111,7 @@ class RecuperacionContrasenaServiceTests {
                 ArgumentCaptor.forClass(TokenRecuperacion.class);
         Instant antes = Instant.now();
 
-        servicio.solicitar(EMAIL);
+        servicio.solicitar(EMAIL, IP);
 
         Instant despues = Instant.now();
         verify(tokenDAO).deleteByUsuarioId("usuario-1");

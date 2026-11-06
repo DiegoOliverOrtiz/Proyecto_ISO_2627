@@ -35,6 +35,7 @@ public class RecuperacionContrasenaService {
     private final PasswordPolicy passwordPolicy;
     private final SesionService sesionService;
     private final BrevoEmailService brevoEmailService;
+    private final LimiteSolicitudesRecuperacion limiteSolicitudes;
     private final TransactionTemplate transaccion;
     private final String urlFrontend;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -46,6 +47,7 @@ public class RecuperacionContrasenaService {
             PasswordPolicy passwordPolicy,
             SesionService sesionService,
             BrevoEmailService brevoEmailService,
+            LimiteSolicitudesRecuperacion limiteSolicitudes,
             MongoTransactionManager transactionManager,
             @org.springframework.beans.factory.annotation.Value(
                     "${app.frontend-url:https://localhost:4200}") String urlFrontend) {
@@ -55,12 +57,20 @@ public class RecuperacionContrasenaService {
         this.passwordPolicy = passwordPolicy;
         this.sesionService = sesionService;
         this.brevoEmailService = brevoEmailService;
+        this.limiteSolicitudes = limiteSolicitudes;
         this.transaccion = new TransactionTemplate(transactionManager);
         this.urlFrontend = urlFrontend.replaceAll("/+$", "");
     }
 
-    public void solicitar(String email) {
+    public void solicitar(String email, String ip) {
         String emailNormalizado = email.trim().toLowerCase(Locale.ROOT);
+
+        // Por encima del límite no se crea token ni se envía correo, pero la
+        // respuesta al cliente es la misma para no revelar nada.
+        if (!limiteSolicitudes.permitir(emailNormalizado, ip)) {
+            return;
+        }
+
         Optional<Usuario> usuarioEncontrado = usuarioDAO.findByEmail(emailNormalizado);
 
         if (usuarioEncontrado.isEmpty()) {

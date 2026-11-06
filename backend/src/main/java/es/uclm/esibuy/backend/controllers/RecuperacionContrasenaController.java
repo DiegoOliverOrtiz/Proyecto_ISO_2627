@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import es.uclm.esibuy.backend.dto.CompletarRecuperacionRequest;
 import es.uclm.esibuy.backend.dto.SolicitarRecuperacionRequest;
 import es.uclm.esibuy.backend.services.RecuperacionContrasenaService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -26,8 +27,9 @@ public class RecuperacionContrasenaController {
 
     @PostMapping("/recuperar-contrasena")
     public ResponseEntity<Map<String, String>> solicitar(
-            @Valid @RequestBody SolicitarRecuperacionRequest request) {
-        servicio.solicitar(request.email());
+            @Valid @RequestBody SolicitarRecuperacionRequest request,
+            HttpServletRequest peticion) {
+        servicio.solicitar(request.email(), peticion.getRemoteAddr());
         return ResponseEntity.accepted().body(Map.of(
                 "message",
                 "Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña."));
