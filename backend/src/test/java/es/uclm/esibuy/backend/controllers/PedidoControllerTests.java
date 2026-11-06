@@ -37,6 +37,7 @@ import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.LineaPedido;
 import es.uclm.esibuy.backend.model.Pedido;
 import es.uclm.esibuy.backend.services.PedidoService;
+import es.uclm.esibuy.backend.services.ValoracionService;
 
 @WebMvcTest(PedidoController.class)
 @Import(SecurityConfiguration.class)
@@ -48,6 +49,7 @@ class PedidoControllerTests {
             + "\"operacionId\":\"" + OPERACION + "\"}";
     @Autowired private MockMvc mvc;
     @MockitoBean private PedidoService servicio;
+    @MockitoBean private ValoracionService valoracionService;
 
     private MockHttpServletRequestBuilder peticion(String contenido) {
         return post("/cliente/pedidos").with(user("a@example.com").roles("CLIENTE"))

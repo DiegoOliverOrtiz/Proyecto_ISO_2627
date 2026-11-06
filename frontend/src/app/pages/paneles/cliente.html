@@ -562,6 +562,36 @@
 
       </div>
 
+      <section class="detail-reviews" aria-labelledby="reviews-title" aria-live="polite">
+        <h3 id="reviews-title">Valoraciones</h3>
+        @if (cargandoValoraciones()) {
+        <p role="status">Cargando valoraciones...</p>
+        } @else if (errorValoraciones()) {
+        <p role="alert">{{ errorValoraciones() }}</p>
+        <button type="button" class="secondary-button"
+          (click)="cargarValoracionesProducto(producto.id)">
+          Reintentar
+        </button>
+        } @else if (valoraciones(); as resumen) {
+        @if (resumen.total === 0) {
+        <p>Aún no hay valoraciones para este producto.</p>
+        } @else {
+        <p class="reviews-summary">
+          Media: <strong>{{ resumen.media | number:'1.1-1' }} / 5</strong>
+          · {{ resumen.total }} {{ resumen.total === 1 ? 'valoración' : 'valoraciones' }}
+        </p>
+        <ul class="reviews-list">
+          @for (valoracion of resumen.valoraciones; track $index) {
+          <li>
+            <p class="review-score">{{ valoracion.puntuacion }} / 5 · Cliente verificado</p>
+            <p>{{ valoracion.comentario || 'Sin comentario.' }}</p>
+          </li>
+          }
+        </ul>
+        }
+        }
+      </section>
+
 
       <button
         type="button"

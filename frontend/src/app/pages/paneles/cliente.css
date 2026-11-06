@@ -397,6 +397,48 @@
   gap: .6rem;
 }
 
+.detail-reviews {
+  padding: .8rem;
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  background: var(--color-paper);
+}
+
+.detail-reviews h3,
+.detail-reviews p {
+  margin-top: 0;
+}
+
+.reviews-summary,
+.review-score {
+  color: var(--color-leaf);
+}
+
+.reviews-list {
+  display: grid;
+  gap: .75rem;
+  max-height: 12rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.reviews-list li {
+  padding-top: .6rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.reviews-list li p:last-child {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.review-score {
+  margin-bottom: .25rem;
+  font-weight: 700;
+}
+
 .detail-data-card {
   display: grid;
   gap: .2rem;

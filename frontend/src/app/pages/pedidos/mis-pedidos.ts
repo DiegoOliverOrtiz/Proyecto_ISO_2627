@@ -1,6 +1,20 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+  signal
+} from '@angular/core';
+import {
+  FormControl,
+  FormGroup,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
@@ -11,10 +25,16 @@ import {
   PedidosService
 } from './pedidos.service';
 
+interface EstadoValoracionUI {
+  estado: 'cargando' | 'pendiente' | 'valorada' | 'error';
+  mensaje: string;
+  enviando: boolean;
+}
+
 @Component({
   selector: 'app-mis-pedidos',
   standalone: true,
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
   templateUrl: './mis-pedidos.html',
   styleUrls: ['../tienda/tienda.css', './mis-pedidos.css']
 })
@@ -33,12 +53,22 @@ export class MisPedidos implements OnInit {
   readonly pedidoSeleccionado = signal<PedidoCliente | null>(null);
   readonly cargandoDetalle = signal(false);
   readonly errorDetalle = signal('');
+  readonly productoValoracionAbierta = signal<string | null>(null);
   readonly pedidoCancelandoId = signal<string | null>(null);
   readonly resultadoCancelacion = signal('');
   readonly errorCancelacion = signal('');
   readonly pedidoConfirmandoId = signal<string | null>(null);
   readonly resultadoRecepcion = signal('');
   readonly errorRecepcion = signal('');
+  readonly estadosValoracion = signal<Record<string, EstadoValoracionUI>>({});
+  private readonly formulariosValoracion = new Map<
+    string,
+    FormGroup<{
+      puntuacion: FormControl<number>;
+      comentario: FormControl<string>;
+    }>
+  >();
+  private readonly formularioBuilder = inject(NonNullableFormBuilder);
 
   readonly estadosSeguimiento: EstadoPedido[] = [
     'EN_PROCESO',
@@ -46,6 +76,13 @@ export class MisPedidos implements OnInit {
     'TRAMITADO_ENVIADO',
     'FINALIZADO'
   ];
+
+  readonly estrellas = [1, 2, 3, 4, 5];
+
+  @ViewChild('detallePedido')
+  set detallePedido(elemento: ElementRef<HTMLElement> | undefined) {
+    elemento?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   ngOnInit(): void {
     this.cargarPedidos();
@@ -88,6 +125,7 @@ export class MisPedidos implements OnInit {
 
   abrirDetalle(pedidoId: string): void {
     this.pedidoSeleccionado.set(null);
+    this.productoValoracionAbierta.set(null);
     this.cargandoDetalle.set(true);
     this.errorDetalle.set('');
 
@@ -95,6 +133,9 @@ export class MisPedidos implements OnInit {
       next: (pedido) => {
         this.pedidoSeleccionado.set(pedido);
         this.cargandoDetalle.set(false);
+        this.estadosValoracion.set({});
+        this.formulariosValoracion.clear();
+        this.consultarEstadosValoracion(pedido);
       },
       error: (error: HttpErrorResponse) => {
         this.cargandoDetalle.set(false);
@@ -105,8 +146,154 @@ export class MisPedidos implements OnInit {
 
   cerrarDetalle(): void {
     this.pedidoSeleccionado.set(null);
+    this.productoValoracionAbierta.set(null);
     this.errorDetalle.set('');
     this.cargandoDetalle.set(false);
+    this.estadosValoracion.set({});
+    this.formulariosValoracion.clear();
+  }
+
+  estadoValoracion(productoId: string): EstadoValoracionUI | undefined {
+    return this.estadosValoracion()[productoId];
+  }
+
+  formularioValoracion(productoId: string): FormGroup<{
+    puntuacion: FormControl<number>;
+    comentario: FormControl<string>;
+  }> | undefined {
+    return this.formulariosValoracion.get(productoId);
+  }
+
+  alternarFormularioValoracion(productoId: string): void {
+    if (this.estadoValoracion(productoId)?.estado !== 'pendiente') {
+      return;
+    }
+
+    if (this.productoValoracionAbierta() === productoId) {
+      this.productoValoracionAbierta.set(null);
+      return;
+    }
+
+    if (!this.formulariosValoracion.has(productoId)) {
+      this.formulariosValoracion.set(
+        productoId,
+        this.formularioBuilder.group({
+          puntuacion: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
+          comentario: ['', [Validators.maxLength(500)]]
+        })
+      );
+    }
+    this.productoValoracionAbierta.set(productoId);
+  }
+
+  seleccionarPuntuacion(productoId: string, puntuacion: number): void {
+    if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+      return;
+    }
+
+    this.formularioValoracion(productoId)?.controls.puntuacion.setValue(puntuacion);
+  }
+
+  reintentarConsultaValoracion(pedido: PedidoCliente, productoId: string): void {
+    this.consultarEstadoValoracion(pedido, productoId);
+  }
+
+  enviarValoracion(pedido: PedidoCliente, productoId: string): void {
+    const estado = this.estadoValoracion(productoId);
+    const formulario = this.formularioValoracion(productoId);
+    if (
+      pedido.estado !== 'FINALIZADO'
+      || estado?.estado !== 'pendiente'
+      || estado.enviando
+      || !formulario
+    ) {
+      return;
+    }
+
+    if (formulario.invalid) {
+      formulario.markAllAsTouched();
+      return;
+    }
+
+    this.actualizarEstadoValoracion(productoId, {
+      ...estado,
+      enviando: true,
+      mensaje: ''
+    });
+
+    this.servicio.valorarProducto(pedido.id, productoId, {
+      puntuacion: formulario.controls.puntuacion.value,
+      comentario: formulario.controls.comentario.value
+    }).subscribe({
+      next: () => {
+        this.actualizarEstadoValoracion(productoId, {
+          estado: 'valorada',
+          mensaje: '',
+          enviando: false
+        });
+        if (this.productoValoracionAbierta() === productoId) {
+          this.productoValoracionAbierta.set(null);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.actualizarEstadoValoracion(productoId, {
+          ...estado,
+          enviando: false,
+          mensaje: this.mensajeErrorValoracion(error)
+        });
+      }
+    });
+  }
+
+  private consultarEstadosValoracion(pedido: PedidoCliente): void {
+    if (pedido.estado !== 'FINALIZADO') {
+      return;
+    }
+
+    for (const productoId of new Set(pedido.lineas.map((linea) => linea.productoId))) {
+      this.consultarEstadoValoracion(pedido, productoId);
+    }
+  }
+
+  private consultarEstadoValoracion(pedido: PedidoCliente, productoId: string): void {
+    this.actualizarEstadoValoracion(productoId, {
+      estado: 'cargando',
+      mensaje: '',
+      enviando: false
+    });
+
+    this.servicio.consultarEstadoValoracion(pedido.id, productoId).subscribe({
+      next: ({ valorada }) => {
+        if (valorada) {
+          this.actualizarEstadoValoracion(productoId, {
+            estado: 'valorada',
+            mensaje: '',
+            enviando: false
+          });
+          return;
+        }
+
+        this.actualizarEstadoValoracion(productoId, {
+          estado: 'pendiente',
+          mensaje: '',
+          enviando: false
+        });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.actualizarEstadoValoracion(productoId, {
+          estado: 'error',
+          mensaje: this.mensajeErrorValoracion(error),
+          enviando: false
+        });
+      }
+    });
+  }
+
+  private actualizarEstadoValoracion(productoId: string, estado: EstadoValoracionUI): void {
+    this.estadosValoracion.update((estados) => ({
+      ...estados,
+      [productoId]: estado
+    }));
   }
 
   async cancelarPedido(pedido: PedidoCliente): Promise<void> {
@@ -193,6 +380,9 @@ export class MisPedidos implements OnInit {
 
         if (this.pedidoSeleccionado()?.id === pedidoFinalizado.id) {
           this.pedidoSeleccionado.set(pedidoFinalizado);
+          this.estadosValoracion.set({});
+          this.formulariosValoracion.clear();
+          this.consultarEstadosValoracion(pedidoFinalizado);
         }
 
         this.resultadoRecepcion.set(
@@ -244,6 +434,39 @@ export class MisPedidos implements OnInit {
     }
 
     return 'No se pudo confirmar la recepción. Inténtalo de nuevo.';
+  }
+
+  private mensajeErrorValoracion(error: HttpErrorResponse): string {
+    if (error.status === 401) {
+      void this.router.navigate(['/login'], {
+        queryParams: { motivo: 'sesion-expirada' }
+      });
+      return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servicio. Inténtalo de nuevo.';
+    }
+
+    const cuerpo = error.error;
+    if (typeof cuerpo === 'object' && cuerpo !== null
+      && 'error' in cuerpo && typeof cuerpo.error === 'string') {
+      return cuerpo.error;
+    }
+
+    if (error.status === 404) {
+      return 'El pedido o producto no existe o no está disponible para valorar.';
+    }
+
+    if (error.status === 409) {
+      return 'Este producto ya está valorado.';
+    }
+
+    if (error.status === 403) {
+      return 'No tienes permiso para valorar este producto.';
+    }
+
+    return 'No se pudo guardar la valoración. Inténtalo de nuevo.';
   }
 
   textoEstado(estado: EstadoPedido): string {

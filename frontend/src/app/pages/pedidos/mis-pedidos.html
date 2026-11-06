@@ -59,29 +59,31 @@
               <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
             </div>
 
-            <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
-              Ver detalle y seguimiento
-            </button>
-            @if (puedeCancelar(pedido.estado)) {
-              <button
-                type="button"
-                class="boton-cancelar"
-                [disabled]="pedidoCancelandoId() !== null"
-                (click)="cancelarPedido(pedido)">
-                {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+            <div class="acciones-pedido">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
+                Ver detalle y seguimiento
               </button>
-            }
-            @if (puedeConfirmarRecepcion(pedido.estado)) {
-              <button
-                type="button"
-                class="boton-primario"
-                [disabled]="pedidoConfirmandoId() !== null"
-                (click)="confirmarRecepcion(pedido)">
-                {{ pedidoConfirmandoId() === pedido.id
-                    ? 'Confirmar recepción (procesando...)'
-                    : 'Confirmar recepción' }}
-              </button>
-            }
+              @if (puedeCancelar(pedido.estado)) {
+                <button
+                  type="button"
+                  class="boton-cancelar"
+                  [disabled]="pedidoCancelandoId() !== null"
+                  (click)="cancelarPedido(pedido)">
+                  {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+                </button>
+              }
+              @if (puedeConfirmarRecepcion(pedido.estado)) {
+                <button
+                  type="button"
+                  class="boton-primario"
+                  [disabled]="pedidoConfirmandoId() !== null"
+                  (click)="confirmarRecepcion(pedido)">
+                  {{ pedidoConfirmandoId() === pedido.id
+                      ? 'Confirmar recepción (procesando...)'
+                      : 'Confirmar recepción' }}
+                </button>
+              }
+            </div>
           </article>
         }
       </div>
@@ -119,9 +121,11 @@
               <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
             </div>
 
-            <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
-              Ver detalle y seguimiento
-            </button>
+            <div class="acciones-pedido">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
+                Ver detalle y seguimiento
+              </button>
+            </div>
           </article>
         }
       </div>
@@ -137,7 +141,7 @@
   }
 
   @if (pedidoSeleccionado(); as pedido) {
-    <section class="detalle" aria-labelledby="titulo-detalle">
+    <section #detallePedido class="detalle" aria-labelledby="titulo-detalle">
       <div class="cabecera-detalle">
         <div>
           <h2 id="titulo-detalle">Detalle del pedido</h2>
@@ -149,27 +153,29 @@
       </div>
 
       <p><strong>Estado actual:</strong> {{ textoEstado(pedido.estado) }}</p>
-      @if (puedeCancelar(pedido.estado)) {
-        <button
-          type="button"
-          class="boton-cancelar"
-          [disabled]="pedidoCancelandoId() !== null"
-          (click)="cancelarPedido(pedido)">
-          {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
-        </button>
-      }
+      <div class="acciones-pedido">
+        @if (puedeCancelar(pedido.estado)) {
+          <button
+            type="button"
+            class="boton-cancelar"
+            [disabled]="pedidoCancelandoId() !== null"
+            (click)="cancelarPedido(pedido)">
+            {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+          </button>
+        }
 
-      @if (puedeConfirmarRecepcion(pedido.estado)) {
-        <button
-          type="button"
-          class="boton-primario"
-          [disabled]="pedidoConfirmandoId() !== null"
-          (click)="confirmarRecepcion(pedido)">
-          {{ pedidoConfirmandoId() === pedido.id
-              ? 'Confirmar recepción (procesando...)'
-              : 'Confirmar recepción' }}
-        </button>
-      }
+        @if (puedeConfirmarRecepcion(pedido.estado)) {
+          <button
+            type="button"
+            class="boton-primario"
+            [disabled]="pedidoConfirmandoId() !== null"
+            (click)="confirmarRecepcion(pedido)">
+            {{ pedidoConfirmandoId() === pedido.id
+                ? 'Confirmar recepción (procesando...)'
+                : 'Confirmar recepción' }}
+          </button>
+        }
+      </div>
 
       <h3>Productos</h3>
       <div class="tabla-contenedor">
@@ -180,6 +186,7 @@
               <th scope="col">Cantidad</th>
               <th scope="col">Precio unitario</th>
               <th scope="col">Subtotal</th>
+              <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -189,7 +196,103 @@
                 <td>{{ linea.cantidad }}</td>
                 <td>{{ linea.precioCompra | number:'1.2-2' }} €</td>
                 <td>{{ linea.precioCompra * linea.cantidad | number:'1.2-2' }} €</td>
+                <td>
+                  @if (pedido.estado === 'FINALIZADO') {
+                    @if (estadoValoracion(linea.productoId); as estado) {
+                      @if (estado.estado === 'cargando') {
+                        <span role="status">Comprobando...</span>
+                      } @else if (estado.estado === 'valorada') {
+                        <span class="valoracion-completada">Ya valorado</span>
+                      } @else if (estado.estado === 'error') {
+                        <button
+                          type="button"
+                          class="boton-secundario"
+                          (click)="reintentarConsultaValoracion(pedido, linea.productoId)">
+                          Reintentar consulta
+                        </button>
+                      } @else {
+                        <button
+                          [id]="'boton-valorar-' + linea.productoId"
+                          type="button"
+                          class="boton-valorar"
+                          [attr.aria-expanded]="productoValoracionAbierta() === linea.productoId"
+                          [attr.aria-controls]="productoValoracionAbierta() === linea.productoId
+                            ? 'formulario-valoracion-' + linea.productoId
+                            : null"
+                          (click)="alternarFormularioValoracion(linea.productoId)">
+                          {{ productoValoracionAbierta() === linea.productoId ? 'Cerrar' : 'Valorar' }}
+                        </button>
+                      }
+                    }
+                  }
+                </td>
               </tr>
+              @if (
+                pedido.estado === 'FINALIZADO'
+                && estadoValoracion(linea.productoId)?.estado === 'pendiente'
+                && productoValoracionAbierta() === linea.productoId
+              ) {
+                @let estado = estadoValoracion(linea.productoId)!;
+                @let formulario = formularioValoracion(linea.productoId);
+                @if (formulario) {
+                  <tr class="fila-valoracion">
+                    <td colspan="5">
+                      <form
+                        [id]="'formulario-valoracion-' + linea.productoId"
+                        [formGroup]="formulario"
+                        (ngSubmit)="enviarValoracion(pedido, linea.productoId)">
+                        <p>Valorar {{ linea.nombreProducto }}</p>
+                        <span class="etiqueta-estrellas" [id]="'etiqueta-puntuacion-' + linea.productoId">
+                          Puntuación
+                        </span>
+                        <div
+                          class="puntuacion-estrellas"
+                          role="group"
+                          [attr.aria-labelledby]="'etiqueta-puntuacion-' + linea.productoId">
+                          @for (estrella of estrellas; track estrella) {
+                            <button
+                              [id]="'estrella-' + linea.productoId + '-' + estrella"
+                              type="button"
+                              class="estrella-puntuacion"
+                              [class.seleccionada]="formulario.controls.puntuacion.value >= estrella"
+                              [attr.aria-label]="estrella + ' de 5 estrellas'"
+                              [attr.aria-pressed]="formulario.controls.puntuacion.value === estrella"
+                              [disabled]="estado.enviando"
+                              (click)="seleccionarPuntuacion(linea.productoId, estrella)">
+                              {{ formulario.controls.puntuacion.value >= estrella ? '★' : '☆' }}
+                            </button>
+                          }
+                        </div>
+
+                        <label [for]="'comentario-' + linea.productoId">
+                          Comentario (opcional)
+                        </label>
+                        <textarea
+                          [id]="'comentario-' + linea.productoId"
+                          formControlName="comentario"
+                          maxlength="500"
+                          rows="3"
+                          [attr.aria-describedby]="'comentario-ayuda-' + linea.productoId">
+                        </textarea>
+                        <small [id]="'comentario-ayuda-' + linea.productoId">
+                          Máximo 500 caracteres.
+                        </small>
+
+                        @if (estado.mensaje) {
+                          <p class="mensaje-error" role="alert">{{ estado.mensaje }}</p>
+                        }
+
+                        <button
+                          type="submit"
+                          class="boton-primario"
+                          [disabled]="formulario.invalid || estado.enviando">
+                          {{ estado.enviando ? 'Enviando valoración...' : 'Enviar valoración' }}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                }
+              }
             }
           </tbody>
         </table>

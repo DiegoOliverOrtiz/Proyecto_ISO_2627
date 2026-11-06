@@ -44,6 +44,17 @@ export interface ProductoCatalogo {
   puedeConsultarDetalle?: boolean;
 }
 
+export interface ValoracionPublica {
+  puntuacion: number;
+  comentario: string | null;
+}
+
+export interface ValoracionesProducto {
+  media: number;
+  total: number;
+  valoraciones: ValoracionPublica[];
+}
+
 export interface CrearProductoRequest {
   nombre: string;
   categoria: string;
@@ -95,6 +106,13 @@ export class ProductoService {
   consultarDetalleProducto(id: string): Observable<ProductoCatalogo> {
     return this.http.get<ProductoCatalogo>(
       `${environment.apiUrl}/cliente/productos/${encodeURIComponent(id)}`,
+      { withCredentials: true }
+    );
+  }
+
+  consultarValoraciones(id: string): Observable<ValoracionesProducto> {
+    return this.http.get<ValoracionesProducto>(
+      `${environment.apiUrl}/cliente/productos/${encodeURIComponent(id)}/valoraciones`,
       { withCredentials: true }
     );
   }
