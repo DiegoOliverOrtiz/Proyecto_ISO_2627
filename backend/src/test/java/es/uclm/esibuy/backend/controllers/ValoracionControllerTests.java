@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +31,7 @@ class ValoracionControllerTests {
     private static final String PRODUCTO_ID = "producto-1";
     private static final String RUTA = "/cliente/pedidos/" + PEDIDO_ID
             + "/productos/" + PRODUCTO_ID + "/valoraciones";
+    private static final String RUTA_ESTADO = RUTA + "/estado";
     private static final String CUERPO = """
             {
               "puntuacion": 5,
@@ -113,6 +115,35 @@ class ValoracionControllerTests {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(CUERPO))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(valoracionService);
+    }
+
+    @Test
+    void clienteAutenticadoPuedeConsultarSiYaValoroElProducto() throws Exception {
+        mvc.perform(get(RUTA_ESTADO)
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valorada").value(false));
+    }
+
+    @Test
+    void consultarEstadoDeValoracionExigeSesion() throws Exception {
+        mvc.perform(get(RUTA_ESTADO))
+                .andExpect(status().is4xxClientError());
+
+        verifyNoInteractions(valoracionService);
+    }
+
+    @Test
+    void soloPermiteConsultarEstadoAClientes() throws Exception {
+        mvc.perform(get(RUTA_ESTADO)
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(get(RUTA_ESTADO)
+                        .with(user("vendedor@example.com").roles("VENDEDOR")))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(valoracionService);
