@@ -208,6 +208,13 @@
               <label>
                 Teléfono
                 <input type="tel" formControlName="telefono" autocomplete="tel" />
+                <span class="field-help">Déjalo vacío para conservar el actual.</span>
+                @if (datos.telefono) {
+                  <span class="field-help">
+                    <input type="checkbox" formControlName="eliminarTelefono" />
+                    Eliminar el teléfono guardado
+                  </span>
+                }
                 @if (formulario.controls.telefono.touched && formulario.controls.telefono.hasError('pattern')) {
                   <span class="field-error">Introduce un teléfono válido o deja el campo vacío.</span>
                 }

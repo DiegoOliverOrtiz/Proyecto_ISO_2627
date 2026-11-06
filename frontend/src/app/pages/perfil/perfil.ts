@@ -81,6 +81,7 @@ export class Perfil {
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     apellidos: ['', [Validators.required, Validators.maxLength(150)]],
     telefono: ['', [Validators.maxLength(30), Validators.pattern(/^\+?[0-9\s().-]{7,20}$/)]],
+    eliminarTelefono: [false],
     imagenPerfil: ['', [Validators.maxLength(1000), Validators.pattern(/^https?:\/\/.+/i)]],
     dniNif: ['', [Validators.maxLength(9), Validators.pattern(/^[0-9]{8}[A-Za-z]$/)]],
     fechaNacimiento: ['', [mayorDeEdad]],
@@ -129,7 +130,8 @@ export class Perfil {
     this.formulario.reset({
       nombre: datos.nombre,
       apellidos: datos.apellidos,
-      telefono: datos.tipoUsuario === 'ADMIN' ? '' : datos.telefono ?? '',
+      telefono: '',
+      eliminarTelefono: false,
       imagenPerfil: datos.imagenPerfil ?? '',
       dniNif: '',
       fechaNacimiento: datos.tipoUsuario === 'CLIENTE' ? datos.fechaNacimiento ?? '' : '',
@@ -162,7 +164,9 @@ export class Perfil {
     const solicitud: ModificarPerfilRequest = {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
-      telefono: datos.tipoUsuario === 'ADMIN' ? datos.telefono : this.valorNulo(valores.telefono),
+      telefono: datos.tipoUsuario === 'ADMIN'
+        ? null
+        : valores.eliminarTelefono ? '' : this.valorNulo(valores.telefono),
       imagenPerfil: this.valorNulo(valores.imagenPerfil)
     };
 

@@ -35,6 +35,7 @@ import es.uclm.esibuy.backend.services.AuthService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "PERSONAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         "TOTP_MIGRATE_KEY=false",
         "FRONTEND_ORIGIN=https://localhost:4200",
         "spring.mongodb.auto-index-creation=false",

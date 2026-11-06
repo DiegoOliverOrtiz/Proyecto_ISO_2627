@@ -12,9 +12,9 @@ describe('UsuarioDetalle (UI-admin)', () => {
   let fixture: ComponentFixture<UsuarioDetalle>;
 
   const base: UsuarioAdministracion = {
-    id: 'u1', nombre: 'Mario', apellidos: 'Muñoz', email: 'mario@example.com', telefono: '600111222',
+    id: 'u1', nombre: 'Mario', apellidos: 'Muñoz', email: 'mario@example.com', telefono: '******222',
     estado: 'ACTIVO', rol: 'CLIENTE', imagenPerfil: null, sede: null, fechaIncorporacion: null, esPremium: true,
-    nombreComercial: null, dniNif: '12345678Z', fechaNacimiento: '2003-11-20', categoriaId: null
+    nombreComercial: null, dniNif: '12*******', fechaNacimiento: '2003-11-20', categoriaId: null
   };
 
   const servicio = { consultarUsuario: vi.fn(), modificarUsuario: vi.fn() };
@@ -89,11 +89,40 @@ describe('UsuarioDetalle (UI-admin)', () => {
 
   it('con ?editar=true abre el formulario con el email protegido y acciones en botones comunes', () => {
     const vista = crear(base, true);
+    const componente = fixture.componentInstance;
 
     expect(vista.querySelector('form.edit-form')).not.toBeNull();
     expect((vista.querySelector('#email') as HTMLInputElement).disabled).toBe(true);
     expect(vista.querySelector('.form-actions .boton-secundario')?.textContent?.trim()).toBe('Cancelar');
     expect(vista.querySelector('.form-actions .boton-principal')?.textContent?.trim()).toBe('Guardar cambios');
+    expect(componente.formulario.controls.telefono.value).toBe('');
+    expect(componente.formulario.controls.dniNif.value).toBe('');
+  });
+
+  it('conserva los datos enmascarados si se dejan vacíos y permite eliminar el teléfono expresamente', () => {
+    crear(base, true);
+    const componente = fixture.componentInstance;
+    servicio.modificarUsuario.mockReturnValue(of(base));
+
+    componente.formulario.patchValue({ nombre: 'Mario actualizado' });
+    componente.guardarCambios();
+
+    expect(servicio.modificarUsuario).toHaveBeenLastCalledWith(
+      base.id,
+      expect.objectContaining({ telefono: null, dniNif: null })
+    );
+
+    componente.iniciarEdicion(base);
+    componente.formulario.patchValue({
+      nombre: 'Mario actualizado',
+      eliminarTelefono: true
+    });
+    componente.guardarCambios();
+
+    expect(servicio.modificarUsuario).toHaveBeenLastCalledWith(
+      base.id,
+      expect.objectContaining({ telefono: '' })
+    );
   });
 
   it('si falla la carga muestra el error como estado accesible', () => {

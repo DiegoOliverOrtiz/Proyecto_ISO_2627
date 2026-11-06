@@ -162,6 +162,28 @@ class AdministradorServiceTests {
 	}
 
 	@Test
+	void conservaElTelefonoSiNoSeIndicaYPermiteBorrarloExpresamente() {
+		Administrador administrador = new Administrador();
+		administrador.setId("admin-1");
+		administrador.setNombre("Ada");
+		administrador.setApellidos("Admin");
+		administrador.setTelefono("600123123");
+		when(usuarioDAO.findById("admin-1")).thenReturn(Optional.of(administrador));
+		when(usuarioDAO.save(any(Administrador.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		AdministradorService service = new AdministradorService(
+				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
+
+		service.modificarUsuario("admin-1", new ModificarUsuarioRequest(
+				"Ada", "Admin", null, null, null, null, null, null));
+		assertEquals("600123123", administrador.getTelefono());
+
+		service.modificarUsuario("admin-1", new ModificarUsuarioRequest(
+				"Ada", "Admin", "", null, null, null, null, null));
+		assertEquals(null, administrador.getTelefono());
+	}
+
+	@Test
 	void mantieneEmailContrasenaIdYPremiumDelClienteDuranteLaModificacion() {
 		Cliente cliente = new Cliente();
 		cliente.setId("cliente-1");

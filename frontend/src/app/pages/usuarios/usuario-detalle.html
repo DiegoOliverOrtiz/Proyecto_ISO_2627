@@ -298,9 +298,21 @@
 
               <input
                 id="telefono"
-                type="text"
+                type="tel"
                 formControlName="telefono"
+                placeholder="Dejar vacío para conservar el actual"
               />
+
+              <small class="protected-info">
+                El teléfono se muestra enmascarado; déjalo vacío para conservarlo.
+              </small>
+
+              @if (datos.telefono) {
+                <label>
+                  <input type="checkbox" formControlName="eliminarTelefono" />
+                  Eliminar el teléfono guardado
+                </label>
+              }
 
             </div>
 
@@ -331,7 +343,12 @@
                   id="dniCliente"
                   type="text"
                   formControlName="dniNif"
+                  placeholder="Dejar vacío para conservar el actual"
                 />
+
+                <small class="protected-info">
+                  El DNI/NIF se muestra enmascarado; déjalo vacío para conservarlo.
+                </small>
 
               </div>
 
@@ -376,7 +393,12 @@
                   id="dniVendedor"
                   type="text"
                   formControlName="dniNif"
+                  placeholder="Dejar vacío para conservar el actual"
                 />
+
+                <small class="protected-info">
+                  El DNI/NIF se muestra enmascarado; déjalo vacío para conservarlo.
+                </small>
 
               </div>
 

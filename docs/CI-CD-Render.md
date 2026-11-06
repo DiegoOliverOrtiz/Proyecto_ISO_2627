@@ -132,10 +132,23 @@ Las variables necesarias se configuran en el panel de Render y no se incluyen en
 | `APP_PRODUCTOS_IMAGENES_ALMACENAMIENTO` | Selecciona MongoDB como almacenamiento de imágenes |
 | `MONGODB_URI` | Cadena privada de conexión a MongoDB Atlas |
 | `TOTP_ENCRYPTION_KEY` | Clave de cifrado de secretos TOTP |
+| `PERSONAL_DATA_ENCRYPTION_KEY` | Clave Base64 de 32 bytes para cifrar DNI/NIF y teléfono de usuarios |
+| `PERSONAL_DATA_PREVIOUS_ENCRYPTION_KEY` | Clave anterior temporal para leer/rotar campos cifrados |
+| `PERSONAL_DATA_MIGRATE` | Activar temporalmente con `true` para cifrar los datos existentes al desplegar |
+| `PERSONAL_DATA_ROTATE` | Activar temporalmente con `true` para rotar los campos cifrados a la clave actual |
 | `TOTP_MIGRATE_KEY` | Control de migración de la clave TOTP |
 | `JAVA_TOOL_OPTIONS` | Ajustes de memoria para la JVM |
 
 Las credenciales, claves de cifrado y enlaces privados de despliegue deben mantenerse fuera de GitHub.
+La migración de datos personales es optativa e idempotente: activarla en `true` durante un arranque,
+comprobar en el log el mensaje de finalización y volver a desactivarla después.
+Generar `PERSONAL_DATA_ENCRYPTION_KEY` con 32 bytes aleatorios codificados en Base64 y conservarla
+en un gestor de secretos: perderla impide recuperar los datos cifrados.
+Para rotar la clave, detener las demás instancias, configurar la clave nueva como
+`PERSONAL_DATA_ENCRYPTION_KEY` y la anterior como `PERSONAL_DATA_PREVIOUS_ENCRYPTION_KEY`, activar
+`PERSONAL_DATA_ROTATE=true` y arrancar una sola instancia. Tras confirmar el mensaje de finalización,
+desactivar la rotación, quitar la clave anterior y reiniciar las instancias restantes con la nueva
+clave. No activar a la vez `PERSONAL_DATA_MIGRATE` y `PERSONAL_DATA_ROTATE`.
 
 ### Acceso a MongoDB Atlas
 

@@ -15,6 +15,7 @@ import es.uclm.esibuy.backend.model.Categoria;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.util.EnmascaradorDatosPersonales;
 
 @Service
 public class PerfilService {
@@ -74,12 +75,12 @@ public class PerfilService {
 
         if (usuario instanceof Cliente cliente) {
             tipoUsuario = "CLIENTE";
-            dniNif = enmascararDniNif(cliente.getDniNif());
+            dniNif = cliente.getDniNif();
             fechaNacimiento = cliente.getFechaNacimiento();
             esPremium = cliente.isEsPremium();
         } else if (usuario instanceof Vendedor vendedor) {
             tipoUsuario = "VENDEDOR";
-            dniNif = enmascararDniNif(vendedor.getDniNif());
+            dniNif = vendedor.getDniNif();
             nombreComercial = vendedor.getNombreComercial();
             categoria = buscarNombreCategoria(vendedor.getCategoriaId());
             categoriaId = vendedor.getCategoriaId();
@@ -97,9 +98,9 @@ public class PerfilService {
                 usuario.getNombre(),
                 usuario.getApellidos(),
                 usuario.getEmail(),
-                usuario.getTelefono(),
+                EnmascaradorDatosPersonales.telefono(usuario.getTelefono()),
                 usuario.getImagenPerfil(),
-                dniNif,
+                EnmascaradorDatosPersonales.dniNif(dniNif),
                 fechaNacimiento,
                 esPremium,
                 nombreComercial,
@@ -109,16 +110,6 @@ public class PerfilService {
                 fechaIncorporacion,
                 rol,
                 usuario.isTotpActivado());
-    }
-
-    private String enmascararDniNif(String dniNif) {
-        if (dniNif == null || dniNif.isBlank()) {
-            return dniNif;
-        }
-
-        int caracteresVisibles = Math.min(2, dniNif.length());
-        return dniNif.substring(0, caracteresVisibles)
-                + "*".repeat(Math.max(0, dniNif.length() - caracteresVisibles));
     }
 
     private String buscarNombreCategoria(String categoriaId) {

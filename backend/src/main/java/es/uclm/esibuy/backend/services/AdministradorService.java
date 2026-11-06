@@ -143,8 +143,9 @@ public class AdministradorService {
 		usuario.setApellidos(
 				request.apellidos().trim());
 
-		usuario.setTelefono(
-				request.telefono());
+		if (request.telefono() != null) {
+			usuario.setTelefono(request.telefono().isBlank() ? null : request.telefono());
+		}
 
 		usuario.setImagenPerfil(
 				request.imagenPerfil());

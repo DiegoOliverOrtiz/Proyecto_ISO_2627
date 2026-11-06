@@ -145,6 +145,8 @@ export class UsuarioDetalle implements OnInit {
 
       telefono: [''],
 
+      eliminarTelefono: [false],
+
       imagenPerfil: [''],
 
       dniNif: [''],
@@ -257,13 +259,16 @@ export class UsuarioDetalle implements OnInit {
         usuario.apellidos ?? '',
 
       telefono:
-        usuario.telefono ?? '',
+        '',
+
+      eliminarTelefono:
+        false,
 
       imagenPerfil:
         usuario.imagenPerfil ?? '',
 
       dniNif:
-        usuario.dniNif ?? '',
+        '',
 
       fechaNacimiento:
         usuario.fechaNacimiento ?? '',
@@ -318,8 +323,10 @@ export class UsuarioDetalle implements OnInit {
         valores.apellidos.trim(),
 
       telefono:
-        valores.telefono.trim()
-        || null,
+        valores.eliminarTelefono
+          ? ''
+          : valores.telefono.trim()
+            || null,
 
       imagenPerfil:
         valores.imagenPerfil.trim()
