@@ -31,6 +31,7 @@ import es.uclm.esibuy.backend.dao.*;
 import es.uclm.esibuy.backend.model.*;
 import es.uclm.esibuy.backend.services.CarritoService;
 import es.uclm.esibuy.backend.services.PedidoService;
+import es.uclm.esibuy.backend.services.ValoracionService;
 
 @WebMvcTest(PedidoController.class)
 @Import({SecurityConfiguration.class, CarritoService.class, PedidoService.class})
@@ -45,6 +46,7 @@ class PedidoControllerSecurityTests {
     @MockitoBean private VendedorDAO vendedores;
     @MockitoBean private PedidoDAO pedidos;
     @MockitoBean private MongoTransactionManager transacciones;
+    @MockitoBean private ValoracionService valoracionService;
     private Cliente cliente;
     private Map<String, Carrito> datosCarritos;
     private Carrito carritoAjeno;

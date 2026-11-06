@@ -9,10 +9,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.security.core.Authentication;
 
 import es.uclm.esibuy.backend.dto.CrearPedidoRequest;
+import es.uclm.esibuy.backend.dto.CrearValoracionRequest;
 import es.uclm.esibuy.backend.dto.PedidoResponse;
+import es.uclm.esibuy.backend.dto.ValoracionResponse;
 import es.uclm.esibuy.backend.services.PedidoService;
+import es.uclm.esibuy.backend.services.ValoracionService;
 import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
 import jakarta.validation.Valid;
 
@@ -20,9 +24,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/cliente/pedidos")
 public class PedidoController {
     private final PedidoService pedidoService;
+    private final ValoracionService valoracionService;
 
-    public PedidoController(PedidoService pedidoService) {
+    public PedidoController(PedidoService pedidoService, ValoracionService valoracionService) {
         this.pedidoService = pedidoService;
+        this.valoracionService = valoracionService;
     }
 
     @PostMapping
@@ -55,5 +61,21 @@ public class PedidoController {
     public PedidoConsultaResponse confirmarRecepcion(
             @PathVariable String pedidoId) {
         return pedidoService.confirmarRecepcion(pedidoId);
+    }
+
+    @PostMapping("/{pedidoId}/productos/{productoId}/valoraciones")
+    public ResponseEntity<ValoracionResponse> valorarProducto(
+            @PathVariable String pedidoId,
+            @PathVariable String productoId,
+            @Valid @RequestBody CrearValoracionRequest request,
+            Authentication authentication) {
+        var valoracion = valoracionService.valorar(
+                authentication.getName(),
+                pedidoId,
+                productoId,
+                request.puntuacion(),
+                request.comentario());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ValoracionResponse.de(valoracion));
     }
 }
