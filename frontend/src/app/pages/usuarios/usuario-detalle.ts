@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import {
@@ -74,11 +75,12 @@ function mayorDeEdadValidator(
   selector: 'app-usuario-detalle',
   standalone: true,
   imports: [
+    DatePipe,
     RouterLink,
     ReactiveFormsModule
   ],
   templateUrl: './usuario-detalle.html',
-  styleUrl: './usuario-detalle.css'
+  styleUrls: ['../tienda/tienda.css', './usuario-detalle.css']
 })
 export class UsuarioDetalle implements OnInit {
 

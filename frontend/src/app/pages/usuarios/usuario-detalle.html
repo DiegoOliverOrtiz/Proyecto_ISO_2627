@@ -1,64 +1,39 @@
-<main class="detalle-page">
-
-  <header class="topbar">
-    <span>
-      Gestión /
-      {{ modoEdicion() ? 'Modificar usuario' : 'Detalle' }}
-    </span>
-
-    <a [routerLink]="volverUrl()">
-      Volver al listado
-    </a>
-  </header>
+<main class="pagina formulario-pagina detalle-page">
 
   <div class="content">
 
-    <a
-      class="back-link"
-      [routerLink]="volverUrl()"
-    >
-      ← Volver al listado
-    </a>
+    <a class="boton-secundario volver" [routerLink]="volverUrl()">Volver al listado</a>
 
     @if (cargando()) {
 
-      <p class="status">
-        Cargando información...
-      </p>
+      <p class="estado" role="status">Cargando información...</p>
 
     } @else if (mensajeError()) {
 
-      <p
-        class="status error"
-        role="alert"
-      >
-        {{ mensajeError() }}
-      </p>
+      <div class="estado" role="alert">
+          <p class="estado-titulo">{{ mensajeError() }}</p>
+        </div>
 
     } @else if (usuario(); as datos) {
 
-      <header class="page-header">
+      <header class="pagina-cabecera">
 
         <div>
 
-          <p class="eyebrow">
-            Ficha administrativa
-          </p>
-
-          <h1>
+          <h1 class="pagina-titulo">
             {{ datos.nombre }}
             {{ datos.apellidos }}
           </h1>
 
           @if (modoEdicion()) {
 
-            <p>
+            <p class="pagina-descripcion">
               Modifica los datos del usuario.
             </p>
 
           } @else {
 
-            <p>
+            <p class="pagina-descripcion">
               Información útil para la gestión de la cuenta.
             </p>
 
@@ -72,7 +47,7 @@
 
             <button
               type="button"
-              class="button primary"
+              class="boton-principal"
               (click)="iniciarEdicion(datos)"
             >
               Modificar usuario
@@ -82,7 +57,7 @@
 
               <button
                 type="button"
-                class="button danger"
+                class="boton-peligro"
                 (click)="
                   eliminarAdministrador(
                     datos.id,
@@ -103,17 +78,12 @@
 
       @if (!modoEdicion()) {
 
-        <section class="detail-card">
+        <section class="tarjeta detail-card">
 
           <div class="status-row">
 
-            <span>
-              Estado de la cuenta
-            </span>
-
-            <strong>
-              {{ datos.estado }}
-            </strong>
+            <span>Estado de la cuenta</span>
+            <span class="chip" [class.chip-exito]="datos.estado === 'ACTIVO'" [class.chip-aviso]="datos.estado === 'PENDIENTE'" [class.chip-peligro]="datos.estado === 'BLOQUEADO'">{{ datos.estado === 'ACTIVO' ? 'Activo' : datos.estado === 'PENDIENTE' ? 'Pendiente' : 'Bloqueado' }}</span>
 
           </div>
 
@@ -130,13 +100,6 @@
               <dt>Teléfono</dt>
               <dd>
                 {{ datos.telefono || 'No indicado' }}
-              </dd>
-            </div>
-
-            <div>
-              <dt>Estado</dt>
-              <dd>
-                {{ datos.estado }}
               </dd>
             </div>
 
@@ -169,7 +132,7 @@
                 </dt>
 
                 <dd>
-                  {{ datos.fechaNacimiento }}
+                  {{ datos.fechaNacimiento | date: 'dd/MM/yyyy' }}
                 </dd>
               </div>
 
@@ -194,7 +157,7 @@
                 </dt>
 
                 <dd>
-                  {{ datos.fechaIncorporacion }}
+                  {{ datos.fechaIncorporacion | date: 'dd/MM/yyyy' }}
                 </dd>
               </div>
 
@@ -234,17 +197,12 @@
 
       } @else {
 
-        <section class="detail-card">
+        <section class="tarjeta detail-card">
 
           <div class="status-row">
 
-            <span>
-              Modificando usuario
-            </span>
-
-            <strong>
-              {{ datos.rol }}
-            </strong>
+            <span>Modificando usuario</span>
+            <span class="chip chip-neutro">{{ datos.rol }}</span>
 
           </div>
 
@@ -468,7 +426,7 @@
 
             @if (mensajeFormulario()) {
 
-              <p class="form-message">
+              <p class="aviso aviso-error" role="alert">
                 {{ mensajeFormulario() }}
               </p>
 
@@ -478,7 +436,7 @@
 
               <button
                 type="button"
-                class="button secondary"
+                class="boton-secundario"
                 (click)="cancelarEdicion()"
               >
                 Cancelar
@@ -486,7 +444,7 @@
 
               <button
                 type="submit"
-                class="button primary"
+                class="boton-principal"
               >
                 Guardar cambios
               </button>
