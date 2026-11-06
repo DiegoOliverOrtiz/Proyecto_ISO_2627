@@ -38,7 +38,7 @@
 *::after { box-sizing: border-box; }
 
 html,
-body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--color-paper); }
+body { min-height: 100vh; margin: 0; background: var(--color-paper); }
 
 button,
 input,

@@ -637,4 +637,6 @@ th {
 
 .filters, .table-wrapper, .statistics article, .status, .success { border-radius: 10px; }
 .filters, .table-wrapper, .statistics article { box-shadow: 0 10px 25px rgba(37, 91, 77, .08); }
-.table-wrapper { overflow: hidden; }
+/* A6: la tabla (700 px mínimo) se desplaza dentro de su contenedor, no la página.
+   `position: relative` retiene también los textos ocultos (.visually-hidden) de la tabla. */
+.table-wrapper { position: relative; max-width: 100%; overflow-x: auto; }

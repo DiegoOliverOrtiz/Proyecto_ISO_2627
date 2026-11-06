@@ -47,7 +47,7 @@ h1 { max-width: 760px; margin: 0; color: #173042; font-size: clamp(2rem, 4vw, 3.
 .primary-action { display: inline-flex; align-items: center; gap: .6rem; margin-top: 1.15rem; padding: .78rem 1.05rem; border: 1px solid var(--color-accent); border-radius: 4px; color: #fff; background: var(--color-accent); font-weight: 700; text-decoration: none; box-shadow: 0 2px 0 #a94b39; transition: transform .18s ease, background .18s ease; }
 .primary-action:hover { background: #185f70; }
 
-.overview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .overview-grid article { display: grid; gap: .35rem; min-height: 8rem; align-content: center; padding: 1.35rem; border: 1px solid #d9e3e6; background: #fff; box-shadow: 0 5px 18px rgba(23, 48, 66, .05); }
 .overview-grid span, .overview-grid small { color: #536a75; }
 .overview-grid strong { font-size: 1.2rem; }
@@ -65,3 +65,8 @@ h1 { max-width: 760px; margin: 0; color: #173042; font-size: clamp(2rem, 4vw, 3.
 .overview-grid article { border-radius: 12px; transition: transform .18s ease, box-shadow .18s ease; }
 .overview-grid article:hover { box-shadow: 0 10px 24px rgba(23, 48, 66, .1); transform: translateY(-2px); }
 .primary-action, .logout-button { border-radius: 7px; }
+
+/* A6: a 320 px las tarjetas van en una sola columna. */
+@media (max-width: 480px) {
+  .overview-grid { grid-template-columns: minmax(0, 1fr); }
+}
