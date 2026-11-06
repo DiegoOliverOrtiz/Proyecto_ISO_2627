@@ -38,12 +38,8 @@ public class ValoracionService {
             String productoId,
             int puntuacion,
             String comentario) {
-        if (puntuacion < PUNTUACION_MINIMA || puntuacion > PUNTUACION_MAXIMA) {
-            throw new IllegalArgumentException("La puntuación debe estar entre 1 y 5.");
-        }
-        if (comentario != null && comentario.length() > LONGITUD_MAXIMA_COMENTARIO) {
-            throw new IllegalArgumentException("El comentario no puede superar los 500 caracteres.");
-        }
+        validarPuntuacion(puntuacion);
+        validarComentario(comentario);
         validarIdentificador(pedidoId, "El pedido es obligatorio.");
         validarIdentificador(productoId, "El producto es obligatorio.");
 
@@ -51,15 +47,7 @@ public class ValoracionService {
                 .orElseThrow(() -> new IllegalArgumentException("El cliente no existe."));
         Pedido pedido = pedidoDAO.findByIdAndClienteId(pedidoId, cliente.getId())
                 .orElseThrow(() -> new IllegalArgumentException("El pedido no pertenece al cliente."));
-
-        if (pedido.getEstado() != EstadoPedido.FINALIZADO) {
-            throw new IllegalStateException("Solo se pueden valorar pedidos finalizados.");
-        }
-        boolean productoIncluido = pedido.getLineas().stream()
-                .anyMatch(linea -> Objects.equals(linea.productoId(), productoId));
-        if (!productoIncluido) {
-            throw new IllegalArgumentException("El producto no pertenece al pedido.");
-        }
+        validarPedidoContieneProducto(pedido, productoId);
         if (valoracionDAO.existsByClienteIdAndProductoId(cliente.getId(), productoId)) {
             throw new IllegalStateException("El cliente ya ha valorado este producto.");
         }
@@ -70,6 +58,29 @@ public class ValoracionService {
                 productoId,
                 puntuacion,
                 comentario));
+    }
+
+    private static void validarPuntuacion(int puntuacion) {
+        if (puntuacion < PUNTUACION_MINIMA || puntuacion > PUNTUACION_MAXIMA) {
+            throw new IllegalArgumentException("La puntuación debe estar entre 1 y 5.");
+        }
+    }
+
+    private static void validarComentario(String comentario) {
+        if (comentario != null && comentario.length() > LONGITUD_MAXIMA_COMENTARIO) {
+            throw new IllegalArgumentException("El comentario no puede superar los 500 caracteres.");
+        }
+    }
+
+    private static void validarPedidoContieneProducto(Pedido pedido, String productoId) {
+        if (pedido.getEstado() != EstadoPedido.FINALIZADO) {
+            throw new IllegalStateException("Solo se pueden valorar pedidos finalizados.");
+        }
+        boolean productoIncluido = pedido.getLineas().stream()
+                .anyMatch(linea -> Objects.equals(linea.productoId(), productoId));
+        if (!productoIncluido) {
+            throw new IllegalArgumentException("El producto no pertenece al pedido.");
+        }
     }
 
     public double calcularMediaProducto(String productoId) {
