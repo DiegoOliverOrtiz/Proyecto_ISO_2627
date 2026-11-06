@@ -17,7 +17,7 @@ import { rutaParaRol } from './rutas-por-rol';
   standalone: true,
   imports: [RouterLink, FormsModule, ReactiveFormsModule],
   templateUrl: './login.html',
-  styleUrl: './login.css'
+  styleUrls: ['../acceso/acceso.css', './login.css']
 })
 export class Login {
   loginForm: FormGroup;
@@ -48,6 +48,12 @@ export class Login {
     } else if (motivo === 'cuenta-eliminada') {
       this.mensajeExito.set('La cuenta se ha eliminado correctamente.');
     }
+  }
+
+  // Un campo se marca como erróneo solo después de que el usuario lo haya tocado.
+  campoInvalido(nombre: 'email' | 'password'): boolean {
+    const control = this.loginForm.get(nombre);
+    return !!control && control.invalid && control.touched;
   }
 
   togglePassword(): void {
