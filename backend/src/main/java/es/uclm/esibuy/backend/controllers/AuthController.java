@@ -69,7 +69,8 @@ public class AuthController {
             @Valid @RequestBody LoginRequest peticion,
             HttpServletRequest request,
             HttpServletResponse response) {
-        Usuario usuarioValidado = authService.autenticar(peticion.email(), peticion.password());
+        Usuario usuarioValidado = authService.autenticar(
+            peticion.email(), peticion.password(), request.getRemoteAddr());
         String rol = obtenerRol(usuarioValidado);
         if (usuarioValidado.isTotpActivado()) {
             HttpSession anterior = request.getSession(false);

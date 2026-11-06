@@ -48,7 +48,8 @@ class AuthControllerTwoFactorTests {
 
     private MockHttpServletRequest iniciarPendiente() {
         var request = new MockHttpServletRequest();
-        when(auth.autenticar(user.getEmail(), "password")).thenReturn(user);
+        when(auth.autenticar(org.mockito.ArgumentMatchers.eq(user.getEmail()),
+            org.mockito.ArgumentMatchers.eq("password"), org.mockito.ArgumentMatchers.anyString())).thenReturn(user);
         assertEquals(202, controller.iniciarSesion(new LoginRequest(user.getEmail(), "password"), request, response)
                 .getStatusCode().value());
         return request;

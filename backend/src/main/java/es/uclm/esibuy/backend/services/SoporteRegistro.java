@@ -37,7 +37,7 @@ public class SoporteRegistro {
 		this.validador = validador;
 	}
 
-	public void validarSolicitud(Object solicitud, String contrasena) {
+	public void validarSolicitud(Object solicitud, String contrasena, String... datosPersonales) {
 		if (solicitud == null) {
 			throw new InvalidRegistrationException();
 		}
@@ -53,7 +53,7 @@ public class SoporteRegistro {
 			throw new InvalidRegistrationException(errores);
 		}
 
-		politicaContrasenas.validate(contrasena);
+		politicaContrasenas.validate(contrasena, List.of(datosPersonales));
 	}
 
 	public String normalizarCorreo(String correo) {

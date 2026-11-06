@@ -252,7 +252,8 @@ public class AdministradorService {
 		}
 
 		passwordPolicy.validate(
-				request.contrasena());
+				request.contrasena(),
+				java.util.List.of(request.nombre(), request.apellidos(), request.email()));
 
 		String email =
 				request.email()

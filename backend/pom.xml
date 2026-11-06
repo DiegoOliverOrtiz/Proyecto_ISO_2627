@@ -105,6 +105,15 @@
 		<plugins>
 
 			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<app.security.password.pepper>test-pepper-that-is-never-used-outside-tests-123456</app.security.password.pepper>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
