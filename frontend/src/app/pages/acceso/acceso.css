@@ -113,6 +113,9 @@
 
 .campo {
   display: grid;
+  /* Sin esto, si el campo es más alto que su contenido (otro campo de la fila muestra
+     los requisitos), la rejilla estira la caja del input. */
+  align-content: start;
   gap: .4rem;
   min-width: 0;
 }
