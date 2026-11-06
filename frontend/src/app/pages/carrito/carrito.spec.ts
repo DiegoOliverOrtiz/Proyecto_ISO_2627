@@ -133,6 +133,34 @@ describe('Carrito - HU-21', () => {
     expect(fixture.nativeElement.textContent).toContain('Carrito descartado.');
   });
 
+  it('muestra el vendedor real de cada línea y no un texto fijo (A8)', () => {
+    cargar([linea({ vendedor: 'Tienda Ana' }), linea({ productoId: 'p2', nombre: 'Producto B', vendedor: null })], 32);
+
+    const lineas = fixture.nativeElement.querySelectorAll('.cart-line');
+    expect(lineas[0].textContent).toContain('Vendedor: Tienda Ana');
+    expect(lineas[1].textContent).not.toContain('Vendedor');
+    expect(fixture.nativeElement.textContent).not.toContain('ESIBuy');
+  });
+
+  it('explica por qué «Comprar» está desactivado y no enseña el id de un producto sin nombre (M4, M6)', () => {
+    cargar([linea({ nombre: null, disponible: false, aviso: 'El producto ha sido eliminado.' })], 0);
+
+    const comprar: HTMLButtonElement = fixture.nativeElement.querySelector('.cart-summary .primary-button');
+    expect(comprar.disabled).toBe(true);
+    expect(comprar.getAttribute('aria-describedby')).toBe('motivo-comprar');
+    expect(fixture.nativeElement.querySelector('#motivo-comprar').textContent).toContain('para poder comprar');
+    expect(fixture.nativeElement.textContent).toContain('Producto sin nombre');
+    expect(fixture.nativeElement.textContent).not.toContain('Producto p1');
+  });
+
+  it('con el carrito vacío ofrece una sola acción (B5)', () => {
+    cargar([], 0);
+
+    const enlaces = fixture.nativeElement.querySelectorAll('a');
+    expect(enlaces.length).toBe(1);
+    expect(enlaces[0].textContent).toContain('Explorar productos');
+  });
+
   it('conserva líneas no disponibles y permite eliminarlas', async () => {
     cargar([linea({ disponible: false, stock: null, precioUnitario: null, subtotal: null,
       aviso: 'El producto ha sido eliminado.' })], 0);

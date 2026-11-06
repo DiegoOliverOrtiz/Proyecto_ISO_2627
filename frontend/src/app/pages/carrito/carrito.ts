@@ -14,7 +14,7 @@ import { CarritoResponse, CarritoService, LineaCarritoResponse } from './carrito
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './carrito.html',
-  styleUrl: './carrito.css'
+  styleUrls: ['../tienda/tienda.css', './carrito.css']
 })
 export class Carrito {
   private readonly servicio = inject(CarritoService);
