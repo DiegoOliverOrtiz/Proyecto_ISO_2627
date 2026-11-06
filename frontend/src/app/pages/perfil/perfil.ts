@@ -229,17 +229,6 @@ export class Perfil {
     });
   }
 
-  volverAlPanel(): void {
-    const tipoUsuario = this.perfil()?.tipoUsuario;
-    const ruta = tipoUsuario === 'ADMIN'
-      ? '/admin'
-      : tipoUsuario === 'VENDEDOR'
-        ? '/vendedor'
-        : '/cliente';
-
-    void this.enrutador.navigateByUrl(ruta);
-  }
-
   iniciarBaja(): void {
     const tipoUsuario = this.perfil()?.tipoUsuario;
     if ((tipoUsuario !== 'CLIENTE' && tipoUsuario !== 'VENDEDOR') || this.bajaEnCurso()) {
