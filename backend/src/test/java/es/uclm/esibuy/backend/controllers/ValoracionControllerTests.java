@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -99,6 +101,65 @@ class ValoracionControllerTests {
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(valoracionService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 6 })
+    void valorarRechazaPuntuacionesFueraDelRangoPermitido(int puntuacion) throws Exception {
+        String cuerpo = """
+                {
+                  "puntuacion": %d,
+                  "comentario": "Buen producto"
+                }
+                """.formatted(puntuacion);
+
+        mvc.perform(post(RUTA)
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(valoracionService);
+    }
+
+    @Test
+    void valorarIgnoraUnClienteIdEnviadoYUsaLaIdentidadAutenticada() throws Exception {
+        when(valoracionService.valorar(
+                EMAIL_CLIENTE,
+                PEDIDO_ID,
+                PRODUCTO_ID,
+                5,
+                "Buen producto"))
+                .thenReturn(new Valoracion(
+                        "valoracion-1",
+                        "cliente-autenticado",
+                        PEDIDO_ID,
+                        PRODUCTO_ID,
+                        5,
+                        "Buen producto"));
+        String cuerpoConClienteAjeno = """
+                {
+                  "puntuacion": 5,
+                  "comentario": "Buen producto",
+                  "clienteId": "otro-cliente"
+                }
+                """;
+
+        mvc.perform(post(RUTA)
+                        .with(user(EMAIL_CLIENTE).roles("CLIENTE"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoConClienteAjeno))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.clienteId").doesNotExist());
+
+        verify(valoracionService).valorar(
+                EMAIL_CLIENTE,
+                PEDIDO_ID,
+                PRODUCTO_ID,
+                5,
+                "Buen producto");
     }
 
     @Test
