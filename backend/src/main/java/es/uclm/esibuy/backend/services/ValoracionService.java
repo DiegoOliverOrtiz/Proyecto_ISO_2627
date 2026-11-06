@@ -4,6 +4,8 @@ import java.util.Locale;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import es.uclm.esibuy.backend.dao.ClienteDAO;
 import es.uclm.esibuy.backend.dao.PedidoDAO;
@@ -89,6 +91,23 @@ public class ValoracionService {
                 .mapToInt(Valoracion::puntuacion)
                 .average()
                 .orElse(0.0);
+    }
+
+    public boolean estaValorado(String emailCliente, String pedidoId, String productoId) {
+        validarIdentificador(pedidoId, "El pedido es obligatorio.");
+        validarIdentificador(productoId, "El producto es obligatorio.");
+
+        Cliente cliente = clienteDAO.findByEmail(normalizarEmail(emailCliente))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Pedido pedido = pedidoDAO.findByIdAndClienteId(pedidoId, cliente.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        boolean productoIncluido = pedido.getLineas().stream()
+                .anyMatch(linea -> Objects.equals(linea.productoId(), productoId));
+        if (!productoIncluido) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        return valoracionDAO.existsByClienteIdAndProductoId(cliente.getId(), productoId);
     }
 
     private static void validarIdentificador(String identificador, String mensaje) {

@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 
 import es.uclm.esibuy.backend.dto.CrearPedidoRequest;
 import es.uclm.esibuy.backend.dto.CrearValoracionRequest;
+import es.uclm.esibuy.backend.dto.EstadoValoracionResponse;
 import es.uclm.esibuy.backend.dto.PedidoResponse;
 import es.uclm.esibuy.backend.dto.ValoracionResponse;
 import es.uclm.esibuy.backend.services.PedidoService;
@@ -77,5 +78,17 @@ public class PedidoController {
                 request.comentario());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ValoracionResponse.de(valoracion));
+    }
+
+    @GetMapping("/{pedidoId}/productos/{productoId}/valoraciones/estado")
+    public EstadoValoracionResponse consultarEstadoValoracion(
+            @PathVariable String pedidoId,
+            @PathVariable String productoId,
+            Authentication authentication) {
+        return new EstadoValoracionResponse(
+                valoracionService.estaValorado(
+                        authentication.getName(),
+                        pedidoId,
+                        productoId));
     }
 }
