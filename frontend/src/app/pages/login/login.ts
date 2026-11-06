@@ -10,6 +10,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthService } from './auth.service';
+import { marcarSesionIniciada, olvidarSesion } from './marca-sesion';
 import { rutaParaRol } from './rutas-por-rol';
 
 @Component({
@@ -17,7 +18,7 @@ import { rutaParaRol } from './rutas-por-rol';
   standalone: true,
   imports: [RouterLink, FormsModule, ReactiveFormsModule],
   templateUrl: './login.html',
-  styleUrl: './login.css'
+  styleUrls: ['../acceso/acceso.css', './login.css']
 })
 export class Login {
   loginForm: FormGroup;
@@ -25,6 +26,7 @@ export class Login {
   isLoading = signal(false);
   mensajeError = signal('');
   mensajeExito = signal('');
+  mensajeInfo = signal('');
   requiereSegundoFactor = signal(false);
   codigoSegundoFactor = '';
 
@@ -39,15 +41,27 @@ export class Login {
       password: ['', Validators.required]
     });
 
+    // Al llegar al login la sesión anterior ya no cuenta (A12).
+    olvidarSesion();
+
     const motivo = this.route.snapshot.queryParamMap.get('motivo');
 
-    if (motivo === 'sesion-expirada') {
+    if (motivo === 'sin-sesion') {
+      // A12: quien nunca inició sesión no ve el aviso de sesión caducada o bloqueada.
+      this.mensajeInfo.set('Inicia sesión para continuar.');
+    } else if (motivo === 'sesion-expirada') {
       this.mensajeError.set(
         'Tu sesión ya no es válida. Es posible que tu cuenta haya sido bloqueada.'
       );
     } else if (motivo === 'cuenta-eliminada') {
       this.mensajeExito.set('La cuenta se ha eliminado correctamente.');
     }
+  }
+
+  // Un campo se marca como erróneo solo después de que el usuario lo haya tocado.
+  campoInvalido(nombre: 'email' | 'password'): boolean {
+    const control = this.loginForm.get(nombre);
+    return !!control && control.invalid && control.touched;
   }
 
   togglePassword(): void {
@@ -77,6 +91,7 @@ export class Login {
             this.mensajeExito.set('Introduce el código de tu aplicación de autenticación.');
             return;
           }
+          marcarSesionIniciada();
           this.router.navigateByUrl(
             rutaParaRol(respuesta.role)
           );
@@ -112,6 +127,7 @@ export class Login {
     this.authService.verificarSegundoFactor(codigo).subscribe({
       next: (respuesta) => {
         this.isLoading.set(false);
+        marcarSesionIniciada();
         this.router.navigateByUrl(rutaParaRol(respuesta.role));
       },
       error: (error: HttpErrorResponse) => {

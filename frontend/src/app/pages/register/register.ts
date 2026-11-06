@@ -118,7 +118,7 @@ const passwordRequirementsValidator: ValidatorFn = (
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-register',
-  styleUrl: './register.css',
+  styleUrls: ['../acceso/acceso.css', './register.css'],
   templateUrl: './register.html',
 })
 export class Register {
@@ -334,19 +334,12 @@ export class Register {
         control.hasError('pattern')
       )
     ) {
-      return 'El DNI debe tener 8 números y una letra.';
+      return 'El DNI/NIF debe tener 8 números y una letra.';
     }
 
     if (
       name === 'contrasena' &&
-      control.hasError('minlength')
-    ) {
-      return 'La contraseña debe tener al menos 8 caracteres.';
-    }
-
-    if (
-      name === 'contrasena' &&
-      control.hasError('passwordRequirements')
+      (control.hasError('minlength') || control.hasError('passwordRequirements'))
     ) {
       return 'La contraseña debe cumplir todos los requisitos indicados.';
     }
