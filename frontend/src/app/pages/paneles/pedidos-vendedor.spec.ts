@@ -410,4 +410,77 @@ describe('PedidosVendedor - HU-35', () => {
     expect(componente.pedidos()).toEqual([pedido]);
     expect(texto()).toContain('Pedido #');
   });
+  describe('pestañas, chips y detalle (M15, A15)', () => {
+    const pestanas = () =>
+      Array.from(fixture.nativeElement.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
+
+    it('usa el patrón ARIA de pestañas con una sola en el orden de tabulación', () => {
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('[role="tablist"]')).not.toBeNull();
+      expect(pestanas().map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+      expect(pestanas().map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1']);
+      const panel = fixture.nativeElement.querySelector('[role="tabpanel"]') as HTMLElement;
+      expect(panel.getAttribute('aria-labelledby')).toBe('pestana-activos');
+    });
+
+    it('las flechas cambian de pestaña y mueven el foco a la nueva', async () => {
+      document.body.appendChild(fixture.nativeElement);
+      fixture.detectChanges();
+      pestanas()[0].focus();
+
+      const evento = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+      pestanas()[0].dispatchEvent(evento);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(evento.defaultPrevented).toBe(true);
+      expect(componente.pestana()).toBe('historico');
+      expect(pestanas().map((t) => t.getAttribute('aria-selected'))).toEqual(['false', 'true']);
+      expect(document.activeElement).toBe(pestanas()[1]);
+      fixture.nativeElement.remove();
+    });
+
+    it('Inicio y Fin saltan a la primera y a la última pestaña; otras teclas no hacen nada', () => {
+      componente.cambiarPestana('historico');
+      fixture.detectChanges();
+
+      pestanas()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+      expect(componente.pestana()).toBe('activos');
+
+      pestanas()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
+      expect(componente.pestana()).toBe('historico');
+
+      const otra = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+      pestanas()[1].dispatchEvent(otra);
+      expect(otra.defaultPrevented).toBe(false);
+    });
+
+    it('el chip de estado cambia de color: pagado avisa, finalizado confirma', () => {
+      expect(componente.claseChip('PAGADO_COMPLETADO')).toBe('chip-aviso');
+      expect(componente.claseChip('TRAMITADO_ENVIADO')).toBe('chip-neutro');
+      expect(componente.claseChip('FINALIZADO')).toBe('chip-exito');
+
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.cabecera-pedido .chip')?.classList).toContain('chip-aviso');
+    });
+
+    it('al abrir el detalle recibe el foco, y al cerrarlo vuelve a «Ver detalle»', async () => {
+      document.body.appendChild(fixture.nativeElement);
+      fixture.detectChanges();
+      const ver = fixture.nativeElement.querySelector('.boton-detalle') as HTMLButtonElement;
+      ver.focus();
+
+      ver.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement?.id).toBe('titulo-detalle');
+
+      componente.cerrarDetalle();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.boton-detalle'));
+      fixture.nativeElement.remove();
+    });
+  });
 });

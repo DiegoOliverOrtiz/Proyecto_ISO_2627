@@ -13,14 +13,19 @@
         </button>
     </div>
 
-    <div class="pestañas" role="group" aria-label="Tipo de pedidos">
-        <button type="button" [class.seleccionada]="pestana() === 'activos'"
-            [attr.aria-pressed]="pestana() === 'activos'" (click)="cambiarPestana('activos')">
+    <!-- M15: patrón ARIA de pestañas, con flechas, Inicio y Fin. -->
+    <div class="pestañas" role="tablist" aria-label="Tipo de pedidos">
+        <button type="button" role="tab" id="pestana-activos" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'activos'" [attr.aria-selected]="pestana() === 'activos'"
+            [attr.tabindex]="pestana() === 'activos' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('activos')">
             Pedidos activos
         </button>
 
-        <button type="button" [class.seleccionada]="pestana() === 'historico'"
-            [attr.aria-pressed]="pestana() === 'historico'" (click)="cambiarPestana('historico')">
+        <button type="button" role="tab" id="pestana-historico" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'historico'" [attr.aria-selected]="pestana() === 'historico'"
+            [attr.tabindex]="pestana() === 'historico' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('historico')">
             Histórico
         </button>
     </div>
@@ -33,6 +38,7 @@
     <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
     }
 
+    <div role="tabpanel" id="panel-pedidos" [attr.aria-labelledby]="'pestana-' + pestana()">
     @if (cargando()) {
     <p class="estado" role="status">Cargando pedidos...</p>
     } @else if (error()) {
@@ -64,7 +70,7 @@
                     <p>Cliente: {{ pedido.clienteNombre }}</p>
                 </div>
 
-                <span class="chip chip-neutro">{{ textoEstado(pedido.estado) }}</span>
+                <span class="chip" [class]="'chip ' + claseChip(pedido.estado)">{{ textoEstado(pedido.estado) }}</span>
             </div>
 
             <div class="resumen">
@@ -75,12 +81,12 @@
 
                 <p>
                     <strong>Importe de tu tienda:</strong>
-                    {{ pedido.importeProductosPropios.toFixed(2) }} €
+                    {{ pedido.importeProductosPropios | number:'1.2-2' }} €
                 </p>
             </div>
 
             <div class="acciones">
-                <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido)">
+                <button type="button" class="boton-secundario boton-detalle" [attr.data-pedido]="pedido.id" (click)="abrirDetalle(pedido)">
                     Ver detalle
                 </button>
 
@@ -95,6 +101,7 @@
         }
     </div>
     }
+    </div>
 
     @if (cargandoDetalle()) {
     <p class="estado" role="status">Cargando detalle del pedido...</p>
@@ -108,7 +115,7 @@
     <section class="tarjeta detalle" aria-label="Detalle del pedido">
         <div class="cabecera-detalle">
             <div>
-                <h2>Detalle del pedido</h2>
+                <h2 id="titulo-detalle" class="titulo-detalle" tabindex="-1">Detalle del pedido</h2>
                 <p>Referencia: {{ detalle.id }}</p>
             </div>
 
@@ -119,7 +126,7 @@
 
         <p>
             <strong>Estado:</strong>
-            {{ textoEstado(detalle.estado) }}
+            <span class="chip" [class]="'chip ' + claseChip(detalle.estado)">{{ textoEstado(detalle.estado) }}</span>
         </p>
         <p>Cliente: {{ detalle.clienteNombre }}</p>
 
@@ -141,9 +148,9 @@
                     <tr>
                         <td>{{ producto.nombreProducto }}</td>
                         <td>{{ producto.cantidad }}</td>
-                        <td>{{ producto.precioCompra.toFixed(2) }} €</td>
+                        <td>{{ producto.precioCompra | number:'1.2-2' }} €</td>
                         <td>
-                            {{ (producto.precioCompra * producto.cantidad).toFixed(2) }} €
+                            {{ producto.precioCompra * producto.cantidad | number:'1.2-2' }} €
                         </td>
                     </tr>
                     }
@@ -153,7 +160,7 @@
 
         <p class="total">
             Importe de tus productos:
-            {{ detalle.importeProductosPropios.toFixed(2) }} €
+            {{ detalle.importeProductosPropios | number:'1.2-2' }} €
         </p>
 
         @if (detalle.direccionEnvio; as direccion) {

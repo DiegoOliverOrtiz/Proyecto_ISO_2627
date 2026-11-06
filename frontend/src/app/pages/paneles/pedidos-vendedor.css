@@ -45,7 +45,7 @@
   cursor: pointer;
 }
 
-.pestañas button.seleccionada {
+.pestañas button[aria-selected='true'] {
   border-bottom-color: var(--color-brand);
   color: var(--color-brand);
 }
@@ -81,6 +81,16 @@ table {
   margin: 1rem 0;
   border-collapse: collapse;
   text-align: left;
+}
+
+.titulo-detalle {
+  scroll-margin-top: 5rem;
+}
+
+th:nth-child(n + 2),
+td:nth-child(n + 2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 th,
