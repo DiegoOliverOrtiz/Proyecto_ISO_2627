@@ -17,7 +17,7 @@ import { AuthService } from '../login/auth.service';
   standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './administradores.html',
-  styleUrl: '../usuarios/usuarios.css'
+  styleUrls: ['../tienda/tienda.css', '../usuarios/usuarios.css']
 })
 export class Administradores implements OnInit {
 

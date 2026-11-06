@@ -14,7 +14,7 @@ import {
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './usuarios.html',
-  styleUrl: './usuarios.css'
+  styleUrls: ['../tienda/tienda.css', './usuarios.css']
 })
 export class Usuarios implements OnInit {
   private readonly usuariosService = inject(UsuariosService);

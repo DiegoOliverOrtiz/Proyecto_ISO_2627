@@ -255,4 +255,50 @@ describe('Usuarios', () => {
       'El usuario ya no existe.'
     );
   });
+  describe('marcado accesible (M9, M24)', () => {
+    const fila = () => (fixture.nativeElement as HTMLElement).querySelector('tbody tr') as HTMLElement;
+
+    it('el estado es un chip con texto', () => {
+      fixture.detectChanges();
+
+      const chip = fila().querySelector('.chip') as HTMLElement;
+      expect(chip.textContent?.trim()).toBe('Activo');
+      expect(chip.classList).toContain('chip-exito');
+    });
+
+    it('un usuario pendiente se muestra con chip de aviso y ofrece «Activar»', () => {
+      usuariosServiceMock.consultarUsuarios.mockReturnValue(
+        of({ ...listado, contenido: [{ ...usuario, estado: 'PENDIENTE' }] })
+      );
+      fixture.detectChanges();
+
+      expect(fila().querySelector('.chip')?.classList).toContain('chip-aviso');
+      const activar = fila().querySelector('button.boton-principal') as HTMLButtonElement;
+      expect(activar.textContent?.trim()).toBe('Activar');
+      expect(activar.getAttribute('aria-label')).toBe('Activar a Mario Muñoz');
+    });
+
+    it('las acciones son enlaces y botones con texto visible y nombre accesible', () => {
+      fixture.detectChanges();
+
+      const acciones = Array.from(fila().querySelectorAll('.accion')) as HTMLElement[];
+      expect(acciones.map((a) => a.textContent?.trim())).toEqual(['Ver detalle', 'Modificar', 'Bloquear']);
+      expect(acciones.map((a) => a.getAttribute('aria-label'))).toEqual([
+        'Ver detalle de Mario Muñoz',
+        'Modificar a Mario Muñoz',
+        'Bloquear a Mario Muñoz'
+      ]);
+    });
+
+    it('sin resultados con filtros ofrece «Limpiar filtros»', () => {
+      usuariosServiceMock.consultarUsuarios.mockReturnValue(of({ ...listado, contenido: [] }));
+      fixture.detectChanges();
+      component.busqueda.set('zzz');
+      component.buscar();
+      fixture.detectChanges();
+
+      const boton = (fixture.nativeElement as HTMLElement).querySelector('.estado button') as HTMLButtonElement;
+      expect(boton.textContent?.trim()).toBe('Limpiar filtros');
+    });
+  });
 });
