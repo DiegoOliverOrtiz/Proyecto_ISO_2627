@@ -1,0 +1,91 @@
+package es.uclm.esibuy.backend.services;
+
+import java.util.Locale;
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+
+import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.PedidoDAO;
+import es.uclm.esibuy.backend.dao.ValoracionDAO;
+import es.uclm.esibuy.backend.model.Cliente;
+import es.uclm.esibuy.backend.model.EstadoPedido;
+import es.uclm.esibuy.backend.model.Pedido;
+import es.uclm.esibuy.backend.model.Valoracion;
+
+@Service
+public class ValoracionService {
+    private static final int PUNTUACION_MINIMA = 1;
+    private static final int PUNTUACION_MAXIMA = 5;
+
+    private final ValoracionDAO valoracionDAO;
+    private final PedidoDAO pedidoDAO;
+    private final ClienteDAO clienteDAO;
+
+    public ValoracionService(
+            ValoracionDAO valoracionDAO,
+            PedidoDAO pedidoDAO,
+            ClienteDAO clienteDAO) {
+        this.valoracionDAO = valoracionDAO;
+        this.pedidoDAO = pedidoDAO;
+        this.clienteDAO = clienteDAO;
+    }
+
+    public Valoracion valorar(
+            String emailCliente,
+            String pedidoId,
+            String productoId,
+            int puntuacion,
+            String comentario) {
+        if (puntuacion < PUNTUACION_MINIMA || puntuacion > PUNTUACION_MAXIMA) {
+            throw new IllegalArgumentException("La puntuación debe estar entre 1 y 5.");
+        }
+        validarIdentificador(pedidoId, "El pedido es obligatorio.");
+        validarIdentificador(productoId, "El producto es obligatorio.");
+
+        Cliente cliente = clienteDAO.findByEmail(normalizarEmail(emailCliente))
+                .orElseThrow(() -> new IllegalArgumentException("El cliente no existe."));
+        Pedido pedido = pedidoDAO.findByIdAndClienteId(pedidoId, cliente.getId())
+                .orElseThrow(() -> new IllegalArgumentException("El pedido no pertenece al cliente."));
+
+        if (pedido.getEstado() != EstadoPedido.FINALIZADO) {
+            throw new IllegalStateException("Solo se pueden valorar pedidos finalizados.");
+        }
+        boolean productoIncluido = pedido.getLineas().stream()
+                .anyMatch(linea -> Objects.equals(linea.productoId(), productoId));
+        if (!productoIncluido) {
+            throw new IllegalArgumentException("El producto no pertenece al pedido.");
+        }
+        if (valoracionDAO.existsByClienteIdAndProductoId(cliente.getId(), productoId)) {
+            throw new IllegalStateException("El cliente ya ha valorado este producto.");
+        }
+
+        return valoracionDAO.save(new Valoracion(
+                cliente.getId(),
+                pedidoId,
+                productoId,
+                puntuacion,
+                comentario));
+    }
+
+    public double calcularMediaProducto(String productoId) {
+        validarIdentificador(productoId, "El producto es obligatorio.");
+        return valoracionDAO.findByProductoId(productoId).stream()
+                .mapToInt(Valoracion::puntuacion)
+                .average()
+                .orElse(0.0);
+    }
+
+    private static void validarIdentificador(String identificador, String mensaje) {
+        if (identificador == null || identificador.isBlank()) {
+            throw new IllegalArgumentException(mensaje);
+        }
+    }
+
+    private static String normalizarEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("El cliente es obligatorio.");
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+}
