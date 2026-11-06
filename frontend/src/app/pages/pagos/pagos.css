@@ -28,7 +28,7 @@ h1 { margin: 0 0 .65rem; color: #173042; font-size: clamp(2.2rem, 5vw, 3.8rem); 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .form-grid label { display: flex; flex-direction: column; gap: .45rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .form-grid .full-width { grid-column: 1 / -1; }
-.form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid #b8ccca; border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; }
+.form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid var(--color-border-input); border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; }
 .form-grid input:focus, .form-grid select:focus { outline: 3px solid var(--color-focus); outline-offset: 2px; border-color: #c65339; }
 .field-error, .form-message { color: #a63120; font-size: .82rem; font-weight: 600; text-transform: none; letter-spacing: normal; margin-top: 2px; }
 .form-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid #d9e3e6; }

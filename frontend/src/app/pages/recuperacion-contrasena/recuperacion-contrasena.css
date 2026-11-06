@@ -107,7 +107,7 @@
   min-height: 44px;
   box-sizing: border-box;
   padding: 9px 11px;
-  border: 1px solid #cbd6d1;
+  border: 1px solid var(--color-border-input);
   border-radius: 4px;
   color: var(--ink);
   background: #fff;
@@ -124,7 +124,7 @@
 .password-input-wrap {
   display: flex;
   min-width: 0;
-  border: 1px solid #cbd6d1;
+  border: 1px solid var(--color-border-input);
   border-radius: 4px;
 }
 

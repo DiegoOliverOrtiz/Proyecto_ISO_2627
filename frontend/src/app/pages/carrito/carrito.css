@@ -165,7 +165,7 @@
   grid-template-columns: 2.7rem minmax(2.7rem, 4rem) 2.7rem;
   min-height: 2.8rem;
   overflow: hidden;
-  border: 1px solid #bfd1d7;
+  border: 1px solid var(--color-border-input);
   border-radius: 4px;
   background: #fff;
 }

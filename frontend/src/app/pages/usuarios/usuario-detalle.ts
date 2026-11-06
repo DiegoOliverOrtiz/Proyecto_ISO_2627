@@ -763,7 +763,7 @@ function mayorDeEdadValidator(
       width: 100%;
       box-sizing: border-box;
       padding: .75rem .85rem;
-      border: 1px solid #CBD8D1;
+      border: 1px solid var(--color-border-input);
       border-radius: 4px;
       background: #fff;
       color: #173042;

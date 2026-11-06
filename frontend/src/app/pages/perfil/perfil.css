@@ -20,7 +20,7 @@ h2 { margin-bottom: 0; color: #173042; font-size: 1.6rem; }
 .two-factor-heading > p:not(.account-type-kicker) { color: #536a75; line-height: 1.45; }
 .totp-qr { display: block; width: 210px; height: 210px; margin: 1rem 0; border: 8px solid #fff; box-shadow: 0 5px 18px rgba(23, 48, 66, .16); }
 .totp-code-label { display: block; margin: 1rem 0 .4rem; color: #55736c; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
-.totp-code-input { display: block; width: 12rem; box-sizing: border-box; padding: .7rem; border: 1px solid #b8ccca; border-radius: 7px; font: inherit; letter-spacing: .2em; }
+.totp-code-input { display: block; width: 12rem; box-sizing: border-box; padding: .7rem; border: 1px solid var(--color-border-input); border-radius: 7px; font: inherit; letter-spacing: .2em; }
 .two-factor-success { color: #205b49 !important; font-weight: 700; }
 .backup-codes { margin-top: 1rem; padding: 1rem; border: 1px solid #e3b24d; border-radius: 8px; background: #fffaf0; color: #6c4b1f; }
 .backup-codes p { margin: .35rem 0 .65rem; color: #775d32; font-size: .9rem; }
@@ -80,7 +80,7 @@ dd { margin: 0; color: #173042; font-size: 1.02rem; overflow-wrap: anywhere; }
 .success-message { margin-bottom: 1rem; color: #205b49; border-color: #a8d1c1; background: #edf8f3; }
 .edit-form { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid #d9e3e6; }
 .form-grid label { display: flex; flex-direction: column; gap: .45rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid #b8ccca; border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; letter-spacing: normal; text-transform: none; }
+.form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid var(--color-border-input); border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; letter-spacing: normal; text-transform: none; }
 .form-grid input:focus, .form-grid select:focus { outline: 3px solid var(--color-focus); outline-offset: 2px; border-color: #c65339; }
 .field-help { margin: 0; color: #6b7d82; font-size: .78rem; font-weight: 400; letter-spacing: normal; text-transform: none; }
 .field-error, .form-message { color: #a63120; font-size: .82rem; font-weight: 600; letter-spacing: normal; text-transform: none; }

@@ -176,6 +176,11 @@ button {
 
 input,
 select {
+  border-color: var(--color-border-input);
+}
+
+input,
+select {
   padding: 0 .7rem;
   background: #fff;
   color: #333333;
