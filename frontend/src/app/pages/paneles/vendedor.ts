@@ -1,8 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../login/auth.service';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { VendedorService } from './vendedor.service';
@@ -12,16 +10,13 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-panel-vendedor',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   styleUrl: './vendedor.css',
   templateUrl: './vendedor.html',
 })
 export class PanelVendedor implements OnInit {
-  private readonly servicioAutenticacion = inject(AuthService);
-  private readonly enrutador = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
   private readonly servicioCategorias = inject(CategoriasService);
-  readonly cerrandoSesion = signal(false);
   readonly mensajeError = signal('');
 
   private readonly servicioProductos = inject(ProductoService);
@@ -87,26 +82,6 @@ export class PanelVendedor implements OnInit {
     descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
-
-  cerrarSesion(): void {
-    this.cerrandoSesion.set(true);
-    this.mensajeError.set('');
-
-    this.servicioAutenticacion.cerrarSesion().subscribe({
-      next: () => {
-        this.cerrandoSesion.set(false);
-        void this.enrutador.navigateByUrl('/login');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cerrandoSesion.set(false);
-        this.mensajeError.set(
-          error.status === 0
-            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
-            : 'No se pudo cerrar la sesión. Inténtalo de nuevo.'
-        );
-      }
-    });
-  }
 
   alternarFormulario(): void {
     this.mensajeExito.set('');
