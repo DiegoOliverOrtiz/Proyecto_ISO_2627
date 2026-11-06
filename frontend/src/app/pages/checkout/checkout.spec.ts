@@ -104,6 +104,30 @@ describe('Checkout - HU-26', () => {
     http.expectNone(`${api}/usuarios/sesion-actual`);
   });
 
+  it('explica qué falta mientras «Pagar» está desactivado (M4)', () => {
+    crear(); cargar();
+    const motivo = () => fixture.nativeElement.querySelector('#motivo-pagar')?.textContent.trim();
+
+    expect(motivo()).toBe('Elige una dirección de envío y un método de pago.');
+    expect(fixture.nativeElement.querySelector('.pay-button').getAttribute('aria-describedby')).toBe('motivo-pagar');
+
+    fixture.componentInstance.direccionId.set('d1');
+    fixture.detectChanges();
+    expect(motivo()).toBe('Elige un método de pago.');
+
+    seleccionar();
+    expect(motivo()).toBeUndefined();
+    expect(fixture.nativeElement.querySelector('.pay-button').disabled).toBe(false);
+  });
+
+  it('con el carrito vacío ofrece ir al catálogo (B4)', () => {
+    crear(); cargar([]);
+
+    const accion = fixture.nativeElement.querySelector('.estado a');
+    expect(accion.textContent).toContain('Ir al catálogo');
+    expect(accion.getAttribute('href')).toBe('/cliente');
+  });
+
   it('rechaza carrito vacío y no permite pagar', () => {
     crear(); cargar([]);
     seleccionar(); fixture.componentInstance.pagar();
