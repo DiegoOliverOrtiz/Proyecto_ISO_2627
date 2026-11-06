@@ -425,4 +425,38 @@ describe('Register', () => {
       tipoUsuario: 'VENDEDOR'
     });
   });
+
+  describe('confirmación de contraseña (A22)', () => {
+    const confirmationInput = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector('[formControlName="repetirContrasena"]');
+
+    const expectClipboardBlocked = (input: HTMLInputElement): void => {
+      for (const type of ['paste', 'copy', 'cut', 'drop']) {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+        expect(event.defaultPrevented, type).toBe(true);
+      }
+      expect(input.getAttribute('autocomplete')).toBe('off');
+    };
+
+    it('no permite pegar, copiar, cortar ni soltar en el formulario de cliente', () => {
+      expectClipboardBlocked(confirmationInput());
+      expect(component.clienteForm.controls.repetirContrasena.value).toBe('');
+    });
+
+    it('no permite pegar, copiar, cortar ni soltar en el formulario de vendedor', () => {
+      fixture.nativeElement
+        .querySelector('.role-switch button:last-child')
+        .click();
+
+      httpMock.expectOne(
+        'https://localhost:8443/categorias/registro'
+      ).flush([]);
+
+      fixture.detectChanges();
+
+      expectClipboardBlocked(confirmationInput());
+      expect(component.vendedorForm.controls.repetirContrasena.value).toBe('');
+    });
+  });
 });
