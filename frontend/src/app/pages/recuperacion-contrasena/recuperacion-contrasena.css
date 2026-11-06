@@ -109,7 +109,6 @@
   padding: 9px 11px;
   border: 1px solid #cbd6d1;
   border-radius: 4px;
-  outline: none;
   color: var(--ink);
   background: #fff;
   font: inherit;
@@ -155,7 +154,7 @@
 .eye-button:focus-visible,
 .submit-button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--leaf);
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 

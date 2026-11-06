@@ -81,7 +81,7 @@ dd { margin: 0; color: #173042; font-size: 1.02rem; overflow-wrap: anywhere; }
 .edit-form { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid #d9e3e6; }
 .form-grid label { display: flex; flex-direction: column; gap: .45rem; color: #55736c; font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .form-grid input, .form-grid select { width: 100%; box-sizing: border-box; padding: .75rem; border: 1px solid #b8ccca; border-radius: 7px; color: #173042; background: #fff; font: inherit; font-size: .98rem; letter-spacing: normal; text-transform: none; }
-.form-grid input:focus, .form-grid select:focus { outline: 2px solid rgba(198, 83, 57, .25); border-color: #c65339; }
+.form-grid input:focus, .form-grid select:focus { outline: 3px solid var(--color-focus); outline-offset: 2px; border-color: #c65339; }
 .field-help { margin: 0; color: #6b7d82; font-size: .78rem; font-weight: 400; letter-spacing: normal; text-transform: none; }
 .field-error, .form-message { color: #a63120; font-size: .82rem; font-weight: 600; letter-spacing: normal; text-transform: none; }
 .protected-fields { margin-top: 1.25rem; padding: 1rem; border: 1px solid #dce7e5; border-radius: 9px; color: #536a75; background: #f7faf9; font-size: .9rem; }

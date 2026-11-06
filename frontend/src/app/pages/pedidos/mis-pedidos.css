@@ -181,7 +181,7 @@ button:disabled {
 .enlace-cliente:focus-visible,
 .boton-primario:focus-visible,
 .boton-secundario:focus-visible {
-  outline: 2px solid #d36b54;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 

@@ -327,7 +327,6 @@ th {
 .view-action:focus-visible {
   color: #fff;
   background: #255B4D;
-  outline: none;
   transform: translateY(-1px);
 }
 
