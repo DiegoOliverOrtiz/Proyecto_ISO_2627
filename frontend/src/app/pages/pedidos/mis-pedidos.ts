@@ -15,7 +15,7 @@ import {
   standalone: true,
   imports: [DatePipe, DecimalPipe],
   templateUrl: './mis-pedidos.html',
-  styleUrl: './mis-pedidos.css'
+  styleUrls: ['../tienda/tienda.css', './mis-pedidos.css']
 })
 export class MisPedidos implements OnInit {
   private readonly servicio = inject(PedidosService);
