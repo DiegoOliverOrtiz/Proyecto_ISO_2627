@@ -1,6 +1,13 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+  signal
+} from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -48,6 +55,7 @@ export class MisPedidos implements OnInit {
   readonly pedidoSeleccionado = signal<PedidoCliente | null>(null);
   readonly cargandoDetalle = signal(false);
   readonly errorDetalle = signal('');
+  readonly productoValoracionAbierta = signal<string | null>(null);
   readonly pedidoCancelandoId = signal<string | null>(null);
   readonly resultadoCancelacion = signal('');
   readonly errorCancelacion = signal('');
@@ -70,6 +78,13 @@ export class MisPedidos implements OnInit {
     'TRAMITADO_ENVIADO',
     'FINALIZADO'
   ];
+
+  readonly estrellas = [1, 2, 3, 4, 5];
+
+  @ViewChild('detallePedido')
+  set detallePedido(elemento: ElementRef<HTMLElement> | undefined) {
+    elemento?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   ngOnInit(): void {
     this.cargarPedidos();
@@ -112,6 +127,7 @@ export class MisPedidos implements OnInit {
 
   abrirDetalle(pedidoId: string): void {
     this.pedidoSeleccionado.set(null);
+    this.productoValoracionAbierta.set(null);
     this.cargandoDetalle.set(true);
     this.errorDetalle.set('');
 
@@ -132,6 +148,7 @@ export class MisPedidos implements OnInit {
 
   cerrarDetalle(): void {
     this.pedidoSeleccionado.set(null);
+    this.productoValoracionAbierta.set(null);
     this.errorDetalle.set('');
     this.cargandoDetalle.set(false);
     this.estadosValoracion.set({});
@@ -147,6 +164,36 @@ export class MisPedidos implements OnInit {
     comentario: FormControl<string>;
   }> | undefined {
     return this.formulariosValoracion.get(productoId);
+  }
+
+  alternarFormularioValoracion(productoId: string): void {
+    if (this.estadoValoracion(productoId)?.estado !== 'pendiente') {
+      return;
+    }
+
+    if (this.productoValoracionAbierta() === productoId) {
+      this.productoValoracionAbierta.set(null);
+      return;
+    }
+
+    if (!this.formulariosValoracion.has(productoId)) {
+      this.formulariosValoracion.set(
+        productoId,
+        this.formularioBuilder.group({
+          puntuacion: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
+          comentario: ['', [Validators.maxLength(500)]]
+        })
+      );
+    }
+    this.productoValoracionAbierta.set(productoId);
+  }
+
+  seleccionarPuntuacion(productoId: string, puntuacion: number): void {
+    if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+      return;
+    }
+
+    this.formularioValoracion(productoId)?.controls.puntuacion.setValue(puntuacion);
   }
 
   reintentarConsultaValoracion(pedido: PedidoCliente, productoId: string): void {
@@ -186,6 +233,9 @@ export class MisPedidos implements OnInit {
           mensaje: '',
           enviando: false
         });
+        if (this.productoValoracionAbierta() === productoId) {
+          this.productoValoracionAbierta.set(null);
+        }
       },
       error: (error: HttpErrorResponse) => {
         this.actualizarEstadoValoracion(productoId, {
@@ -225,13 +275,6 @@ export class MisPedidos implements OnInit {
           return;
         }
 
-        this.formulariosValoracion.set(
-          productoId,
-          this.formularioBuilder.group({
-            puntuacion: [5, [Validators.required, Validators.min(1), Validators.max(5)]],
-            comentario: ['', [Validators.maxLength(500)]]
-          })
-        );
         this.actualizarEstadoValoracion(productoId, {
           estado: 'pendiente',
           mensaje: '',

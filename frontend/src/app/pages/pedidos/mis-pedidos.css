@@ -131,6 +131,12 @@
   margin: 1rem 0;
 }
 
+.acciones-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
 .boton-primario,
 .boton-secundario,
 .boton-cancelar,
@@ -161,7 +167,6 @@
 }
 
 .boton-cancelar {
-  margin-left: .5rem;
   border: 1px solid #c74b35;
   color: #a63120;
   background: #fff;
@@ -180,7 +185,9 @@ button:disabled {
 .logout-button:focus-visible,
 .enlace-cliente:focus-visible,
 .boton-primario:focus-visible,
-.boton-secundario:focus-visible {
+.boton-secundario:focus-visible,
+.boton-valorar:focus-visible,
+.estrella-puntuacion:focus-visible {
   outline: 2px solid #d36b54;
   outline-offset: 2px;
 }
@@ -193,15 +200,30 @@ button:disabled {
   overflow-x: auto;
 }
 
-.valoracion-producto {
-  margin: 1rem 0;
-  padding: 1rem;
-  border: 1px solid #d9e3e6;
-  border-radius: 8px;
+.boton-valorar {
+  padding: .4rem .7rem;
+  border: 1px solid #d36b54;
+  border-radius: 4px;
+  color: #a63120;
+  background: #fff;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.valoracion-producto select,
-.valoracion-producto textarea {
+.fila-valoracion > td {
+  padding: 1rem;
+  background: #f7f9fa;
+}
+
+.fila-valoracion form {
+  display: grid;
+  gap: .65rem;
+  max-width: 36rem;
+}
+
+.fila-valoracion textarea {
   width: 100%;
   padding: .65rem;
   border: 1px solid #7a8f97;
@@ -209,6 +231,34 @@ button:disabled {
   color: #173042;
   background: #fff;
 }
+
+.puntuacion-estrellas {
+  display: flex;
+  gap: .25rem;
+}
+
+.estrella-puntuacion {
+  padding: .1rem;
+  border: 0;
+  color: #aab8bf;
+  background: transparent;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.estrella-puntuacion.seleccionada {
+  color: #d36b2e;
+}
+
+.etiqueta-estrellas {
+  font-weight: 700;
+}
+
+.fila-valoracion small {
+  color: #526675;
+}
+
 .valoracion-completada { color: #255b4d; }
 
 table {

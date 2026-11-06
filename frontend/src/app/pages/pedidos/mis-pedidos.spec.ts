@@ -14,6 +14,8 @@ import { EstadoPedido, PedidoCliente } from './pedidos.service';
 describe('MisPedidos - HU-38 confirmar recepción', () => {
   let fixture: ComponentFixture<MisPedidos>;
   let http: HttpTestingController;
+  let descriptorScrollIntoView: PropertyDescriptor | undefined;
+  let scrollIntoView: ReturnType<typeof vi.fn>;
 
   const baseUrl = `${environment.apiUrl}/cliente/pedidos`;
   const csrfUrl = `${environment.apiUrl}/usuarios/csrf`;
@@ -93,6 +95,16 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
   }
 
   beforeEach(() => {
+    descriptorScrollIntoView = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollIntoView'
+    );
+    scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView
+    });
+
     TestBed.configureTestingModule({
       imports: [MisPedidos],
       providers: [
@@ -110,6 +122,15 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
   afterEach(() => {
     http.verify();
     vi.restoreAllMocks();
+    if (descriptorScrollIntoView) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'scrollIntoView',
+        descriptorScrollIntoView
+      );
+    } else {
+      delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
+    }
     TestBed.resetTestingModule();
   });
 
@@ -238,7 +259,10 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
     )).flush({ valorada: false });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Valorar');
+    expect(fixture.nativeElement.querySelector('#boton-valorar-producto-1'))
+      .not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#formulario-valoracion-producto-1'))
+      .toBeNull();
 
     fixture.componentInstance.abrirDetalle(enviado.id);
     http.expectOne(`${baseUrl}/${enviado.id}`).flush(enviado);
@@ -246,6 +270,23 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
 
     expect(fixture.nativeElement.textContent)
       .not.toContain('Valorar producto');
+  });
+
+  it('desplaza suavemente hasta el detalle cuando termina de cargar', () => {
+    cargar([enviado]);
+
+    const boton = (fixture.nativeElement as HTMLElement).querySelector(
+      '#titulo-activos ~ .lista-pedidos .tarjeta-pedido .boton-primario'
+    ) as HTMLButtonElement;
+    boton.click();
+
+    http.expectOne(`${baseUrl}/${enviado.id}`).flush(enviado);
+    fixture.detectChanges();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start'
+    });
   });
 
   it('muestra el formulario para una valoración pendiente y la marca tras enviarla', () => {
@@ -260,23 +301,28 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
     )).flush({ valorada: false });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent)
-      .toContain('Valorar producto');
+    expect(fixture.nativeElement.querySelector('#formulario-valoracion-producto-1'))
+      .toBeNull();
+    fixture.nativeElement.querySelector('#boton-valorar-producto-1').click();
+    fixture.detectChanges();
 
-    const puntuacion: HTMLSelectElement | null =
-      fixture.nativeElement.querySelector('#puntuacion-producto-1');
+    const estrellas: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.estrella-puntuacion')
+    );
     const comentario: HTMLTextAreaElement | null =
       fixture.nativeElement.querySelector('#comentario-producto-1');
     const boton: HTMLButtonElement | null =
       fixture.nativeElement.querySelector('#formulario-valoracion-producto-1 button[type="submit"]');
 
-    expect(puntuacion).not.toBeNull();
+    expect(estrellas).toHaveLength(5);
     expect(comentario).not.toBeNull();
     expect(comentario?.getAttribute('maxlength')).toBe('500');
     expect(boton).not.toBeNull();
 
+    fixture.nativeElement.querySelector('#estrella-producto-1-4').click();
     fixture.componentInstance.formularioValoracion('producto-1')!
-      .setValue({ puntuacion: 5, comentario: 'Buen producto' });
+      .controls.comentario.setValue('Buen producto');
+    fixture.detectChanges();
     expect(boton!.disabled).toBe(false);
     fixture.nativeElement
       .querySelector('#formulario-valoracion-producto-1')
@@ -288,14 +334,14 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
     );
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual({
-      puntuacion: 5,
+      puntuacion: 4,
       comentario: 'Buen producto'
     });
     peticion.flush({
       id: 'valoracion-1',
       pedidoId: pedidoFinalizadoConProducto.id,
       productoId: 'producto-1',
-      puntuacion: 5,
+      puntuacion: 4,
       comentario: 'Buen producto'
     });
     fixture.detectChanges();
