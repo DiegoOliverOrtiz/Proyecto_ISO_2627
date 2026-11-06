@@ -413,7 +413,19 @@ function mayorDeEdadValidator(
                     id="telefono"
                     type="text"
                     formControlName="telefono"
+                    placeholder="Dejar vacío para conservar el actual"
                   />
+
+                  <small class="field-help">
+                    @if (usuario()?.telefono) {
+                      <label>
+                        <input type="checkbox" formControlName="eliminarTelefono" />
+                        Eliminar el teléfono guardado
+                      </label>
+                    } @else {
+                      Déjalo vacío para conservar el actual.
+                    }
+                  </small>
 
                 </div>
 
@@ -444,7 +456,9 @@ function mayorDeEdadValidator(
                       id="dniCliente"
                       type="text"
                       formControlName="dniNif"
+                      placeholder="Dejar vacío para conservar el actual"
                     />
+                    <small class="field-help">El DNI/NIF se muestra enmascarado; déjalo vacío para conservarlo.</small>
 
                   </div>
 
@@ -489,7 +503,9 @@ function mayorDeEdadValidator(
                       id="dniVendedor"
                       type="text"
                       formControlName="dniNif"
+                      placeholder="Dejar vacío para conservar el actual"
                     />
+                    <small class="field-help">El DNI/NIF se muestra enmascarado; déjalo vacío para conservarlo.</small>
 
                   </div>
 
@@ -921,6 +937,8 @@ export class UsuarioDetalle implements OnInit {
 
       telefono: [''],
 
+      eliminarTelefono: [false],
+
       imagenPerfil: [''],
 
       dniNif: [''],
@@ -1026,13 +1044,16 @@ export class UsuarioDetalle implements OnInit {
         usuario.apellidos ?? '',
 
       telefono:
-        usuario.telefono ?? '',
+        '',
+
+      eliminarTelefono:
+        false,
 
       imagenPerfil:
         usuario.imagenPerfil ?? '',
 
       dniNif:
-        usuario.dniNif ?? '',
+        '',
 
       fechaNacimiento:
         usuario.fechaNacimiento ?? '',
@@ -1087,8 +1108,10 @@ export class UsuarioDetalle implements OnInit {
         valores.apellidos.trim(),
 
       telefono:
-        valores.telefono.trim()
-        || null,
+        valores.eliminarTelefono
+          ? ''
+          : valores.telefono.trim()
+            || null,
 
       imagenPerfil:
         valores.imagenPerfil.trim()

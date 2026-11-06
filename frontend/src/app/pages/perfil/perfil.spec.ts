@@ -14,7 +14,7 @@ const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(res
 
 const perfilCliente: PerfilResponse = {
   tipoUsuario: 'CLIENTE', nombre: 'Ana', apellidos: 'García',
-  email: 'ana@esibuy.com', telefono: '600123123', imagenPerfil: null,
+  email: 'ana@esibuy.com', telefono: '******123', imagenPerfil: null,
   dniNif: '12*******', fechaNacimiento: null, esPremium: true,
   nombreComercial: null, categoria: null, sede: null,
   fechaIncorporacion: null, rol: null, totpActivado: false,
@@ -254,6 +254,26 @@ describe('Perfil', () => {
     expect(componente.perfil()).toEqual(perfilActualizado);
     expect(componente.mensajeExito()).toContain('actualizado');
     expect(componente.editando()).toBe(false);
+  });
+
+  it('conserva el teléfono enmascarado si el campo se deja vacío y permite borrarlo expresamente', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    expect(componente.formulario.controls.telefono.value).toBe('');
+
+    componente.formulario.patchValue({ nombre: 'Ana', apellidos: 'García' });
+    perfilServiceMock.modificarPerfil.mockReturnValue(of(perfilCliente));
+    componente.guardarCambios();
+    expect(perfilServiceMock.modificarPerfil).toHaveBeenLastCalledWith(expect.objectContaining({ telefono: null }));
+
+    componente.iniciarEdicion();
+    componente.formulario.patchValue({
+      nombre: 'Ana',
+      apellidos: 'García',
+      eliminarTelefono: true
+    });
+    componente.guardarCambios();
+    expect(perfilServiceMock.modificarPerfil).toHaveBeenLastCalledWith(expect.objectContaining({ telefono: '' }));
   });
 
   it('permite al vendedor seleccionar una categoría', () => {

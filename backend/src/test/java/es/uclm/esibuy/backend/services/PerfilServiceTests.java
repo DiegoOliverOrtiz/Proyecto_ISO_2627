@@ -68,6 +68,8 @@ class PerfilServiceTests {
         assertEquals("García López", perfil.apellidos());
         assertEquals("cliente@esibuy.com", perfil.email());
         assertEquals("12*******", perfil.dniNif());
+        assertEquals("******123", perfil.telefono());
+        assertFalse(perfil.telefono().contains("600123123"));
         assertEquals(true, perfil.esPremium());
         for (var componente : PerfilResponse.class.getRecordComponents()) {
             assertFalse(componente.getName().toLowerCase().contains("contrasena"));
