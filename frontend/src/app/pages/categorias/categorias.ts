@@ -5,7 +5,6 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import {
   Categoria,
@@ -16,12 +15,9 @@ import {
 
 @Component({
   selector: 'app-categorias',
-  imports: [
-    ReactiveFormsModule,
-    RouterLink
-  ],
+  imports: [ReactiveFormsModule],
   templateUrl: './categorias.html',
-  styleUrl: './categorias.css',
+  styleUrls: ['../tienda/tienda.css', './categorias.css'],
 })
 export class Categorias implements OnInit {
   private readonly categoriasService = inject(CategoriasService);
@@ -295,12 +291,15 @@ export class Categorias implements OnInit {
 
   private desplazarAlFormulario(): void {
     setTimeout(() => {
+      // A20: el formulario se lleva a la vista (sin animación si se pide menos movimiento) y recibe el foco.
+      const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       document
         .getElementById('formulario-categoria')
-        ?.scrollIntoView({
-          behavior: 'smooth',
+        ?.scrollIntoView?.({
+          behavior: sinMovimiento ? 'auto' : 'smooth',
           block: 'start'
         });
+      document.getElementById('titulo-formulario')?.focus({ preventScroll: true });
     });
   }
 }

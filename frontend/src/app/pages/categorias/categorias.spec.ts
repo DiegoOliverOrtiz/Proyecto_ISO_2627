@@ -459,4 +459,57 @@ describe('Categorias', () => {
     expect(component.categorias().length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Deportes');
   });
+  describe('presentación (M17, A20)', () => {
+    function cargar(categorias: unknown[]): HTMLElement {
+      fixture.detectChanges();
+      httpMock.expectOne(`${environment.apiUrl}/categorias`).flush(categorias);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('sin resultados con filtros muestra el mensaje completo y «Limpiar filtros» junto a él (M17)', () => {
+      const vista = cargar([]);
+      component.filtros.patchValue({ nombre: 'zzz' });
+      component.aplicarFiltros();
+      httpMock.expectOne(`${environment.apiUrl}/categorias?nombre=zzz`).flush([]);
+      fixture.detectChanges();
+
+      const estado = vista.querySelector('.estado') as HTMLElement;
+      expect(estado.textContent).toContain('No se encontraron categorías con los filtros indicados.');
+      expect(estado.querySelector('button')?.textContent?.trim()).toBe('Limpiar filtros');
+    });
+
+    it('sin categorías invita a crear la primera', () => {
+      const vista = cargar([]);
+
+      expect(vista.querySelector('.estado')?.textContent).toContain('Nueva categoría');
+    });
+
+    it('muestra cada categoría como tarjeta con «Editar» y «Eliminar» de contorno rojo', () => {
+      const vista = cargar([{ id: 'c1', nombre: 'Hogar', descripcion: 'Cosas de casa' }]);
+
+      const tarjeta = vista.querySelector('.categoria-card') as HTMLElement;
+      expect(tarjeta.querySelector('h2')?.textContent?.trim()).toBe('Hogar');
+      expect(tarjeta.querySelector('.boton-peligro')?.getAttribute('aria-label')).toBe('Eliminar categoría Hogar');
+      expect(vista.querySelectorAll('h1').length).toBe(1);
+    });
+
+    it('al abrir el formulario, el foco entra en su título y respeta prefers-reduced-motion', async () => {
+      const vista = cargar([]);
+      document.body.appendChild(vista);
+      const desplazar = vi.fn();
+      (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView = desplazar;
+      vi.stubGlobal('matchMedia', () => ({ matches: true }));
+
+      component.abrirFormulario();
+      fixture.detectChanges();
+      await new Promise<void>((resolver) => setTimeout(resolver));
+
+      expect(document.activeElement?.id).toBe('titulo-formulario');
+      expect(desplazar).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'auto', block: 'start' }));
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+      vi.unstubAllGlobals();
+      vista.remove();
+    });
+  });
 });
