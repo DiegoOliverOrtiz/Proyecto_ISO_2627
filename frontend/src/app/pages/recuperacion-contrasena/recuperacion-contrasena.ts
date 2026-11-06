@@ -57,7 +57,7 @@ const validadorCoincidenciaContrasenas: ValidatorFn = (
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-recuperacion-contrasena',
-  styleUrl: './recuperacion-contrasena.css',
+  styleUrls: ['../acceso/acceso.css', './recuperacion-contrasena.css'],
   templateUrl: './recuperacion-contrasena.html',
 })
 export class RecuperacionContrasena {
