@@ -135,7 +135,8 @@ public class CarritoService {
                 linea = new LineaCarritoResponse(entrada.getKey(), entrada.getValue(), null, null,
                         producto == null ? "Producto eliminado" : producto.getNombre(),
                         producto == null ? null : producto.getImagen(),
-                        producto == null ? null : producto.getStock(), false, aviso);
+                        producto == null ? null : producto.getStock(), false, aviso,
+                        producto == null ? null : producto.getVendedor());
             }
             lineas.add(linea);
         }
@@ -171,7 +172,8 @@ public class CarritoService {
         BigDecimal precioUnitario = BigDecimal.valueOf(precio).setScale(2);
         BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
         return new LineaCarritoResponse(producto.getId(), cantidad, precioUnitario, subtotal,
-                producto.getNombre(), producto.getImagen(), producto.getStock(), true, null);
+                producto.getNombre(), producto.getImagen(), producto.getStock(), true, null,
+                producto.getVendedor());
     }
 
     private Resultado actualizarCarrito(String idProducto, int cantidad) {

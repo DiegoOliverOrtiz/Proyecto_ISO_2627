@@ -4,16 +4,18 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { DireccionesService, DireccionResponse, DireccionRequest } from './direcciones.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 @Component({
   selector: 'app-direcciones',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
-  styleUrl: './direcciones.css',
+  styleUrls: ['../tienda/tienda.css', '../tienda/gestion.css', './direcciones.css'],
   templateUrl: './direcciones.html'
 })
 export class Direcciones {
   private readonly servicioDirecciones = inject(DireccionesService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly constructorFormularios = inject(FormBuilder);
   private readonly enrutador = inject(Router);
 
@@ -129,8 +131,14 @@ export class Direcciones {
     });
   }
 
-  eliminarDireccion(id: string): void {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar esta dirección?')) {
+  async eliminarDireccion(id: string): Promise<void> {
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar dirección',
+      mensaje: '¿Seguro que quieres eliminar esta dirección? No se puede deshacer.',
+      aceptar: 'Eliminar',
+      peligro: true
+    });
+    if (!confirmado) {
       return;
     }
 

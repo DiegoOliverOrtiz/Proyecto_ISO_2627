@@ -1,125 +1,141 @@
-<main class="profile-page">
-  <header class="profile-header">
+<main class="pagina gestion-pagina">
+  <header class="pagina-cabecera">
     <div>
-      <p class="eyebrow">Direcciones</p>
-      <h1>Mis direcciones</h1>
-      <p>Gestiona los lugares donde quieres recibir tus pedidos.</p>
+      <h1 class="pagina-titulo">Mis direcciones</h1>
+      <p class="pagina-descripcion">Gestiona los lugares donde quieres recibir tus pedidos.</p>
     </div>
-    <div class="header-actions">
-      <a class="secondary-button" routerLink="/perfil">Volver al perfil</a>
-      @if (!editando()) {
-        <button class="primary-button" (click)="iniciarCreacion()">Añadir dirección</button>
+    <div class="gestion-acciones">
+      <a class="boton-secundario" routerLink="/perfil">Volver al perfil</a>
+      @if (!editando() && !cargando() && !mensajeError()) {
+        <button class="boton-principal" type="button" (click)="iniciarCreacion()">Añadir dirección</button>
       }
     </div>
   </header>
 
   @if (cargando()) {
-    <output class="status-message">Cargando direcciones...</output>
+    <output class="estado">Cargando direcciones...</output>
   } @else if (mensajeError()) {
-    <p class="status-message error-message" role="alert">{{ mensajeError() }}</p>
+    <section class="estado" role="alert">
+      <p class="estado-titulo">{{ mensajeError() }}</p>
+      <button class="boton-secundario" type="button" (click)="cargarDirecciones()">Reintentar</button>
+    </section>
   } @else {
-    
     @if (mensajeExito() && !editando()) {
-      <p class="status-message success-message" role="status">{{ mensajeExito() }}</p>
+      <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
     }
 
     @if (editando()) {
-      <section class="edit-form" aria-labelledby="form-titulo">
+      <section class="tarjeta gestion-formulario" aria-labelledby="form-titulo">
         <h2 id="form-titulo">{{ direccionIdActiva() ? 'Editar dirección' : 'Nueva dirección' }}</h2>
-        
+
         <form [formGroup]="formulario" (ngSubmit)="guardarDireccion()">
-          <div class="form-grid">
+          <div class="gestion-campos">
             <label>
-              Nombre (ej. Mi casa)
-              <input type="text" formControlName="nombre" />
+              Nombre identificativo
+              <input type="text" formControlName="nombre" aria-describedby="ayuda-nombre-direccion"
+                     [attr.aria-invalid]="formulario.controls.nombre.touched && formulario.controls.nombre.invalid" />
+              <span id="ayuda-nombre-direccion" class="ayuda-campo">Por ejemplo: «Mi casa». Máximo 50 caracteres.</span>
               @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
-                <span class="field-error">El nombre es obligatorio y debe tener máximo 50 caracteres.</span>
+                <span class="error-campo">El nombre es obligatorio y debe tener como máximo 50 caracteres.</span>
               }
             </label>
 
             <label>
-              Código Postal
-              <input type="text" formControlName="codigoPostal" maxlength="5" />
+              Código postal
+              <input type="text" formControlName="codigoPostal" maxlength="5" inputmode="numeric" autocomplete="postal-code"
+                     [attr.aria-invalid]="formulario.controls.codigoPostal.touched && formulario.controls.codigoPostal.invalid" />
               @if (formulario.controls.codigoPostal.touched && formulario.controls.codigoPostal.hasError('pattern')) {
-                <span class="field-error">El código postal debe tener exactamente 5 dígitos.</span>
+                <span class="error-campo">El código postal debe tener exactamente 5 dígitos.</span>
               }
             </label>
 
-            <label class="full-width">
+            <label class="ancho-completo">
               Calle
-              <input type="text" formControlName="calle" />
+              <input type="text" formControlName="calle" autocomplete="address-line1"
+                     [attr.aria-invalid]="formulario.controls.calle.touched && formulario.controls.calle.invalid" />
               @if (formulario.controls.calle.touched && formulario.controls.calle.invalid) {
-                <span class="field-error">La calle es obligatoria.</span>
+                <span class="error-campo">La calle es obligatoria.</span>
               }
             </label>
 
             <label>
               Número
-              <input type="text" formControlName="numero" />
+              <input type="text" formControlName="numero"
+                     [attr.aria-invalid]="formulario.controls.numero.touched && formulario.controls.numero.invalid" />
               @if (formulario.controls.numero.touched && formulario.controls.numero.invalid) {
-                <span class="field-error">El número es obligatorio.</span>
+                <span class="error-campo">El número es obligatorio.</span>
               }
             </label>
 
             <label>
-              Portal (Opcional)
+              Portal (opcional)
               <input type="text" formControlName="portal" />
             </label>
 
             <label>
-              Piso (Opcional)
+              Piso (opcional)
               <input type="text" formControlName="piso" />
             </label>
 
             <label>
               Ciudad
-              <input type="text" formControlName="ciudad" />
+              <input type="text" formControlName="ciudad" autocomplete="address-level2"
+                     [attr.aria-invalid]="formulario.controls.ciudad.touched && formulario.controls.ciudad.invalid" />
               @if (formulario.controls.ciudad.touched && formulario.controls.ciudad.invalid) {
-                <span class="field-error">La ciudad es obligatoria.</span>
+                <span class="error-campo">La ciudad es obligatoria.</span>
               }
             </label>
 
             <label>
               Provincia
-              <input type="text" formControlName="provincia" />
+              <input type="text" formControlName="provincia" autocomplete="address-level1"
+                     [attr.aria-invalid]="formulario.controls.provincia.touched && formulario.controls.provincia.invalid" />
               @if (formulario.controls.provincia.touched && formulario.controls.provincia.invalid) {
-                <span class="field-error">La provincia es obligatoria.</span>
+                <span class="error-campo">La provincia es obligatoria.</span>
               }
             </label>
           </div>
 
           @if (mensajeFormulario()) {
-            <p class="form-message" role="alert">{{ mensajeFormulario() }}</p>
+            <p class="mensaje-formulario" role="alert">{{ mensajeFormulario() }}</p>
           }
 
-          <div class="form-actions">
-            <button class="secondary-button" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
-            <button class="primary-button" type="submit" [disabled]="guardando()">
+          <div class="gestion-formulario-acciones">
+            <button class="boton-secundario" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="boton-principal" type="submit" [disabled]="guardando()">
               {{ guardando() ? 'Guardando...' : 'Guardar dirección' }}
             </button>
           </div>
         </form>
       </section>
     } @else {
-      <div class="direcciones-grid">
-        @for (dir of direcciones(); track dir.id) {
-          <article class="direccion-card">
-            <h3>{{ dir.nombre }}</h3>
-            <p>{{ dir.calle }}, {{ dir.numero }}</p>
-            <p>
-              @if (dir.portal) { Portal {{ dir.portal }} }
-              @if (dir.piso) { Piso {{ dir.piso }} }
-            </p>
-            <p>{{ dir.codigoPostal }} {{ dir.ciudad }} ({{ dir.provincia }})</p>
-            <div class="card-actions">
-              <button class="secondary-button action-btn" (click)="iniciarEdicion(dir)">Editar</button>
-              <button class="secondary-button danger action-btn" (click)="eliminarDireccion(dir.id)">Eliminar</button>
-            </div>
-          </article>
-        } @empty {
-          <p class="status-message">No tienes ninguna dirección de envío guardada.</p>
-        }
-      </div>
+      @if (direcciones().length === 0) {
+        <section class="estado">
+          <p class="estado-titulo">Todavía no tienes direcciones de envío.</p>
+          <p>Añade una para poder completar tus pedidos.</p>
+          <button class="boton-principal" type="button" (click)="iniciarCreacion()">Añadir dirección</button>
+        </section>
+      } @else {
+        <div class="gestion-rejilla">
+          @for (dir of direcciones(); track dir.id) {
+            <article class="tarjeta gestion-tarjeta">
+              <h2>{{ dir.nombre }}</h2>
+              <p>{{ dir.calle }}, {{ dir.numero }}</p>
+              @if (dir.portal || dir.piso) {
+                <p>
+                  @if (dir.portal) { Portal {{ dir.portal }} }
+                  @if (dir.piso) { Piso {{ dir.piso }} }
+                </p>
+              }
+              <p>{{ dir.codigoPostal }} {{ dir.ciudad }} ({{ dir.provincia }})</p>
+              <div class="gestion-tarjeta-acciones">
+                <button class="boton-secundario" type="button" (click)="iniciarEdicion(dir)">Editar</button>
+                <button class="boton-peligro" type="button" (click)="eliminarDireccion(dir.id)">Eliminar</button>
+              </div>
+            </article>
+          }
+        </div>
+      }
     }
   }
 </main>

@@ -1,8 +1,17 @@
-<header class="cabecera">
-  <h1>Mis pedidos</h1>
-</header>
-
-<main class="contenedor">
+<main class="contenedor pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mis pedidos</h1>
+      <p class="pagina-descripcion">Consulta tus pedidos, su estado y la información del envío.</p>
+    </div>
+    <button
+      type="button"
+      class="boton-secundario"
+      [disabled]="cargandoActivos() || cargandoHistorico()"
+      (click)="cargarPedidos()">
+      Actualizar
+    </button>
+  </div>
   @if (resultadoCancelacion()) {
     <p class="mensaje-exito" role="status">{{ resultadoCancelacion() }}</p>
   }
@@ -21,22 +30,6 @@
       {{ errorRecepcion() }}
     </p>
   }
-
-  <div class="encabezado">
-    <div>
-      <h2>Mis compras</h2>
-      <p>Consulta tus pedidos, su estado y la información disponible del envío.</p>
-    </div>
-
-    <button
-      type="button"
-      class="boton-secundario"
-      [disabled]="cargandoActivos() || cargandoHistorico()"
-      (click)="cargarPedidos()">
-      Actualizar
-    </button>
-  </div>
-
   <section class="seccion-pedidos" aria-labelledby="titulo-activos">
     <h2 id="titulo-activos">Pedidos activos</h2>
 
@@ -58,7 +51,7 @@
                 <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                 <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
               </div>
-              <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+              <span class="chip-estado">{{ textoEstado(pedido.estado) }}</span>
             </div>
 
             <div class="resumen">
@@ -66,7 +59,7 @@
               <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
             </div>
 
-            <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+            <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
               Ver detalle y seguimiento
             </button>
             @if (puedeCancelar(pedido.estado)) {
@@ -116,7 +109,7 @@
                 <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                 <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
               </div>
-              <span class="estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
+              <span class="chip-estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
                 {{ textoEstado(pedido.estado) }}
               </span>
             </div>
@@ -126,7 +119,7 @@
               <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
             </div>
 
-            <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+            <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
               Ver detalle y seguimiento
             </button>
           </article>

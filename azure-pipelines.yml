@@ -1,5 +1,6 @@
 # Azure Pipelines Configuration - ESIBuy
-# Pipeline as Code: Validación automática en cada push
+# Pipeline as Code: validación automática al integrar en main y develop
+# (los push a ramas feature/* no lanzan la pipeline, para no saturar el agente propio)
 # El análisis de seguridad (CodeQL) se ejecuta en GitHub Actions: .github/workflows/codeql.yml
 # SonarQube se ejecuta de forma manual en local (no forma parte de esta pipeline)
 
@@ -8,22 +9,17 @@ trigger:
     include:
     - main                 # Rama de producción
     - develop             # Rama de integración
-    - feature/*           # Ramas de nuevas features (HU)
-    - release/*           # Ramas de releases
-    - hotfix/*            # Ramas de correcciones urgentes
   paths:
     exclude:
     - README.md           # Ignore documentación
     - docs/**             # Ignore carpeta de docs
 
-# Pull requests hacia las ramas de integración y estables
+# Pull requests hacia las ramas de integración y estables (se validan antes del merge)
 pr:
   branches:
     include:
     - main
     - develop
-    - feature/*
-    - release/*
 
 pool:
   name: Default             # Agente propio (WSL Ubuntu); ver documents/sprint2/instruccionesCI-CD.md

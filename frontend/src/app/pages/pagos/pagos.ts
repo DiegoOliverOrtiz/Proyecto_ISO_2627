@@ -4,16 +4,18 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { PagosService, MetodoPagoRequest, TipoPago, MetodoPagoResponse } from './pagos.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 @Component({
   selector: 'app-pagos',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
-  styleUrl: './pagos.css',
+  styleUrls: ['../tienda/tienda.css', '../tienda/gestion.css', './pagos.css'],
   templateUrl: './pagos.html'
 })
 export class Pagos {
   private readonly servicioPagos = inject(PagosService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly constructorFormularios = inject(FormBuilder);
   private readonly enrutador = inject(Router);
 
@@ -83,6 +85,16 @@ export class Pagos {
     this.mensajeFormulario.set('');
   }
 
+  /** Nombre legible del tipo (B7): el del catálogo de tipos o, si no está, el código sin mayúsculas. */
+  nombreTipo(codigo: string): string {
+    const tipo = this.tipos().find((t) => t.codigo === codigo);
+    if (tipo?.nombre) {
+      return tipo.nombre;
+    }
+    const texto = (codigo ?? '').toLowerCase();
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
   tipoSeleccionado(): string {
     return this.formulario.controls.tipo.value;
   }
@@ -145,8 +157,14 @@ export class Pagos {
     });
   }
 
-  eliminarMetodo(id: string): void {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este método de pago?')) {
+  async eliminarMetodo(id: string): Promise<void> {
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar método de pago',
+      mensaje: '¿Seguro que quieres eliminar este método de pago? No se puede deshacer.',
+      aceptar: 'Eliminar',
+      peligro: true
+    });
+    if (!confirmado) {
       return;
     }
 

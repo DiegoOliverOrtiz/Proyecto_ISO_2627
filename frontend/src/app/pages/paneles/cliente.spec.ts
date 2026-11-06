@@ -453,6 +453,85 @@ describe('PanelCliente - catálogo HU-19', () => {
     });
   });
 
+  describe('rediseño del catálogo (UI-cliente)', () => {
+    const cargarCatalogo = (productos: ProductoCatalogo[]) => {
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush(productos);
+      fixture.detectChanges();
+    };
+
+    it('busca al escribir, con 300 ms de espera y una sola petición (M22)', () => {
+      vi.useFakeTimers();
+      try {
+        cargarCatalogo([crearProducto('a', false, true, 5)]);
+        const busqueda: HTMLInputElement = fixture.nativeElement.querySelector('input[type="search"]');
+
+        for (const texto of ['r', 'ra', 'raton']) {
+          busqueda.value = texto;
+          busqueda.dispatchEvent(new Event('input'));
+        }
+        vi.advanceTimersByTime(299);
+        httpMock.expectNone((r) => r.url === `${environment.apiUrl}/cliente/productos`);
+
+        vi.advanceTimersByTime(1);
+        const peticion = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/cliente/productos`);
+        expect(peticion.request.params.get('nombre')).toBe('raton');
+        peticion.flush([]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('el botón «Filtros» indica cuántos hay activos y si están desplegados (A14)', () => {
+      cargarCatalogo([crearProducto('a', false, true, 5)]);
+      const boton: HTMLButtonElement = fixture.nativeElement.querySelector('.boton-filtros');
+      expect(boton.textContent?.trim()).toBe('Filtros');
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+
+      const categoria: HTMLSelectElement = fixture.nativeElement.querySelector('#filtros-avanzados select');
+      categoria.value = 'Informática';
+      categoria.dispatchEvent(new Event('change'));
+      boton.click();
+      fixture.detectChanges();
+
+      expect(boton.textContent?.trim()).toBe('Filtros (1)');
+      expect(boton.getAttribute('aria-expanded')).toBe('true');
+      expect(fixture.nativeElement.querySelector('#filtros-avanzados').classList).toContain('abiertos');
+    });
+
+    it('sin imagen o si falla, la tarjeta muestra un marcador en un marco fijo (M7)', () => {
+      const conImagen = { ...crearProducto('img', false, true, 5), imagen: 'rota.png' };
+      cargarCatalogo([crearProducto('sin', false, true, 5), conImagen]);
+      const tarjetas = fixture.nativeElement.querySelectorAll('.product-card');
+
+      expect(tarjetas[0].querySelector('.marco-imagen svg')).not.toBeNull();
+      tarjetas[1].querySelector('img').dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+      expect(tarjetas[1].querySelector('img')).toBeNull();
+      expect(tarjetas[1].querySelector('.marco-imagen').textContent).toContain('Producto sin imagen');
+    });
+
+    it('sin resultados ofrece «Limpiar filtros» junto al mensaje (B4)', () => {
+      cargarCatalogo([crearProducto('a', false, true, 5)]);
+      fixture.componentInstance.soloFavoritos.set(true);
+      fixture.detectChanges();
+
+      const estado: HTMLElement = fixture.nativeElement.querySelector('.estado');
+      expect(estado.textContent).toContain('No tienes productos favoritos');
+      expect(estado.querySelector('button')?.textContent).toContain('Limpiar filtros');
+    });
+
+    it('el detalle no muestra descuentos del 0 % (B7)', () => {
+      cargarCatalogo([crearProducto('cero', false, true, 5)]);
+      fixture.nativeElement.querySelector('.product-actions .secondary-button').click();
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos/cero`)
+        .flush({ ...crearProducto('cero', false, true, 5), descuento: 0, descuentoPremium: 0 });
+      fixture.detectChanges();
+
+      const detalle: HTMLElement = fixture.nativeElement.querySelector('.product-detail');
+      expect(detalle.textContent).not.toContain('Descuento');
+    });
+  });
+
   describe('listas de productos HU-39', () => {
     const urlListas = `${environment.apiUrl}/usuarios/listas`;
     const listas: ResumenLista[] = [
