@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { ProductoService } from '../paneles/producto.service';
 import { ProductoAdministracion, ProductosAdminService } from './productos-admin.service';
 
@@ -10,9 +11,9 @@ type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-productos-admin',
   standalone: true,
-  imports: [RouterLink],
+  imports: [DecimalPipe],
   templateUrl: './productos-admin.html',
-  styleUrl: './productos-admin.css'
+  styleUrls: ['../tienda/tienda.css', './productos-admin.css']
 })
 export class ProductosAdmin implements OnInit {
   private readonly productosAdminService = inject(ProductosAdminService);
@@ -21,6 +22,12 @@ export class ProductosAdmin implements OnInit {
   readonly productos = signal<ProductoAdministracion[]>([]);
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
+  // Imágenes que no han cargado: se sustituyen por el icono de «sin imagen».
+  readonly imagenesFallidas = signal<ReadonlySet<string>>(new Set<string>());
+
+  marcarImagenFallida(idProducto: string): void {
+    this.imagenesFallidas.update((ids) => new Set([...ids, idProducto]));
+  }
 
   // Búsqueda y filtros en memoria, como en el catálogo del vendedor (HU-15).
   readonly terminoBusqueda = signal('');
@@ -34,15 +41,15 @@ export class ProductosAdmin implements OnInit {
     this.valoresUnicos(this.productos().map((producto) => producto.vendedor))
   );
   readonly productosFiltrados = computed(() => {
-    // El texto se compara como literal con includes(): nunca se interpreta como expresión regular.
-    const termino = this.terminoBusqueda().trim().toLowerCase();
+    // El texto se compara como literal con includes(), sin tildes ni mayúsculas (M22): nunca es una expresión regular.
+    const termino = normalizarTexto(this.terminoBusqueda().trim());
     const categoria = this.categoriaFiltro();
     const estado = this.estadoFiltro();
     const vendedor = this.vendedorFiltro();
 
     return this.productos().filter(
       (producto) =>
-        producto.nombre.toLowerCase().includes(termino) &&
+        normalizarTexto(producto.nombre).includes(termino) &&
         (categoria === '' || producto.categoria === categoria) &&
         (vendedor === '' || producto.vendedor === vendedor) &&
         (estado === 'todos' || producto.esVisible === (estado === 'activos'))

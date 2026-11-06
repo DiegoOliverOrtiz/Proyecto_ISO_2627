@@ -224,4 +224,75 @@ describe('ProductosAdmin (HU-34)', () => {
       'No se pudo conectar con el servicio'
     );
   });
+  describe('tarjetas (M7, A15)', () => {
+    beforeEach(() => {
+      productosAdminServiceMock.consultarProductos.mockReturnValue(of(productos));
+    });
+
+    it('reserva el marco con un icono si no hay imagen y muestra el estado como chip', async () => {
+      const elemento = await crearComponente();
+
+      const tarjetas = elemento.querySelectorAll('.tarjeta-producto');
+      expect(tarjetas[1].querySelector('.marco-imagen svg')).not.toBeNull();
+      expect(tarjetas[1].querySelector('.marco-imagen img')).toBeNull();
+      expect(tarjetas[0].querySelector('.chip-exito')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Activo');
+      expect(tarjetas[1].querySelector('.chip-neutro')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Desactivado');
+    });
+
+    it('sustituye por el icono una imagen que no carga', async () => {
+      const elemento = await crearComponente();
+
+      elemento.querySelector('.marco-imagen img')!.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      expect(elemento.querySelector('.tarjeta-producto .marco-imagen img')).toBeNull();
+      expect(elemento.querySelector('.tarjeta-producto .marco-imagen svg')).not.toBeNull();
+    });
+
+    it('sin resultados ofrece «Limpiar filtros» junto al mensaje', async () => {
+      const elemento = await crearComponente();
+      component.terminoBusqueda.set('zzz');
+      fixture.detectChanges();
+
+      const boton = elemento.querySelector('.estado button') as HTMLButtonElement;
+      expect(boton.textContent?.trim()).toBe('Limpiar filtros');
+      boton.click();
+      fixture.detectChanges();
+
+      expect(nombresMostrados(elemento).length).toBe(2);
+    });
+
+    it('el aviso de solo lectura es una nota visible y la pantalla tiene un único h1', async () => {
+      const elemento = await crearComponente();
+
+      expect(elemento.querySelector('[role="note"]')?.textContent).toContain('Modo solo lectura');
+      expect(elemento.querySelectorAll('h1').length).toBe(1);
+    });
+  });
+  describe('búsqueda sin tildes (M22)', () => {
+    beforeEach(() => {
+      productosAdminServiceMock.consultarProductos.mockReturnValue(of(productos));
+    });
+
+    it('«raton» encuentra «Ratón» sin distinguir mayúsculas', async () => {
+      const elemento = await crearComponente();
+
+      component.terminoBusqueda.set('RATON');
+      fixture.detectChanges();
+
+      expect(nombresMostrados(elemento)).toEqual(['Ratón']);
+    });
+
+    it('«mecánico» con tilde encuentra «Teclado mecánico» y «mecanico» también', async () => {
+      const elemento = await crearComponente();
+
+      component.terminoBusqueda.set('mecanico');
+      fixture.detectChanges();
+      expect(nombresMostrados(elemento)).toEqual(['Teclado mecánico']);
+
+      component.terminoBusqueda.set('mecánico');
+      fixture.detectChanges();
+      expect(nombresMostrados(elemento)).toEqual(['Teclado mecánico']);
+    });
+  });
 });

@@ -5,77 +5,43 @@ import { RouterLink } from '@angular/router';
   selector: 'app-panel-administrador',
   standalone: true,
   imports: [RouterLink],
-  styleUrl: './administrador.css',
+  styleUrls: ['../tienda/tienda.css', './administrador.css'],
   template: `
-    <main class="admin-shell">
-      <section class="admin-content">
-        <header class="topbar">
-          <span class="breadcrumb">
-            Gestión
-            <span aria-hidden="true">/</span>
-            Panel de administración
-          </span>
-        </header>
-
-        <div class="welcome-block">
-          <p class="eyebrow">Espacio de gestión</p>
-          <h1>Bienvenido, administrador</h1>
-          <p>
-            Consulta y gestiona la información administrativa de EsiBuy.
+    <main class="pagina">
+      <header class="pagina-cabecera">
+        <div>
+          <h1 class="pagina-titulo">Bienvenido, administrador</h1>
+          <p class="pagina-descripcion">
+            Consulta y gestiona la información administrativa de ESIBuy.
           </p>
-
-          <a class="primary-action" routerLink="/admin/usuarios">
-            Consultar usuarios
-          </a>
         </div>
+      </header>
 
-        <div class="overview-grid">
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Usuarios</strong>
-            <small>Consulta administrativa</small>
+      <div class="overview-grid">
+        <article class="tarjeta">
+          <h2>Usuarios</h2>
+          <p>Consulta administrativa</p>
+          <a class="boton-secundario" routerLink="/admin/usuarios">Abrir listado</a>
+        </article>
 
-            <a routerLink="/admin/usuarios">
-              Abrir listado
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
+        <article class="tarjeta">
+          <h2>Categorías</h2>
+          <p>Consulta administrativa</p>
+          <a class="boton-secundario" routerLink="/admin/categorias">Abrir categorías</a>
+        </article>
 
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Categorías</strong>
-            <small>Consulta administrativa</small>
+        <article class="tarjeta">
+          <h2>Productos</h2>
+          <p>Consulta en solo lectura</p>
+          <a class="boton-secundario" routerLink="/admin/productos">Abrir productos</a>
+        </article>
 
-            <a routerLink="/admin/categorias">
-              Abrir categorías
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
-
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Productos</strong>
-            <small>Consulta en solo lectura</small>
-
-            <a routerLink="/admin/productos">
-              Abrir productos
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
-
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Administradores</strong>
-            <small>Gestión interna</small>
-
-            <a routerLink="/admin/administradores">
-              Abrir administradores
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
-        </div>
-
-      </section>
+        <article class="tarjeta">
+          <h2>Administradores</h2>
+          <p>Gestión interna</p>
+          <a class="boton-secundario" routerLink="/admin/administradores">Abrir administradores</a>
+        </article>
+      </div>
     </main>
   `
 })

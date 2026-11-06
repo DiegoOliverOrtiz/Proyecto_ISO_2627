@@ -1,0 +1,473 @@
+<main class="pagina formulario-pagina detalle-page">
+
+  <div class="content">
+
+    <a class="boton-secundario volver" [routerLink]="volverUrl()">Volver al listado</a>
+
+    @if (cargando()) {
+
+      <p class="estado" role="status">Cargando información...</p>
+
+    } @else if (mensajeError()) {
+
+      <div class="estado" role="alert">
+          <p class="estado-titulo">{{ mensajeError() }}</p>
+          <button class="boton-secundario boton-reintentar" type="button" (click)="reintentar()">Reintentar</button>
+        </div>
+
+    } @else if (usuario(); as datos) {
+
+      <header class="pagina-cabecera">
+
+        <div>
+
+          <h1 class="pagina-titulo">
+            {{ datos.nombre }}
+            {{ datos.apellidos }}
+          </h1>
+
+          @if (modoEdicion()) {
+
+            <p class="pagina-descripcion">
+              Modifica los datos del usuario.
+            </p>
+
+          } @else {
+
+            <p class="pagina-descripcion">
+              Información útil para la gestión de la cuenta.
+            </p>
+
+          }
+
+        </div>
+
+        <div class="header-actions">
+
+          @if (!modoEdicion()) {
+
+            <button
+              type="button"
+              class="boton-principal"
+              (click)="iniciarEdicion(datos)"
+            >
+              Modificar usuario
+            </button>
+
+            @if (datos.rol === 'ADMIN') {
+
+              <button
+                type="button"
+                class="boton-peligro"
+                (click)="
+                  eliminarAdministrador(
+                    datos.id,
+                    datos.nombre
+                  )
+                "
+              >
+                Eliminar administrador
+              </button>
+
+            }
+
+          }
+
+        </div>
+
+      </header>
+
+      @if (mensajeExito()) {
+        <output class="aviso aviso-exito">{{ mensajeExito() }}</output>
+      }
+
+      @if (errorAccion()) {
+        <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
+      }
+
+      @if (!modoEdicion()) {
+
+        <section class="tarjeta detail-card">
+
+          <div class="status-row">
+
+            <span>Estado de la cuenta</span>
+            <span class="chip" [class.chip-exito]="datos.estado === 'ACTIVO'" [class.chip-aviso]="datos.estado === 'PENDIENTE'" [class.chip-peligro]="datos.estado === 'BLOQUEADO'">{{ datos.estado === 'ACTIVO' ? 'Activo' : datos.estado === 'PENDIENTE' ? 'Pendiente' : 'Bloqueado' }}</span>
+
+          </div>
+
+          <dl>
+
+            <div>
+              <dt>Email</dt>
+              <dd>
+                {{ datos.email }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Teléfono</dt>
+              <dd>
+                {{ datos.telefono || 'No indicado' }}
+              </dd>
+            </div>
+
+            <div>
+              <dt>Rol</dt>
+              <dd>
+                {{ datos.rol }}
+              </dd>
+            </div>
+
+            @if (datos.dniNif) {
+
+              <div>
+                <dt>DNI / NIF</dt>
+                <dd>
+                  {{ datos.dniNif }}
+                </dd>
+              </div>
+
+            }
+
+            @if (
+              datos.rol === 'CLIENTE' &&
+              datos.fechaNacimiento
+            ) {
+
+              <div>
+                <dt>
+                  Fecha de nacimiento
+                </dt>
+
+                <dd>
+                  {{ datos.fechaNacimiento | date: 'dd/MM/yyyy' }}
+                </dd>
+              </div>
+
+            }
+
+            @if (datos.sede) {
+
+              <div>
+                <dt>Sede</dt>
+                <dd>
+                  {{ datos.sede }}
+                </dd>
+              </div>
+
+            }
+
+            @if (datos.fechaIncorporacion) {
+
+              <div>
+                <dt>
+                  Fecha de incorporación
+                </dt>
+
+                <dd>
+                  {{ datos.fechaIncorporacion | date: 'dd/MM/yyyy' }}
+                </dd>
+              </div>
+
+            }
+
+            @if (datos.esPremium !== null) {
+
+              <div>
+                <dt>
+                  Cuenta premium
+                </dt>
+
+                <dd>
+                  {{ datos.esPremium ? 'Sí' : 'No' }}
+                </dd>
+              </div>
+
+            }
+
+            @if (datos.nombreComercial) {
+
+              <div>
+                <dt>
+                  Nombre comercial
+                </dt>
+
+                <dd>
+                  {{ datos.nombreComercial }}
+                </dd>
+              </div>
+
+            }
+
+          </dl>
+
+        </section>
+
+      } @else {
+
+        <section class="tarjeta detail-card">
+
+          <div class="status-row">
+
+            <span>Modificando usuario</span>
+            <span class="chip chip-neutro">{{ datos.rol }}</span>
+
+          </div>
+
+          <form
+            class="edit-form"
+            [formGroup]="formulario"
+            (ngSubmit)="guardarCambios()"
+          >
+
+            <div class="field">
+
+              <label for="nombre">
+                Nombre
+              </label>
+
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+              />
+
+              @if (
+                formulario.controls.nombre.touched &&
+                formulario.controls.nombre.hasError('required')
+              ) {
+
+                <small class="field-error">
+                  El nombre es obligatorio.
+                </small>
+
+              }
+
+            </div>
+
+            <div class="field">
+
+              <label for="apellidos">
+                Apellidos
+              </label>
+
+              <input
+                id="apellidos"
+                type="text"
+                formControlName="apellidos"
+              />
+
+              @if (
+                formulario.controls.apellidos.touched &&
+                formulario.controls.apellidos.hasError('required')
+              ) {
+
+                <small class="field-error">
+                  Los apellidos son obligatorios.
+                </small>
+
+              }
+
+            </div>
+
+            <div class="field">
+
+              <label for="email">
+                Email
+              </label>
+
+              <input
+                id="email"
+                type="email"
+                [value]="datos.email"
+                disabled
+              />
+
+              <small class="protected-info">
+                El email no se puede modificar.
+              </small>
+
+            </div>
+
+            <div class="field">
+
+              <label for="telefono">
+                Teléfono
+              </label>
+
+              <input
+                id="telefono"
+                type="text"
+                formControlName="telefono"
+              />
+
+            </div>
+
+            <div class="field">
+
+              <label for="imagenPerfil">
+                Imagen de perfil
+              </label>
+
+              <input
+                id="imagenPerfil"
+                type="text"
+                formControlName="imagenPerfil"
+                placeholder="URL de la imagen"
+              />
+
+            </div>
+
+            @if (datos.rol === 'CLIENTE') {
+
+              <div class="field">
+
+                <label for="dniCliente">
+                  DNI
+                </label>
+
+                <input
+                  id="dniCliente"
+                  type="text"
+                  formControlName="dniNif"
+                />
+
+              </div>
+
+              <div class="field">
+
+                <label for="fechaNacimiento">
+                  Fecha de nacimiento
+                </label>
+
+                <input
+                  id="fechaNacimiento"
+                  type="date"
+                  formControlName="fechaNacimiento"
+                />
+
+                @if (
+                  formulario.controls.fechaNacimiento.touched &&
+                  formulario.controls.fechaNacimiento.hasError(
+                    'menorDeEdad'
+                  )
+                ) {
+
+                  <small class="field-error">
+                    El cliente debe ser mayor de edad.
+                  </small>
+
+                }
+
+              </div>
+
+            }
+
+            @if (datos.rol === 'VENDEDOR') {
+
+              <div class="field">
+
+                <label for="dniVendedor">
+                  DNI / NIF
+                </label>
+
+                <input
+                  id="dniVendedor"
+                  type="text"
+                  formControlName="dniNif"
+                />
+
+              </div>
+
+            }
+
+            @if (datos.rol === 'ADMIN') {
+
+              <div class="field">
+
+                <label for="sede">
+                  Sede
+                </label>
+
+                <input
+                  id="sede"
+                  type="text"
+                  formControlName="sede"
+                />
+
+              </div>
+
+              <div class="field">
+
+                <label for="fechaIncorporacion">
+                  Fecha de incorporación
+                </label>
+
+                <input
+                  id="fechaIncorporacion"
+                  type="text"
+                  [value]="
+                    datos.fechaIncorporacion || ''
+                  "
+                  disabled
+                />
+
+                <small class="protected-info">
+                  La fecha de incorporación no se puede modificar.
+                </small>
+
+              </div>
+
+            }
+
+            <div class="protected-section">
+
+              <strong>
+                Contraseña
+              </strong>
+
+              <p>
+                La contraseña no puede modificarse desde esta pantalla.
+              </p>
+
+            </div>
+
+            @if (mensajeFormulario()) {
+
+              <p class="aviso aviso-error" role="alert">
+                {{ mensajeFormulario() }}
+              </p>
+
+            }
+
+            <div class="form-actions">
+
+              <button
+                type="button"
+                class="boton-secundario"
+                (click)="cancelarEdicion()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                class="boton-principal"
+              >
+                Guardar cambios
+              </button>
+
+            </div>
+
+          </form>
+
+        </section>
+
+      }
+
+    }
+
+  </div>
+
+</main>

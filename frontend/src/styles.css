@@ -58,3 +58,16 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+
+/* M18: quien pide menos movimiento no ve animaciones ni desplazamientos suaves en ninguna pantalla.
+   El !important es deliberado: debe ganar a los estilos de cada componente. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

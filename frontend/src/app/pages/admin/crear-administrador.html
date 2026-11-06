@@ -1,21 +1,15 @@
-<main class="admin-shell">
-  <section class="admin-content">
-    <header class="topbar">
-      <span>Gestión / Administradores / Añadir</span>
-    </header>
+<main class="pagina formulario-pagina">
+  <header class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Añadir administrador</h1>
+      <p class="pagina-descripcion">Registra a un nuevo responsable de la plataforma.</p>
+    </div>
+    <a class="boton-secundario" routerLink="/admin/administradores">Volver al listado</a>
+  </header>
 
-    <div class="form-page">
-      <a class="back-link" routerLink="/admin/administradores">← Volver al listado</a>
-      
-      <header class="page-header">
-        <p class="eyebrow">Nuevo acceso</p>
-        <h1>Añadir administrador</h1>
-        <p class="subtitle">Registra a un nuevo responsable de la plataforma.</p>
-      </header>
-
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="admin-form" autocomplete="off">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="tarjeta admin-form" autocomplete="off">
         @if (mensajeError()) {
-          <div class="feedback error" role="alert">{{ mensajeError() }}</div>
+          <div class="aviso aviso-error" role="alert">{{ mensajeError() }}</div>
         }
 
         <div class="form-grid">
@@ -75,8 +69,8 @@
                   (blur)="passwordFocused = !!form.controls.contrasena.value"
                 />
               }
-              <button type="button" (click)="togglePassword()" class="eye-button">
-                {{ hidePassword ? '👁️' : '🙈' }}
+              <button type="button" (click)="togglePassword()" class="boton-ojo" [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'" [attr.aria-pressed]="!hidePassword">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (hidePassword) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
               </button>
             </div>
             
@@ -107,8 +101,8 @@
               } @else {
                 <input type="text" formControlName="repetirContrasena" autocomplete="off" />
               }
-              <button type="button" (click)="toggleRepeatPassword()" class="eye-button">
-                {{ hideRepeatPassword ? '👁️' : '🙈' }}
+              <button type="button" (click)="toggleRepeatPassword()" class="boton-ojo" [attr.aria-label]="hideRepeatPassword ? 'Mostrar contraseña' : 'Ocultar contraseña'" [attr.aria-pressed]="!hideRepeatPassword">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (hideRepeatPassword) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
               </button>
             </div>
             
@@ -121,10 +115,8 @@
           </label>
         </div>
 
-        <button type="submit" class="submit-button" [disabled]="isSubmitting()">
+        <button type="submit" class="boton-principal submit-button" [disabled]="isSubmitting()">
           {{ isSubmitting() ? 'Creando cuenta...' : 'Crear administrador' }}
         </button>
       </form>
-    </div>
-  </section>
 </main>

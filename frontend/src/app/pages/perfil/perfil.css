@@ -33,7 +33,7 @@ h2 { margin-bottom: 0; color: var(--color-text); font-size: 1.6rem; }
 .account-type-content h3 { margin: 0 0 .35rem; font-size: 1.25rem; }
 .account-type-content p:not(.account-type-kicker) { margin-bottom: .85rem; color: rgba(255, 255, 255, .88); }
 .account-type-button { padding: .7rem 1rem; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-warning-text); background: var(--color-warning-background); font: inherit; font-weight: 800; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
-.account-type-button:hover { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(0, 0, 0, .16); }
+.account-type-button:hover { box-shadow: 0 5px 12px rgba(0, 0, 0, .16); }
 .account-type-button-light { border-color: var(--color-premium-highlight); color: var(--color-surface); background: transparent; }
 .account-type-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 .account-benefits { margin-top: 1rem; padding: 1.25rem; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-background); }
