@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -10,7 +11,7 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-panel-vendedor',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule],
   styleUrls: ['../tienda/tienda.css', './vendedor.css'],
   templateUrl: './vendedor.html',
 })
@@ -26,6 +27,12 @@ export class PanelVendedor implements OnInit {
   readonly productoCambiandoEstado = signal<string | null>(null);
   readonly productoEliminando = signal<string | null>(null);
   readonly productoEnEdicion = signal<ProductoPropio | null>(null);
+  // Imágenes que no han cargado: se sustituyen por el icono de «sin imagen» (M7).
+  readonly imagenesFallidas = signal<ReadonlySet<string>>(new Set<string>());
+
+  marcarImagenFallida(idProducto: string): void {
+    this.imagenesFallidas.update((ids) => new Set([...ids, idProducto]));
+  }
 
   // Búsqueda y filtros del catálogo (HU-15): se aplican en memoria sobre los productos del vendedor.
   readonly terminoBusqueda = signal('');

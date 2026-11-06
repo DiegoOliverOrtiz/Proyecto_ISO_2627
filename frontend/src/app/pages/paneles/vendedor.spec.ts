@@ -1,7 +1,10 @@
+import { registerLocaleData } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
+import localeEs from '@angular/common/locales/es';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from '../login/auth.service';
@@ -330,7 +333,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
 
       (
         fixture.nativeElement.querySelector(
-          '.acciones-producto button.boton-secundario'
+          '.acciones-producto button.boton-modificar'
         ) as HTMLButtonElement
       ).click();
       fixture.detectChanges();
@@ -349,7 +352,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     };
 
     function botonesModificar(): HTMLButtonElement[] {
-      return Array.from(fixture.nativeElement.querySelectorAll('.acciones-producto button.boton-secundario'));
+      return Array.from(fixture.nativeElement.querySelectorAll('.acciones-producto button.boton-modificar'));
     }
 
     beforeEach(() => {
@@ -891,5 +894,116 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(component.productoEnEdicion()).toBeNull();
       expect(component.mostrandoFormulario()).toBe(false);
     });
+  });
+});
+
+registerLocaleData(localeEs, 'es-ES');
+
+describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
+  let fixture: ComponentFixture<PanelVendedor>;
+
+  const producto = (extra: Partial<ProductoPropio> = {}): ProductoPropio => ({
+    id: 'p1',
+    nombre: 'Teclado',
+    categoria: 'Informática',
+    stock: 4,
+    descripcion: null,
+    precio: 1099,
+    descuento: 0,
+    descuentoPremium: 0,
+    esVisible: true,
+    imagen: null,
+    soloPremium: false,
+    ...extra
+  });
+
+  const servicioProductos = {
+    consultarProductosPropios: vi.fn(),
+    activarProducto: vi.fn(),
+    desactivarProducto: vi.fn(),
+    eliminarProducto: vi.fn(),
+    crearProducto: vi.fn(),
+    modificarProducto: vi.fn(),
+    urlImagen: vi.fn((imagen: string) => `http://api${imagen}`)
+  };
+
+  function crear(productos: ProductoPropio[]): HTMLElement {
+    servicioProductos.consultarProductosPropios.mockReturnValue(of(productos));
+    fixture = TestBed.createComponent(PanelVendedor);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PanelVendedor],
+      providers: [
+        provideRouter([]),
+        { provide: LOCALE_ID, useValue: 'es-ES' },
+        { provide: ProductoService, useValue: servicioProductos },
+        { provide: CategoriasService, useValue: { obtenerCategorias: () => of([]) } },
+        { provide: VendedorService, useValue: { obtenerPerfil: () => of({ nombreComercial: 'Tienda' }) } },
+        { provide: AuthService, useValue: { cerrarSesion: () => of(void 0) } }
+      ]
+    }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  it('muestra el precio con formato español (A15)', () => {
+    const vista = crear([producto({ precio: 1099 }), producto({ id: 'p2', precio: 89.9 })]);
+
+    const precios = Array.from(vista.querySelectorAll('li .precio')).map((p) => p.textContent?.trim());
+    expect(precios).toEqual(['1.099,00 €', '89,90 €']);
+  });
+
+  it('oculta los descuentos a cero y muestra los que tienen valor (B7)', () => {
+    const vista = crear([producto({ descuento: 0, descuentoPremium: 15 })]);
+
+    const texto = vista.querySelector('li')?.textContent ?? '';
+    expect(texto).not.toContain('Descuento: 0');
+    expect(texto).toContain('Descuento Premium: 15 %');
+  });
+
+  it('indica el estado con un chip que conserva el texto «Estado: …»', () => {
+    const vista = crear([producto(), producto({ id: 'p2', esVisible: false })]);
+
+    const chips = vista.querySelectorAll('li .cabecera-producto .chip');
+    expect(chips[0].classList).toContain('chip-exito');
+    expect(chips[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Activo');
+    expect(chips[1].classList).toContain('chip-neutro');
+    expect(chips[1].textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Desactivado');
+  });
+
+  it('reserva el marco con un icono si el producto no tiene imagen (M7)', () => {
+    const vista = crear([producto({ imagen: null })]);
+
+    const marco = vista.querySelector('li .marco-imagen');
+    expect(marco?.querySelector('img')).toBeNull();
+    expect(marco?.querySelector('svg')).not.toBeNull();
+    expect(marco?.textContent).toContain('Producto sin imagen');
+  });
+
+  it('sustituye por el icono una imagen que no carga (M7)', () => {
+    const vista = crear([producto({ imagen: '/product-images/roto.png' })]);
+
+    const imagen = vista.querySelector('li .marco-imagen img') as HTMLImageElement;
+    expect(imagen.getAttribute('src')).toBe('http://api/product-images/roto.png');
+    imagen.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(vista.querySelector('li .marco-imagen img')).toBeNull();
+    expect(vista.querySelector('li .marco-imagen svg')).not.toBeNull();
+  });
+
+  it('«Modificar» es la acción principal y «Eliminar» es de contorno (A16)', () => {
+    const vista = crear([producto()]);
+
+    expect(vista.querySelector('.boton-modificar')?.classList).toContain('boton-principal');
+    expect(vista.querySelector('.boton-estado')?.classList).toContain('boton-secundario');
+    expect(vista.querySelector('.boton-eliminar')?.classList).toContain('boton-peligro');
   });
 });
