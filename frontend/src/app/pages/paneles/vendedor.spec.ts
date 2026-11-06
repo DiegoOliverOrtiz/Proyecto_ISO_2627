@@ -1087,4 +1087,73 @@ describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
       expect(errores.length).toBeGreaterThan(0);
     });
   });
+  describe('foco y desplazamiento del formulario (A20)', () => {
+    function montar(): HTMLElement {
+      const vista = crear([producto({ id: 'a', nombre: 'Teclado' }), producto({ id: 'b', nombre: 'Ratón' })]);
+      document.body.appendChild(vista);
+      return vista;
+    }
+
+    const modificar = (vista: HTMLElement, id: string) =>
+      vista.querySelector(`.boton-modificar[data-producto="${id}"]`) as HTMLButtonElement;
+
+    afterEach(() => {
+      fixture?.nativeElement.remove();
+    });
+
+    it('al pulsar «Modificar» el foco entra en el título del formulario', async () => {
+      const vista = montar();
+      const boton = modificar(vista, 'b');
+      boton.focus();
+
+      boton.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement?.id).toBe('titulo-formulario');
+      expect(document.activeElement?.textContent).toContain('Modificar producto');
+    });
+
+    it('lleva el formulario a la vista con scrollIntoView', async () => {
+      const vista = montar();
+      const desplazar = vi.fn();
+      (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView = desplazar;
+
+      modificar(vista, 'a').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(desplazar).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    });
+
+    it('al cancelar devuelve el foco al «Modificar» del mismo producto', async () => {
+      const vista = montar();
+      modificar(vista, 'b').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.alternarFormulario();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(modificar(vista, 'b'));
+    });
+
+    it('al cancelar «Añadir producto» el foco vuelve a ese botón', async () => {
+      const vista = montar();
+      const anadir = vista.querySelector('button.añadirProductos') as HTMLButtonElement;
+      anadir.focus();
+      anadir.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement?.id).toBe('titulo-formulario');
+
+      fixture.componentInstance.alternarFormulario();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(vista.querySelector('button.añadirProductos'));
+    });
+  });
 });

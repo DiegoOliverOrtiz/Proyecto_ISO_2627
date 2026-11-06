@@ -20,6 +20,10 @@
 @if (mostrandoFormulario()) {
 <form class="tarjeta formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()"
     [attr.aria-label]="productoEnEdicion() ? 'Modificar producto' : 'Crear producto'">
+    <h2 id="titulo-formulario" class="titulo-formulario" tabindex="-1">
+        {{ productoEnEdicion() ? 'Modificar producto' : 'Nuevo producto' }}
+    </h2>
+
     <div class="campo">
         <label for="nombre-producto">Nombre</label>
         <input id="nombre-producto" type="text" formControlName="nombre" />
@@ -230,7 +234,7 @@
 
             <!-- A16: «Modificar» es la acción principal; «Eliminar» es de contorno rojo. -->
             <div class="acciones-producto">
-                <button type="button" class="boton-principal boton-modificar" [attr.aria-label]="'Modificar ' + producto.nombre"
+                <button type="button" class="boton-principal boton-modificar" [attr.data-producto]="producto.id" [attr.aria-label]="'Modificar ' + producto.nombre"
                     (click)="editarProducto(producto)">
                     Modificar
                 </button>

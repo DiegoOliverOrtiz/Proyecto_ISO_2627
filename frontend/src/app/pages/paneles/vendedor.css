@@ -16,6 +16,13 @@
   padding: 1.5rem;
 }
 
+.titulo-formulario {
+  margin: 0 0 1rem;
+  scroll-margin-top: 5rem;
+  color: var(--color-text);
+  font-size: 1.35rem;
+}
+
 .campo {
   display: flex;
   flex-direction: column;

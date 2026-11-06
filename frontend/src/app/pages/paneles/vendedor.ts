@@ -1,6 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { CategoriasService } from '../categorias/categorias.service';
@@ -18,6 +27,10 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 })
 export class PanelVendedor implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly inyector = inject(Injector);
+  private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
+  // A20: botón que abrió el formulario, para devolverle el foco al cerrarlo ('' = «Añadir producto»).
+  private origenFoco: string | null = null;
   private readonly servicioCategorias = inject(CategoriasService);
   readonly mensajeError = signal('');
 
@@ -98,8 +111,48 @@ export class PanelVendedor implements OnInit {
     if (this.mostrandoFormulario()) {
       this.cerrarFormulario();
     } else {
+      this.origenFoco = '';
       this.mostrandoFormulario.set(true);
+      this.enfocarFormulario();
     }
+  }
+
+  /** A20: al abrir el formulario se desplaza a la vista y el foco entra en su título. */
+  private enfocarFormulario(): void {
+    afterNextRender(
+      () => {
+        const titulo = this.elemento.nativeElement.querySelector<HTMLElement>('#titulo-formulario');
+        if (!titulo) {
+          return;
+        }
+        const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        titulo.scrollIntoView?.({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
+        titulo.focus({ preventScroll: true });
+      },
+      { injector: this.inyector }
+    );
+  }
+
+  /** A20: al cerrar o guardar, el foco vuelve al botón que abrió el formulario. */
+  private devolverFoco(): void {
+    const destino = this.origenFoco;
+    this.origenFoco = null;
+    if (destino === null) {
+      return;
+    }
+    afterNextRender(
+      () => {
+        const raiz = this.elemento.nativeElement;
+        const boton =
+          destino === ''
+            ? raiz.querySelector<HTMLElement>('.añadirProductos')
+            : Array.from(raiz.querySelectorAll<HTMLElement>('.boton-modificar')).find(
+                (candidato) => candidato.dataset['producto'] === destino
+              );
+        boton?.focus();
+      },
+      { injector: this.inyector }
+    );
   }
 
   private ajustarStockMinimo(minimo: number): void {
@@ -109,6 +162,7 @@ export class PanelVendedor implements OnInit {
   }
 
   private cerrarFormulario(): void {
+    this.devolverFoco();
     this.mostrandoFormulario.set(false);
     this.productoEnEdicion.set(null);
     this.limpiarImagenSeleccionada();
@@ -132,6 +186,7 @@ export class PanelVendedor implements OnInit {
     this.mensajeError.set('');
     this.limpiarImagenSeleccionada();
     this.errorImagen.set('');
+    this.origenFoco = producto.id;
     this.productoEnEdicion.set(producto);
     this.ajustarStockMinimo(0);
     // Se reutiliza el formulario de creación cargando los valores actuales del producto.
@@ -147,6 +202,7 @@ export class PanelVendedor implements OnInit {
     });
     this.soloPremium.setValue(producto.soloPremium);
     this.mostrandoFormulario.set(true);
+    this.enfocarFormulario();
   }
 
   actualizarBusqueda(evento: Event): void {
