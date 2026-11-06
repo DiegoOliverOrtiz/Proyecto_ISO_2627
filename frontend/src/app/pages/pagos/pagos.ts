@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { PagosService, MetodoPagoRequest, TipoPago, MetodoPagoResponse } from './pagos.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 @Component({
   selector: 'app-pagos',
@@ -14,6 +15,7 @@ import { PagosService, MetodoPagoRequest, TipoPago, MetodoPagoResponse } from '.
 })
 export class Pagos {
   private readonly servicioPagos = inject(PagosService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly constructorFormularios = inject(FormBuilder);
   private readonly enrutador = inject(Router);
 
@@ -145,8 +147,14 @@ export class Pagos {
     });
   }
 
-  eliminarMetodo(id: string): void {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este método de pago?')) {
+  async eliminarMetodo(id: string): Promise<void> {
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar método de pago',
+      mensaje: '¿Seguro que quieres eliminar este método de pago? No se puede deshacer.',
+      aceptar: 'Eliminar',
+      peligro: true
+    });
+    if (!confirmado) {
       return;
     }
 

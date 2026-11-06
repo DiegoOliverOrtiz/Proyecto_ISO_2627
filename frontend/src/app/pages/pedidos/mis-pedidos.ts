@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 import {
   CambioEstadoPedido,
@@ -19,6 +20,7 @@ import {
 })
 export class MisPedidos implements OnInit {
   private readonly servicio = inject(PedidosService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly router = inject(Router);
 
   readonly pedidosActivos = signal<PedidoCliente[]>([]);
@@ -107,14 +109,18 @@ export class MisPedidos implements OnInit {
     this.cargandoDetalle.set(false);
   }
 
-  cancelarPedido(pedido: PedidoCliente): void {
+  async cancelarPedido(pedido: PedidoCliente): Promise<void> {
     if (this.pedidoCancelandoId() !== null || !this.puedeCancelar(pedido.estado)) {
       return;
     }
 
-    const confirmado = window.confirm(
-      `¿Quieres cancelar el pedido #${this.referenciaPedido(pedido.id)}?`
-    );
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Cancelar pedido',
+      mensaje: `¿Quieres cancelar el pedido #${this.referenciaPedido(pedido.id)}?`,
+      aceptar: 'Cancelar pedido',
+      cancelar: 'Volver',
+      peligro: true
+    });
     if (!confirmado) {
       return;
     }
@@ -151,7 +157,7 @@ export class MisPedidos implements OnInit {
     return estado === 'TRAMITADO_ENVIADO';
   }
 
-  confirmarRecepcion(pedido: PedidoCliente): void {
+  async confirmarRecepcion(pedido: PedidoCliente): Promise<void> {
     if (
       this.pedidoConfirmandoId() !== null ||
       this.pedidoCancelandoId() !== null ||
@@ -160,9 +166,11 @@ export class MisPedidos implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
-      `¿Confirmas que has recibido el pedido #${this.referenciaPedido(pedido.id)}?`
-    );
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Confirmar recepción',
+      mensaje: `¿Confirmas que has recibido el pedido #${this.referenciaPedido(pedido.id)}?`,
+      aceptar: 'Sí, lo he recibido'
+    });
 
     if (!confirmado) {
       return;

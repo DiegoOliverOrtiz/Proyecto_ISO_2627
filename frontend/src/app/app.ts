@@ -4,9 +4,10 @@ import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@an
 import { filter, map } from 'rxjs';
 
 import { Cabecera } from './shared/cabecera/cabecera';
+import { Confirmacion } from './shared/confirmacion/confirmacion';
 
 @Component({
-  imports: [RouterOutlet, Cabecera],
+  imports: [RouterOutlet, Cabecera, Confirmacion],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',

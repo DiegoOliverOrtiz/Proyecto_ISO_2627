@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validat
 import { Router, RouterLink } from '@angular/router';
 
 import { CategoriaPerfil, ModificarPerfilRequest, PerfilResponse, PerfilService } from './perfil.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   if (!control.value) {
@@ -34,6 +35,7 @@ const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | 
 })
 export class Perfil {
   private readonly servicioPerfil = inject(PerfilService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly enrutador = inject(Router);
   private readonly constructorFormularios = inject(FormBuilder);
 
@@ -326,13 +328,19 @@ export class Perfil {
     });
   }
 
-  desactivarTOTP(): void {
+  async desactivarTOTP(): Promise<void> {
     const codigo = this.codigoTOTP().replace(/[\s-]/g, '').toUpperCase();
     if (!/^(\d{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
       this.errorTOTP.set('Introduce un código actual de la aplicación o un código de respaldo para desactivar TOTP.');
       return;
     }
-    if (!confirm('¿Quieres desactivar el segundo factor de autenticación?')) {
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Desactivar el segundo factor',
+      mensaje: 'Tu cuenta quedará protegida solo con la contraseña.',
+      aceptar: 'Desactivar',
+      peligro: true
+    });
+    if (!confirmado) {
       return;
     }
     this.cargandoTOTP.set(true);

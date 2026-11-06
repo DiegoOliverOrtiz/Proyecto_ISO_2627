@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../login/auth.service';
 import { CarritoResponse, CarritoService, LineaCarritoResponse } from './carrito.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 @Component({
   selector: 'app-carrito',
@@ -18,6 +19,7 @@ import { CarritoResponse, CarritoService, LineaCarritoResponse } from './carrito
 })
 export class Carrito {
   private readonly servicio = inject(CarritoService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly autenticacion = inject(AuthService);
   private readonly enrutador = inject(Router);
 
@@ -91,9 +93,15 @@ export class Carrito {
       'Producto eliminado del carrito.', 'No se pudo eliminar el producto. Inténtalo de nuevo.', true);
   }
 
-  descartarCarrito(): void {
+  async descartarCarrito(): Promise<void> {
     if (this.operacion() !== null || this.cargando() || !this.carrito()?.productos.length) return;
-    if (!window.confirm('¿Quieres descartar todo el carrito? Se eliminarán todos sus productos.')) return;
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Descartar el carrito',
+      mensaje: 'Se eliminarán todos los productos del carrito.',
+      aceptar: 'Descartar carrito',
+      peligro: true
+    });
+    if (!confirmado) return;
     this.ejecutar(this.servicio.descartarCarrito(), 'descarte',
       'Carrito descartado.', 'No se pudo descartar el carrito. Inténtalo de nuevo.');
   }

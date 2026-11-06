@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { ProductoService } from '../paneles/producto.service';
 import type { ProductoFavorito } from '../favoritos/favoritos.service';
 import { ListaProductos, ListasService, ResumenLista } from './listas.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 export const MAX_NOMBRE_LISTA = 50;
 
@@ -32,6 +33,7 @@ function crearControlNombre(): FormControl<string> {
 export class Listas implements OnInit {
 
   private readonly servicioListas = inject(ListasService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly servicioProductos = inject(ProductoService);
   private readonly enrutador = inject(Router);
 
@@ -150,14 +152,17 @@ export class Listas implements OnInit {
     });
   }
 
-  eliminar(lista: ListaProductos): void {
+  async eliminar(lista: ListaProductos): Promise<void> {
     if (lista.predeterminada || this.operacion()) {
       return;
     }
 
-    const confirmado = confirm(
-      `¿Eliminar la lista «${lista.nombre}»? Sus productos seguirán en el catálogo.`
-    );
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar lista',
+      mensaje: `¿Eliminar la lista «${lista.nombre}»? Sus productos seguirán en el catálogo.`,
+      aceptar: 'Eliminar lista',
+      peligro: true
+    });
     if (!confirmado) {
       return;
     }

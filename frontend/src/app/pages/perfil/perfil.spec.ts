@@ -5,6 +5,12 @@ import { Observable, of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Perfil } from './perfil';
 import { PerfilResponse, PerfilService } from './perfil.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
+
 
 const perfilCliente: PerfilResponse = {
   tipoUsuario: 'CLIENTE', nombre: 'Ana', apellidos: 'García',
@@ -106,11 +112,11 @@ describe('Perfil', () => {
     entrada.value = '081804';
     entrada.dispatchEvent(new Event('input'));
     await fixture.whenStable();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
     perfilServiceMock.desactivarSegundoFactor.mockReturnValue(of(undefined));
     componente.codigosRespaldo.set(['ABCDEFGH234567AB']);
 
-    componente.desactivarTOTP();
+    await componente.desactivarTOTP();
 
     expect(perfilServiceMock.desactivarSegundoFactor).toHaveBeenCalledWith('081804');
     expect(componente.perfil()?.totpActivado).toBe(false);
@@ -118,13 +124,13 @@ describe('Perfil', () => {
     expect(componente.codigosRespaldo()).toEqual([]);
   });
 
-  it('mantiene TOTP activado y muestra el bloqueo temporal si se agotan los intentos', () => {
+  it('mantiene TOTP activado y muestra el bloqueo temporal si se agotan los intentos', async () => {
     crearComponente(of({ ...perfilCliente, totpActivado: true }));
     componente.codigoTOTP.set('123456');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
     perfilServiceMock.desactivarSegundoFactor.mockReturnValue(throwError(() =>
       new HttpErrorResponse({ status: 429, error: { error: 'Espera 5 minutos.' } })));
-    componente.desactivarTOTP();
+    await componente.desactivarTOTP();
     expect(componente.perfil()?.totpActivado).toBe(true);
     expect(componente.errorTOTP()).toBe('Espera 5 minutos.');
     expect(componente.cargandoTOTP()).toBe(false);

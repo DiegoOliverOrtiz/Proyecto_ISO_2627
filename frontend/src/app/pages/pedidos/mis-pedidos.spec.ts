@@ -10,6 +10,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { MisPedidos } from './mis-pedidos';
 import { EstadoPedido, PedidoCliente } from './pedidos.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
+
 
 describe('MisPedidos - HU-38 confirmar recepción', () => {
   let fixture: ComponentFixture<MisPedidos>;
@@ -110,16 +116,16 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
       .toContain('Confirmar recepción');
   });
 
-  it('no envía la petición si el cliente rechaza la confirmación', () => {
+  it('no envía la petición si el cliente rechaza la confirmación', async () => {
     cargar();
 
-    const confirmar = vi.spyOn(window, 'confirm')
-      .mockReturnValue(false);
+    const confirmar = simularConfirmacion(false);
 
     const boton = botonConfirmar();
     expect(boton).toBeDefined();
 
     boton!.click();
+    await esperarConfirmacion();
 
     expect(confirmar).toHaveBeenCalledOnce();
     http.expectNone(csrfUrl);
@@ -129,12 +135,13 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
       .toHaveLength(1);
   });
 
-  it('mueve al histórico el pedido confirmado correctamente', () => {
+  it('mueve al histórico el pedido confirmado correctamente', async () => {
     cargar();
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
 
     botonConfirmar()!.click();
+    await esperarConfirmacion();
 
     http.expectOne(csrfUrl).flush({ token: 'csrf' });
 
@@ -159,12 +166,13 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
       .toContain('Finalizado');
   });
 
-  it('impide confirmaciones duplicadas mientras está procesando', () => {
+  it('impide confirmaciones duplicadas mientras está procesando', async () => {
     cargar();
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
 
     botonConfirmar()!.click();
+    await esperarConfirmacion();
     fixture.detectChanges();
 
     const boton = botonConfirmar();
@@ -177,12 +185,13 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
     http.expectNone(`${baseUrl}/pedido-enviado/confirmar-recepcion`);
   });
 
-  it('mantiene el pedido activo cuando el servidor devuelve 409', () => {
+  it('mantiene el pedido activo cuando el servidor devuelve 409', async () => {
     cargar();
 
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
 
     botonConfirmar()!.click();
+    await esperarConfirmacion();
 
     http.expectOne(csrfUrl).flush({ token: 'csrf' });
 
