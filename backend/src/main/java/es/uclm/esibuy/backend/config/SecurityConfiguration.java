@@ -1,5 +1,6 @@
 package es.uclm.esibuy.backend.config;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -22,6 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import es.uclm.esibuy.backend.security.PepperedBCryptPasswordEncoder;
+import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 
 @Configuration
 @EnableMethodSecurity
@@ -68,7 +71,9 @@ public class SecurityConfiguration {
                         CorsConfigurationSource corsConfigurationSource,
                         SecurityContextRepository securityContextRepository,
                         CookieCsrfTokenRepository csrfTokenRepository,
-                        SessionRegistry sessionRegistry) throws Exception {
+                        SessionRegistry sessionRegistry,
+                        @Value("${app.security.session.absolute-timeout:8h}") Duration timeoutAbsolutoSesion)
+                        throws Exception {
 
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -83,6 +88,9 @@ public class SecurityConfiguration {
                                                 .sessionRegistry(sessionRegistry)
                                                 .expiredSessionStrategy(event -> event.getResponse()
                                                                 .setStatus(HttpStatus.UNAUTHORIZED.value())))
+
+                                .addFilterBefore(new SesionAbsolutaFilter(timeoutAbsolutoSesion),
+                                                AuthorizationFilter.class)
 
                                 .csrf(csrf -> csrf
                                                 .csrfTokenRepository(csrfTokenRepository)
