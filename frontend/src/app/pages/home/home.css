@@ -10,7 +10,7 @@
 .auth-actions { display: flex; gap: .6rem; }
 .login-button, .register-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.7rem; padding: .7rem 1rem; border-radius: 7px; font: inherit; font-size: .9rem; font-weight: 700; text-decoration: none; cursor: pointer; transition: transform .18s ease, background .18s ease, color .18s ease; }
 .login-button { border: 1px solid #bfd1d7; color: #255b4d; background: #fff; }
-.register-button, .primary-button { border: 1px solid #d36b54; color: #fff; background: #d36b54; box-shadow: 0 3px 0 #b9553e; }
+.register-button, .primary-button { border: 1px solid var(--color-accent); color: #fff; background: var(--color-accent); box-shadow: 0 3px 0 #b9553e; }
 .login-button:hover, .register-button:hover, .primary-button:hover { transform: translateY(-1px); }
 .login-button:hover { border-color: #255b4d; background: #e8f2ed; }
 .register-button:hover, .primary-button:hover { background: #b9553e; }

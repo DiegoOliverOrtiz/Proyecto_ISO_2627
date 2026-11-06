@@ -133,8 +133,8 @@
 }
 
 .boton-primario {
-    background: #d36b54;
-    border: 1px solid #d36b54;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent);
     color: white;
 }
 

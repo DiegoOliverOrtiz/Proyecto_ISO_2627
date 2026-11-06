@@ -653,7 +653,7 @@ function mayorDeEdadValidator(
 
     .eyebrow {
       margin: 0 0 .35rem;
-      color: #D36B54;
+      color: var(--color-danger);
       font-size: .8rem;
       font-weight: 700;
       letter-spacing: .08em;
@@ -763,7 +763,7 @@ function mayorDeEdadValidator(
       width: 100%;
       box-sizing: border-box;
       padding: .75rem .85rem;
-      border: 1px solid #CBD8D1;
+      border: 1px solid var(--color-border-input);
       border-radius: 4px;
       background: #fff;
       color: #173042;
@@ -771,9 +771,8 @@ function mayorDeEdadValidator(
     }
 
     .field input:focus {
-      outline:
-        2px solid
-        rgba(37, 91, 77, .18);
+      outline: 3px solid var(--color-focus);
+      outline-offset: 2px;
       border-color: #255B4D;
     }
 

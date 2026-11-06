@@ -79,9 +79,9 @@
 }
 
 .primary-button {
-  border: 1px solid #d36b54;
+  border: 1px solid var(--color-accent);
   color: #fff;
-  background: #d36b54;
+  background: var(--color-accent);
   box-shadow: 0 2px 0 #a94b39;
   cursor: pointer;
 }
@@ -102,7 +102,7 @@
 .secondary-button:focus-visible,
 .primary-button:focus-visible,
 .detail-close:focus-visible {
-  outline: 2px solid #d36b54;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -175,7 +175,7 @@
 .catalog-filters select {
   min-height: 2.65rem;
   padding: .5rem .65rem;
-  border: 1px solid #bfd1d7;
+  border: 1px solid var(--color-border-input);
   border-radius: 4px;
   color: #173042;
   background: #fff;
@@ -534,7 +534,7 @@
 .detail-lists select {
   min-width: 0;
   padding: .45rem .6rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border-input);
   border-radius: 8px;
 }
 
