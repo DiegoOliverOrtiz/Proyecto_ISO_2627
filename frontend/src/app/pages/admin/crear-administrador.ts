@@ -54,7 +54,7 @@ const passwordRequirementsValidator: ValidatorFn = (
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './crear-administrador.html',
-  styleUrl: './crear-administrador.css'
+  styleUrls: ['../tienda/tienda.css', './crear-administrador.css']
 })
 export class CrearAdministrador {
   private readonly fb = inject(FormBuilder);

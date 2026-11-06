@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ProductoService } from '../paneles/producto.service';
 import { ProductoAdministracion, ProductosAdminService } from './productos-admin.service';
 
@@ -10,9 +10,9 @@ type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-productos-admin',
   standalone: true,
-  imports: [RouterLink],
+  imports: [DecimalPipe],
   templateUrl: './productos-admin.html',
-  styleUrl: './productos-admin.css'
+  styleUrls: ['../tienda/tienda.css', './productos-admin.css']
 })
 export class ProductosAdmin implements OnInit {
   private readonly productosAdminService = inject(ProductosAdminService);
@@ -21,6 +21,12 @@ export class ProductosAdmin implements OnInit {
   readonly productos = signal<ProductoAdministracion[]>([]);
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
+  // Imágenes que no han cargado: se sustituyen por el icono de «sin imagen».
+  readonly imagenesFallidas = signal<ReadonlySet<string>>(new Set<string>());
+
+  marcarImagenFallida(idProducto: string): void {
+    this.imagenesFallidas.update((ids) => new Set([...ids, idProducto]));
+  }
 
   // Búsqueda y filtros en memoria, como en el catálogo del vendedor (HU-15).
   readonly terminoBusqueda = signal('');
