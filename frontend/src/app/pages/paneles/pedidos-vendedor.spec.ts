@@ -393,4 +393,21 @@ describe('PedidosVendedor - HU-35', () => {
       expect(texto()).toContain('El pedido no existe o no está disponible.');
     });
   });
+  it('si falla la carga ofrece «Reintentar» y vuelve a consultar (M5)', () => {
+    servicioMock.consultarActivos.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+    componente.cargarPedidos();
+    fixture.detectChanges();
+
+    const reintentar = fixture.nativeElement.querySelector('.estado[role="alert"] button') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+
+    servicioMock.consultarActivos.mockReturnValue(of([pedido]));
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(componente.pedidos()).toEqual([pedido]);
+    expect(texto()).toContain('Pedido #');
+  });
 });

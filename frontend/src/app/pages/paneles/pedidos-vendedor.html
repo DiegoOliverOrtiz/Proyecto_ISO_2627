@@ -36,7 +36,10 @@
     @if (cargando()) {
     <p class="estado" role="status">Cargando pedidos...</p>
     } @else if (error()) {
-    <p class="aviso aviso-error" role="alert">{{ error() }}</p>
+    <section class="estado" role="alert">
+        <p class="estado-titulo">{{ error() }}</p>
+        <button type="button" class="boton-secundario" (click)="cargarPedidos()">Reintentar</button>
+    </section>
     } @else if (pedidos().length === 0) {
     <div class="estado">
         @if (pestana() === 'activos') {

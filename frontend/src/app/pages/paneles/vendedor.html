@@ -154,9 +154,15 @@
     @if (cargandoProductos()) {
     <output class="estado">Cargando productos...</output>
     } @else if (errorCatalogo()) {
-    <p class="estado" role="alert">{{ errorCatalogo() }}</p>
+    <section class="estado" role="alert">
+        <p class="estado-titulo">{{ errorCatalogo() }}</p>
+        <button type="button" class="boton-secundario" (click)="cargarProductos()">Reintentar</button>
+    </section>
     } @else if (productos().length === 0) {
-    <p class="estado">Aún no tienes productos registrados.</p>
+    <section class="estado">
+        <p class="estado-titulo">Aún no tienes productos registrados.</p>
+        <p>Usa «Añadir producto» para crear el primero y que los clientes lo vean en el catálogo.</p>
+    </section>
     } @else {
     <form class="filtros-catalogo" role="search" aria-label="Buscar y filtrar productos"
         (submit)="$event.preventDefault()">
@@ -188,7 +194,10 @@
     </form>
 
     @if (productosFiltrados().length === 0) {
-    <p class="estado">No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
+    <section class="estado">
+        <p class="estado-titulo">No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
+        <button type="button" class="boton-secundario" (click)="limpiarFiltros()">Limpiar filtros</button>
+    </section>
     } @else {
     <ul aria-label="Mis productos">
         @for (producto of productosFiltrados(); track producto.id) {

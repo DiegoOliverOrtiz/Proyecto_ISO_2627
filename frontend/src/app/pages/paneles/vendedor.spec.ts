@@ -1173,4 +1173,45 @@ describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
       expect(document.activeElement).toBe(vista.querySelector('button.añadirProductos'));
     });
   });
+  describe('errores y vacíos con salida (M5, B4)', () => {
+    it('si falla la carga ofrece «Reintentar» y vuelve a pedir los productos', () => {
+      servicioProductos.consultarProductosPropios.mockReturnValueOnce(
+        throwError(() => new HttpErrorResponse({ status: 500 }))
+      );
+      fixture = TestBed.createComponent(PanelVendedor);
+      fixture.detectChanges();
+      const vista = fixture.nativeElement as HTMLElement;
+
+      const reintentar = vista.querySelector('.estado[role="alert"] button') as HTMLButtonElement;
+      expect(reintentar.textContent?.trim()).toBe('Reintentar');
+
+      servicioProductos.consultarProductosPropios.mockReturnValue(of([producto()]));
+      reintentar.click();
+      fixture.detectChanges();
+
+      expect(servicioProductos.consultarProductosPropios).toHaveBeenCalledTimes(2);
+      expect(vista.querySelector('li h2')?.textContent).toContain('Teclado');
+    });
+
+    it('sin productos explica cómo crear el primero', () => {
+      const vista = crear([]);
+
+      expect(vista.querySelector('.estado')?.textContent).toContain('Aún no tienes productos registrados.');
+      expect(vista.querySelector('.estado')?.textContent).toContain('Añadir producto');
+    });
+
+    it('sin resultados ofrece «Limpiar filtros» junto al mensaje', () => {
+      const vista = crear([producto({ nombre: 'Teclado' })]);
+      fixture.componentInstance.terminoBusqueda.set('zzz');
+      fixture.detectChanges();
+
+      const limpiar = vista.querySelector('.estado button') as HTMLButtonElement;
+      expect(limpiar.textContent?.trim()).toBe('Limpiar filtros');
+      limpiar.click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.terminoBusqueda()).toBe('');
+      expect(vista.querySelectorAll('li').length).toBe(1);
+    });
+  });
 });
