@@ -11,6 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
@@ -27,6 +28,7 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 })
 export class PanelVendedor implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly inyector = inject(Injector);
   private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
   // A20: botón que abrió el formulario, para devolverle el foco al cerrarlo ('' = «Añadir producto»).
@@ -412,10 +414,14 @@ export class PanelVendedor implements OnInit {
     });
   }
 
-  eliminarProducto(producto: ProductoPropio): void {
-    const confirmado = confirm(
-      `¿Seguro que quieres eliminar «${producto.nombre}»? Se eliminará definitivamente junto con su imagen.`
-    );
+  async eliminarProducto(producto: ProductoPropio): Promise<void> {
+    // M8: diálogo propio de la aplicación en lugar de confirm() del navegador.
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar producto',
+      mensaje: `¿Seguro que quieres eliminar «${producto.nombre}»? Se eliminará definitivamente junto con su imagen.`,
+      aceptar: 'Eliminar producto',
+      peligro: true
+    });
     if (!confirmado) {
       return;
     }

@@ -12,6 +12,12 @@ import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { PanelVendedor } from './vendedor';
 import { VendedorService } from './vendedor.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
 
 describe('PanelVendedor - activar/desactivar producto', () => {
   let component: PanelVendedor;
@@ -770,19 +776,23 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       ]);
     });
 
-    it('pide confirmación nombrando el producto antes de eliminarlo', () => {
-      const confirmar = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('pide confirmación nombrando el producto antes de eliminarlo', async () => {
+      const confirmar = simularConfirmacion(true);
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
 
-      expect(confirmar).toHaveBeenCalledWith(expect.stringContaining('«Teclado»'));
+      expect(confirmar).toHaveBeenCalledWith(
+        expect.objectContaining({ mensaje: expect.stringContaining('«Teclado»'), peligro: true })
+      );
     });
 
-    it('elimina el producto confirmado, informa del resultado y recarga el catálogo', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('elimina el producto confirmado, informa del resultado y recarga el catálogo', async () => {
+      simularConfirmacion(true);
       productoServiceMock.consultarProductosPropios.mockReturnValue(of([productoDesactivado]));
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
       fixture.detectChanges();
 
       expect(productoServiceMock.eliminarProducto).toHaveBeenCalledWith('producto-1');
@@ -792,10 +802,11 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(component.productoEliminando()).toBeNull();
     });
 
-    it('no elimina nada si se cancela la confirmación', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
+    it('no elimina nada si se cancela la confirmación', async () => {
+      simularConfirmacion(false);
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
       fixture.detectChanges();
 
       expect(productoServiceMock.eliminarProducto).not.toHaveBeenCalled();
@@ -803,8 +814,8 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(1);
     });
 
-    it('muestra el motivo del backend si el producto tiene pedidos en curso', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('muestra el motivo del backend si el producto tiene pedidos en curso', async () => {
+      simularConfirmacion(true);
       const motivo =
         'No se puede eliminar el producto porque figura en pedidos en curso (pagados o enviados).';
       productoServiceMock.eliminarProducto.mockReturnValue(
@@ -812,6 +823,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       );
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
       fixture.detectChanges();
 
       expect(component.mensajeError()).toBe(motivo);
@@ -819,8 +831,8 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(fixture.nativeElement.textContent).toContain(motivo);
     });
 
-    it('muestra el mensaje del backend si el producto ya no existe y recarga el catálogo', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('muestra el mensaje del backend si el producto ya no existe y recarga el catálogo', async () => {
+      simularConfirmacion(true);
       productoServiceMock.eliminarProducto.mockReturnValue(
         throwError(
           () =>
@@ -832,51 +844,56 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       );
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
 
       expect(component.mensajeError()).toBe('No se ha encontrado el producto solicitado.');
       expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
     });
 
-    it('usa un mensaje genérico si el backend no indica el motivo', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('usa un mensaje genérico si el backend no indica el motivo', async () => {
+      simularConfirmacion(true);
       productoServiceMock.eliminarProducto.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 500 }))
       );
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
 
       expect(component.mensajeError()).toBe('No se pudo eliminar el producto.');
     });
 
-    it('muestra un mensaje de conexión si el servicio no responde', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('muestra un mensaje de conexión si el servicio no responde', async () => {
+      simularConfirmacion(true);
       productoServiceMock.eliminarProducto.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 0 }))
       );
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
 
       expect(component.mensajeError()).toBe('No se pudo conectar con el servicio. Inténtalo de nuevo.');
     });
 
-    it('si no puede eliminarse, el producto sigue en el catálogo con sus acciones', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('si no puede eliminarse, el producto sigue en el catálogo con sus acciones', async () => {
+      simularConfirmacion(true);
       productoServiceMock.eliminarProducto.mockReturnValue(
         throwError(() => new HttpErrorResponse({ status: 409, error: { error: 'Pedidos en curso' } }))
       );
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
       fixture.detectChanges();
 
       expect(fixture.nativeElement.textContent).toContain('Teclado');
       expect(botonesEliminar()[0].disabled).toBe(false);
     });
 
-    it('desactiva el botón mientras se procesa la eliminación', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('desactiva el botón mientras se procesa la eliminación', async () => {
+      simularConfirmacion(true);
       productoServiceMock.eliminarProducto.mockReturnValue(new Subject<void>());
 
       botonesEliminar()[0].click();
+      await esperarConfirmacion();
       fixture.detectChanges();
 
       expect(botonesEliminar()[0].disabled).toBe(true);
@@ -884,12 +901,12 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       expect(botonesEliminar()[1].disabled).toBe(false);
     });
 
-    it('cierra el formulario si se elimina el producto que se estaba modificando', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('cierra el formulario si se elimina el producto que se estaba modificando', async () => {
+      simularConfirmacion(true);
       component.editarProducto(productoActivo);
       fixture.detectChanges();
 
-      component.eliminarProducto(productoActivo);
+      await component.eliminarProducto(productoActivo);
 
       expect(component.productoEnEdicion()).toBeNull();
       expect(component.mostrandoFormulario()).toBe(false);
