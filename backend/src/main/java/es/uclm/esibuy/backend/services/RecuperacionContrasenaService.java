@@ -36,6 +36,7 @@ public class RecuperacionContrasenaService {
     private final SesionService sesionService;
     private final BrevoEmailService brevoEmailService;
     private final LimiteSolicitudesRecuperacion limiteSolicitudes;
+    private final AuditoriaService auditoriaService;
     private final TransactionTemplate transaccion;
     private final String urlFrontend;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -48,6 +49,7 @@ public class RecuperacionContrasenaService {
             SesionService sesionService,
             BrevoEmailService brevoEmailService,
             LimiteSolicitudesRecuperacion limiteSolicitudes,
+            AuditoriaService auditoriaService,
             MongoTransactionManager transactionManager,
             @org.springframework.beans.factory.annotation.Value(
                     "${app.frontend-url:https://localhost:4200}") String urlFrontend) {
@@ -58,6 +60,7 @@ public class RecuperacionContrasenaService {
         this.sesionService = sesionService;
         this.brevoEmailService = brevoEmailService;
         this.limiteSolicitudes = limiteSolicitudes;
+        this.auditoriaService = auditoriaService;
         this.transaccion = new TransactionTemplate(transactionManager);
         this.urlFrontend = urlFrontend.replaceAll("/+$", "");
     }
@@ -68,8 +71,11 @@ public class RecuperacionContrasenaService {
         // Por encima del límite no se crea token ni se envía correo, pero la
         // respuesta al cliente es la misma para no revelar nada.
         if (!limiteSolicitudes.permitir(emailNormalizado, ip)) {
+            auditoriaService.registrarSolicitudRecuperacion(true);
             return;
         }
+        // Se registra antes de buscar el usuario, exista o no.
+        auditoriaService.registrarSolicitudRecuperacion(false);
 
         Optional<Usuario> usuarioEncontrado = usuarioDAO.findByEmail(emailNormalizado);
 
@@ -134,6 +140,7 @@ public class RecuperacionContrasenaService {
         });
 
         sesionService.cerrarSesiones(usuario.getEmail());
+        auditoriaService.registrarRestablecimientoContrasena(usuario.getId());
     }
 
     private String calcularHash(String token) {

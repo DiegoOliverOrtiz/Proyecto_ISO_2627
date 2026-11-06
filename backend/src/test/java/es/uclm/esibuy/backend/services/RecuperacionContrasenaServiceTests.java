@@ -58,6 +58,8 @@ class RecuperacionContrasenaServiceTests {
     @Mock
     private LimiteSolicitudesRecuperacion limiteSolicitudes;
     @Mock
+    private AuditoriaService auditoriaService;
+    @Mock
     private MongoTransactionManager transactionManager;
 
     private RecuperacionContrasenaService servicio;
@@ -73,6 +75,7 @@ class RecuperacionContrasenaServiceTests {
                 sesionService,
                 brevoEmailService,
                 limiteSolicitudes,
+                auditoriaService,
                 transactionManager,
                 "https://esibuy.example/");
         lenient().when(limiteSolicitudes.permitir(anyString(), anyString())).thenReturn(true);
@@ -90,6 +93,7 @@ class RecuperacionContrasenaServiceTests {
         servicio.solicitar("  CLIENTE@EXAMPLE.COM ", IP);
 
         verify(limiteSolicitudes).permitir(EMAIL, IP);
+        verify(auditoriaService).registrarSolicitudRecuperacion(false);
         verify(usuarioDAO).findByEmail(EMAIL);
         verifyNoInteractions(tokenDAO, brevoEmailService);
     }
@@ -102,6 +106,7 @@ class RecuperacionContrasenaServiceTests {
 
         // A24: misma respuesta (no lanza nada), pero sin efectos.
         verifyNoInteractions(usuarioDAO, tokenDAO, brevoEmailService);
+        verify(auditoriaService).registrarSolicitudRecuperacion(true);
     }
 
     @Test
@@ -150,6 +155,7 @@ class RecuperacionContrasenaServiceTests {
         assertEquals("hash-nuevo", cliente.getContrasenaHash());
         assertEquals("hash-nuevo", cliente.getHistorialContrasenasHash().getFirst());
         verify(sesionService).cerrarSesiones(EMAIL);
+        verify(auditoriaService).registrarRestablecimientoContrasena("usuario-1");
     }
 
     @Test
@@ -199,7 +205,7 @@ class RecuperacionContrasenaServiceTests {
 
         verify(tokenDAO, never()).consumirSiValido(anyString(), any(Instant.class));
         verify(usuarioDAO, never()).save(any(Cliente.class));
-        verifyNoInteractions(sesionService);
+        verifyNoInteractions(sesionService, auditoriaService);
     }
 
     @Test
@@ -216,7 +222,7 @@ class RecuperacionContrasenaServiceTests {
 
         verify(tokenDAO, never()).consumirSiValido(anyString(), any(Instant.class));
         verify(usuarioDAO, never()).save(any(Cliente.class));
-        verifyNoInteractions(sesionService);
+        verifyNoInteractions(sesionService, auditoriaService);
     }
 
     @Test
@@ -230,7 +236,7 @@ class RecuperacionContrasenaServiceTests {
                 () -> servicio.completar(TOKEN, NUEVA_CONTRASENA));
 
         verify(usuarioDAO, never()).save(any(Cliente.class));
-        verifyNoInteractions(sesionService);
+        verifyNoInteractions(sesionService, auditoriaService);
     }
 
     @Test
@@ -247,7 +253,7 @@ class RecuperacionContrasenaServiceTests {
 
         verify(transactionManager).rollback(any());
         verify(transactionManager, never()).commit(any());
-        verifyNoInteractions(sesionService);
+        verifyNoInteractions(sesionService, auditoriaService);
     }
 
     private TokenRecuperacion tokenValido() {
