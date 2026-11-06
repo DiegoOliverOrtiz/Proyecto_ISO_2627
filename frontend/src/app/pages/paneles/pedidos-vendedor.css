@@ -1,223 +1,141 @@
-:host {
-    display: block;
-    min-height: 100vh;
-    background: #f4f7f8;
-    color: #173042;
-}
+/*
+ * Pedidos del vendedor. La página, la cabecera, las tarjetas, los botones, los chips, los estados
+ * y los avisos vienen de ../tienda/tienda.css. Solo usa tokens de styles.css.
+ */
 
-.cabecera {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    padding: 1rem 2rem;
-    background: #e8eef0;
-    border-bottom: 1px solid #d9e3e6;
-}
-
-.cabecera h1 {
-    font-size: 1.2rem;
-    margin: 0;
-}
-
-.contenedor {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-}
-
-.encabezado,
+.pagina-cabecera,
 .cabecera-pedido,
 .cabecera-detalle {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-.encabezado h2,
-.detalle h2 {
-    margin-top: 0;
+.cabecera-pedido,
+.cabecera-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.encabezado p,
 .cabecera-pedido p {
-    color: #5c7180;
+  margin: .25rem 0 0;
+  color: var(--color-text-secondary);
+}
+
+.detalle h2 {
+  margin-top: 0;
 }
 
 .pestañas {
-    display: flex;
-    gap: .5rem;
-    border-bottom: 1px solid #d9e3e6;
-    margin: 1.5rem 0;
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .pestañas button {
-    padding: .85rem 1.25rem;
-    border: none;
-    border-bottom: 3px solid transparent;
-    background: transparent;
-    color: #526675;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
+  min-height: 44px;
+  padding: .75rem 1.25rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.pestañas button.seleccionada {
-    color: #255b4d;
-    border-bottom-color: #255b4d;
+.pestañas button[aria-selected='true'] {
+  border-bottom-color: var(--color-brand);
+  color: var(--color-brand);
 }
 
 .lista-pedidos {
-    display: grid;
-    gap: 1rem;
-}
-
-.tarjeta-pedido,
-.detalle,
-.estado-vacio {
-    background: white;
-    padding: 1.5rem;
-    border: 1px solid #dae3e6;
-    border-radius: 8px;
+  display: grid;
+  gap: 1rem;
 }
 
 .tarjeta-pedido h3 {
-    margin: 0;
-    overflow-wrap: anywhere;
-}
-
-.estado {
-    border-radius: 999px;
-    padding: .45rem .85rem;
-    background: #e5f3eb;
-    color: #255b4d;
-    font-size: .85rem;
-    font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .resumen {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    margin: 1rem 0;
-}
-
-.boton-primario,
-.boton-secundario {
-    padding: .7rem 1rem;
-    border-radius: 4px;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.boton-primario {
-    background: var(--color-accent);
-    border: 1px solid var(--color-accent);
-    color: white;
-}
-
-.boton-secundario {
-    background: white;
-    border: 1px solid #255b4d;
-    color: #255b4d;
-}
-
-button:disabled {
-    opacity: .6;
-    cursor: not-allowed;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0;
 }
 
 .detalle {
-    margin-top: 2rem;
+  margin-top: 2rem;
 }
 
 .tabla-contenedor {
-    overflow-x: auto;
+  position: relative;
+  overflow-x: auto;
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-    text-align: left;
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.titulo-detalle {
+  scroll-margin-top: 5rem;
+}
+
+th:nth-child(n + 2),
+td:nth-child(n + 2) {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 th,
 td {
-    padding: .8rem;
-    border-bottom: 1px solid #e0e7e9;
+  padding: .8rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.importe {
+  white-space: nowrap;
 }
 
 .total {
-    font-size: 1.1rem;
-    font-weight: 800;
-    text-align: right;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: right;
 }
 
 .direccion {
-    margin-top: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 .nota {
-    color: #526675;
-    font-size: .9rem;
-}
-
-.estado-vacio {
-    text-align: center;
-    padding: 3rem 1.5rem;
+  color: var(--color-text-secondary);
+  font-size: .9rem;
 }
 
 .acciones {
-    display: flex;
-    gap: .75rem;
-    flex-wrap: wrap;
-}
-
-.mensaje-exito {
-    padding: 1rem;
-    border: 1px solid #a9d3bb;
-    border-radius: 4px;
-    background: #e5f3eb;
-    color: #255b4d;
-}
-
-.mensaje-error {
-    padding: 1rem;
-    border: 1px solid #e5b1a8;
-    border-radius: 4px;
-    background: #fff0ed;
-    color: #a63120;
-}
-
-@media (max-width: 640px) {
-    .cabecera {
-        padding: 1rem;
-    }
-
-    .contenedor {
-        padding: 1.5rem 1rem;
-    }
-
-    .tarjeta-pedido,
-    .detalle {
-        padding: 1rem;
-    }
-
-    .pestañas button {
-        padding: .75rem;
-    }
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
 }
 
 /* A6: la referencia completa no cabe en una línea a 320 px. */
 .cabecera-detalle > div {
-    min-width: 0;
+  min-width: 0;
 }
 
 .cabecera-detalle p {
-    overflow-wrap: anywhere;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .pestañas button {
+    padding: .75rem;
+  }
 }

@@ -1,6 +1,18 @@
+import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { VendedorService } from './vendedor.service';
@@ -10,12 +22,17 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
 @Component({
   selector: 'app-panel-vendedor',
   standalone: true,
-  imports: [ReactiveFormsModule],
-  styleUrl: './vendedor.css',
+  imports: [DecimalPipe, ReactiveFormsModule],
+  styleUrls: ['../tienda/tienda.css', './vendedor.css'],
   templateUrl: './vendedor.html',
 })
 export class PanelVendedor implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly confirmacion = inject(ConfirmacionService);
+  private readonly inyector = inject(Injector);
+  private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
+  // A20: botón que abrió el formulario, para devolverle el foco al cerrarlo ('' = «Añadir producto»).
+  private origenFoco: string | null = null;
   private readonly servicioCategorias = inject(CategoriasService);
   readonly mensajeError = signal('');
 
@@ -26,6 +43,12 @@ export class PanelVendedor implements OnInit {
   readonly productoCambiandoEstado = signal<string | null>(null);
   readonly productoEliminando = signal<string | null>(null);
   readonly productoEnEdicion = signal<ProductoPropio | null>(null);
+  // Imágenes que no han cargado: se sustituyen por el icono de «sin imagen» (M7).
+  readonly imagenesFallidas = signal<ReadonlySet<string>>(new Set<string>());
+
+  marcarImagenFallida(idProducto: string): void {
+    this.imagenesFallidas.update((ids) => new Set([...ids, idProducto]));
+  }
 
   // Búsqueda y filtros del catálogo (HU-15): se aplican en memoria sobre los productos del vendedor.
   readonly terminoBusqueda = signal('');
@@ -37,14 +60,14 @@ export class PanelVendedor implements OnInit {
     )
   );
   readonly productosFiltrados = computed(() => {
-    // El texto se compara como literal con includes(): nunca se interpreta como expresión regular.
-    const termino = this.terminoBusqueda().trim().toLowerCase();
+    // El texto se compara como literal con includes(), sin tildes ni mayúsculas (M22): nunca es una expresión regular.
+    const termino = normalizarTexto(this.terminoBusqueda().trim());
     const categoria = this.categoriaFiltro();
     const estado = this.estadoFiltro();
 
     return this.productos().filter(
       (producto) =>
-        producto.nombre.toLowerCase().includes(termino) &&
+        normalizarTexto(producto.nombre).includes(termino) &&
         (categoria === '' || producto.categoria === categoria) &&
         (estado === 'todos' || producto.esVisible === (estado === 'activos'))
     );
@@ -76,9 +99,10 @@ export class PanelVendedor implements OnInit {
     categoria: ['', Validators.required],
     descripcion: [''],
     esVisible: [true],
-    precio: [0, [Validators.required, Validators.min(0.01)]],
+    // M14: precio y stock empiezan vacíos (con placeholder), no con un 0 que hay que borrar.
+    precio: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
     // Al crear el stock debe ser mayor que 0; al modificar (HU18) se admite 0.
-    stock: [0, [Validators.required, Validators.min(1)]],
+    stock: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
     descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
   });
@@ -89,8 +113,48 @@ export class PanelVendedor implements OnInit {
     if (this.mostrandoFormulario()) {
       this.cerrarFormulario();
     } else {
+      this.origenFoco = '';
       this.mostrandoFormulario.set(true);
+      this.enfocarFormulario();
     }
+  }
+
+  /** A20: al abrir el formulario se desplaza a la vista y el foco entra en su título. */
+  private enfocarFormulario(): void {
+    afterNextRender(
+      () => {
+        const titulo = this.elemento.nativeElement.querySelector<HTMLElement>('#titulo-formulario');
+        if (!titulo) {
+          return;
+        }
+        const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        titulo.scrollIntoView?.({ block: 'start', behavior: sinMovimiento ? 'auto' : 'smooth' });
+        titulo.focus({ preventScroll: true });
+      },
+      { injector: this.inyector }
+    );
+  }
+
+  /** A20: al cerrar o guardar, el foco vuelve al botón que abrió el formulario. */
+  private devolverFoco(): void {
+    const destino = this.origenFoco;
+    this.origenFoco = null;
+    if (destino === null) {
+      return;
+    }
+    afterNextRender(
+      () => {
+        const raiz = this.elemento.nativeElement;
+        const boton =
+          destino === ''
+            ? raiz.querySelector<HTMLElement>('.añadirProductos')
+            : Array.from(raiz.querySelectorAll<HTMLElement>('.boton-modificar')).find(
+                (candidato) => candidato.dataset['producto'] === destino
+              );
+        boton?.focus();
+      },
+      { injector: this.inyector }
+    );
   }
 
   private ajustarStockMinimo(minimo: number): void {
@@ -100,6 +164,7 @@ export class PanelVendedor implements OnInit {
   }
 
   private cerrarFormulario(): void {
+    this.devolverFoco();
     this.mostrandoFormulario.set(false);
     this.productoEnEdicion.set(null);
     this.limpiarImagenSeleccionada();
@@ -111,8 +176,8 @@ export class PanelVendedor implements OnInit {
       categoria: '',
       descripcion: '',
       esVisible: true,
-      precio: 0,
-      stock: 0,
+      precio: null,
+      stock: null,
       descuento: 0,
       descuentoPremium: 0,
     });
@@ -123,6 +188,7 @@ export class PanelVendedor implements OnInit {
     this.mensajeError.set('');
     this.limpiarImagenSeleccionada();
     this.errorImagen.set('');
+    this.origenFoco = producto.id;
     this.productoEnEdicion.set(producto);
     this.ajustarStockMinimo(0);
     // Se reutiliza el formulario de creación cargando los valores actuales del producto.
@@ -138,6 +204,7 @@ export class PanelVendedor implements OnInit {
     });
     this.soloPremium.setValue(producto.soloPremium);
     this.mostrandoFormulario.set(true);
+    this.enfocarFormulario();
   }
 
   actualizarBusqueda(evento: Event): void {
@@ -247,7 +314,7 @@ export class PanelVendedor implements OnInit {
     }
 
     this.servicioProductos.crearProducto(
-      { ...this.formularioProducto.getRawValue(), soloPremium: this.soloPremium.value },
+      { ...this.valoresValidos(), soloPremium: this.soloPremium.value },
       this.imagenSeleccionada()
     ).subscribe({
       next: () => {
@@ -274,9 +341,15 @@ export class PanelVendedor implements OnInit {
     });
   }
 
+  /** Valores del formulario ya validado: precio y stock son obligatorios, así que no son nulos. */
+  private valoresValidos() {
+    const valores = this.formularioProducto.getRawValue();
+    return { ...valores, precio: valores.precio as number, stock: valores.stock as number };
+  }
+
   private modificarProducto(id: string): void {
     const { nombre, categoria, descripcion, precio, stock, descuento, descuentoPremium } =
-      this.formularioProducto.getRawValue();
+      this.valoresValidos();
 
     this.servicioProductos.modificarProducto(
       id,
@@ -341,10 +414,14 @@ export class PanelVendedor implements OnInit {
     });
   }
 
-  eliminarProducto(producto: ProductoPropio): void {
-    const confirmado = confirm(
-      `¿Seguro que quieres eliminar «${producto.nombre}»? Se eliminará definitivamente junto con su imagen.`
-    );
+  async eliminarProducto(producto: ProductoPropio): Promise<void> {
+    // M8: diálogo propio de la aplicación en lugar de confirm() del navegador.
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Eliminar producto',
+      mensaje: `¿Seguro que quieres eliminar «${producto.nombre}»? Se eliminará definitivamente junto con su imagen.`,
+      aceptar: 'Eliminar producto',
+      peligro: true
+    });
     if (!confirmado) {
       return;
     }
