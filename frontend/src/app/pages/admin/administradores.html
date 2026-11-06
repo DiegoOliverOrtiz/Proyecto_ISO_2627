@@ -85,10 +85,12 @@
               <td class="actions-cell">
                 <div class="user-actions">
                   <a
-                    class="boton-secundario accion"
+                    class="boton-secundario accion accion-icono"
                     [routerLink]="['/admin/usuarios', admin.id]"
                     [attr.aria-label]="'Ver detalle de ' + admin.nombre + ' ' + admin.apellidos"
-                  >Ver detalle</a>
+                  
+                    title="Ver detalle"
+                  ><span aria-hidden="true">&#128065;</span></a>
 
                   @if (esAdministradorActual(admin.email)) {
                     <span class="chip chip-neutro current-admin-label" title="Tu cuenta de administrador">Tú</span>
@@ -96,28 +98,38 @@
                     @if (admin.estado === 'BLOQUEADO') {
                       <button
                         type="button"
-                        class="boton-secundario accion"
+                        class="boton-secundario accion accion-icono"
                         (click)="desbloquear(admin)"
                         [disabled]="usuarioEnProceso() === admin.id"
                         [attr.aria-label]="'Desbloquear a ' + admin.nombre + ' ' + admin.apellidos"
-                      >{{ usuarioEnProceso() === admin.id ? 'Desbloqueando...' : 'Desbloquear' }}</button>
+                      
+                    [attr.title]="usuarioEnProceso() === admin.id ? 'Desbloqueando...' : 'Desbloquear'"
+                  >
+                    <span aria-hidden="true">{{ usuarioEnProceso() === admin.id ? '…' : '&#128275;' }}</span>
+                  </button>
                     } @else {
                       <button
                         type="button"
-                        class="boton-peligro accion"
+                        class="boton-peligro accion accion-icono"
                         (click)="bloquear(admin)"
                         [disabled]="usuarioEnProceso() === admin.id"
                         [attr.aria-label]="'Bloquear a ' + admin.nombre + ' ' + admin.apellidos"
-                      >{{ usuarioEnProceso() === admin.id ? 'Bloqueando...' : 'Bloquear' }}</button>
+                      
+                    [attr.title]="usuarioEnProceso() === admin.id ? 'Bloqueando...' : 'Bloquear'"
+                  >
+                    <span aria-hidden="true">{{ usuarioEnProceso() === admin.id ? '…' : '&#128274;' }}</span>
+                  </button>
                     }
                   }
 
                   <button
                     type="button"
-                    class="boton-peligro accion"
+                    class="boton-peligro accion accion-icono"
                     (click)="eliminar(admin.id, admin.nombre)"
                     [attr.aria-label]="'Eliminar a ' + admin.nombre + ' ' + admin.apellidos"
-                  >Eliminar</button>
+                  
+                    title="Eliminar"
+                  ><span aria-hidden="true">&#10006;</span></button>
                 </div>
               </td>
             </tr>

@@ -122,42 +122,58 @@
               <td class="actions-cell">
                 <div class="user-actions">
                   <a
-                    class="boton-secundario accion"
+                    class="boton-secundario accion accion-icono"
                     [routerLink]="['/admin/usuarios', usuario.id]"
                     [attr.aria-label]="'Ver detalle de ' + usuario.nombre + ' ' + usuario.apellidos"
-                  >Ver detalle</a>
+                  
+                    title="Ver detalle"
+                  ><span aria-hidden="true">&#128065;</span></a>
 
                   <a
-                    class="boton-secundario accion"
+                    class="boton-secundario accion accion-icono"
                     [routerLink]="['/admin/usuarios', usuario.id]"
                     [queryParams]="{ editar: true }"
                     [attr.aria-label]="'Modificar a ' + usuario.nombre + ' ' + usuario.apellidos"
-                  >Modificar</a>
+                  
+                    title="Modificar"
+                  ><span aria-hidden="true">&#9998;</span></a>
 
                   @if (usuario.estado === 'PENDIENTE') {
                     <button
                       type="button"
-                      class="boton-principal accion"
+                      class="boton-principal accion accion-icono"
                       (click)="activar(usuario)"
                       [disabled]="usuarioEnProceso() === usuario.id"
                       [attr.aria-label]="'Activar a ' + usuario.nombre + ' ' + usuario.apellidos"
-                    >{{ usuarioEnProceso() === usuario.id ? 'Activando...' : 'Activar' }}</button>
+                    
+                    [attr.title]="usuarioEnProceso() === usuario.id ? 'Activando...' : 'Activar'"
+                  >
+                    <span aria-hidden="true">{{ usuarioEnProceso() === usuario.id ? '…' : '&#10003;' }}</span>
+                  </button>
                   } @else if (usuario.estado === 'BLOQUEADO') {
                     <button
                       type="button"
-                      class="boton-secundario accion"
+                      class="boton-secundario accion accion-icono"
                       (click)="desbloquear(usuario)"
                       [disabled]="usuarioEnProceso() === usuario.id"
                       [attr.aria-label]="'Desbloquear a ' + usuario.nombre + ' ' + usuario.apellidos"
-                    >{{ usuarioEnProceso() === usuario.id ? 'Desbloqueando...' : 'Desbloquear' }}</button>
+                    
+                    [attr.title]="usuarioEnProceso() === usuario.id ? 'Desbloqueando...' : 'Desbloquear'"
+                  >
+                    <span aria-hidden="true">{{ usuarioEnProceso() === usuario.id ? '…' : '&#128275;' }}</span>
+                  </button>
                   } @else {
                     <button
                       type="button"
-                      class="boton-peligro accion"
+                      class="boton-peligro accion accion-icono"
                       (click)="bloquear(usuario)"
                       [disabled]="usuarioEnProceso() === usuario.id"
                       [attr.aria-label]="'Bloquear a ' + usuario.nombre + ' ' + usuario.apellidos"
-                    >{{ usuarioEnProceso() === usuario.id ? 'Bloqueando...' : 'Bloquear' }}</button>
+                    
+                    [attr.title]="usuarioEnProceso() === usuario.id ? 'Bloqueando...' : 'Bloquear'"
+                  >
+                    <span aria-hidden="true">{{ usuarioEnProceso() === usuario.id ? '…' : '&#128274;' }}</span>
+                  </button>
                   }
                 </div>
               </td>

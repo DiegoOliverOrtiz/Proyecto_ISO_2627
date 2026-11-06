@@ -99,7 +99,7 @@ th {
 }
 
 .actions-cell {
-  min-width: 14rem;
+  min-width: 12rem;
 }
 
 .user-actions {
@@ -109,12 +109,19 @@ th {
   gap: .5rem;
 }
 
-/* M9: objetivo táctil de 44 px, con texto en lugar de iconos sueltos. */
+/* M9: objetivo táctil de 44 px. Las acciones son iconos con nombre accesible (aria-label) y texto en `title`. */
 .accion {
   min-height: 44px;
   padding: .4rem .8rem;
   font-size: .9rem;
   white-space: nowrap;
+}
+
+.accion-icono {
+  min-width: 44px;
+  padding: .4rem;
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .current-admin-label {
