@@ -193,6 +193,24 @@ button:disabled {
   overflow-x: auto;
 }
 
+.valoracion-producto {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #d9e3e6;
+  border-radius: 8px;
+}
+
+.valoracion-producto select,
+.valoracion-producto textarea {
+  width: 100%;
+  padding: .65rem;
+  border: 1px solid #7a8f97;
+  border-radius: 4px;
+  color: #173042;
+  background: #fff;
+}
+.valoracion-completada { color: #255b4d; }
+
 table {
   width: 100%;
   margin: 1rem 0;

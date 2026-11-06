@@ -225,6 +225,77 @@
         </table>
       </div>
 
+      @if (pedido.estado === 'FINALIZADO') {
+        <section class="valoraciones" aria-labelledby="titulo-valoraciones">
+          <h3 id="titulo-valoraciones">Valoraciones</h3>
+          @for (linea of pedido.lineas; track linea.productoId) {
+            <article class="valoracion-producto">
+              <h4>{{ linea.nombreProducto }}</h4>
+              @if (estadoValoracion(linea.productoId); as estado) {
+                @if (estado.estado === 'cargando') {
+                  <p role="status">Comprobando si ya has valorado este producto...</p>
+                } @else if (estado.estado === 'valorada') {
+                  <p class="valoracion-completada" role="status">Ya valorado</p>
+                } @else if (estado.estado === 'error') {
+                  <p class="mensaje-error" role="alert">{{ estado.mensaje }}</p>
+                  <button
+                    type="button"
+                    class="boton-secundario"
+                    (click)="reintentarConsultaValoracion(pedido, linea.productoId)">
+                    Reintentar consulta
+                  </button>
+                } @else {
+                  @let formulario = formularioValoracion(linea.productoId);
+                  @if (formulario) {
+                    <form
+                      [id]="'formulario-valoracion-' + linea.productoId"
+                      [formGroup]="formulario"
+                      (ngSubmit)="enviarValoracion(pedido, linea.productoId)">
+                      <p>Valorar producto</p>
+                      <label [for]="'puntuacion-' + linea.productoId">Puntuación</label>
+                      <select
+                        [id]="'puntuacion-' + linea.productoId"
+                        formControlName="puntuacion">
+                        <option [ngValue]="1">1 - Muy mala</option>
+                        <option [ngValue]="2">2 - Mala</option>
+                        <option [ngValue]="3">3 - Normal</option>
+                        <option [ngValue]="4">4 - Buena</option>
+                        <option [ngValue]="5">5 - Muy buena</option>
+                      </select>
+
+                      <label [for]="'comentario-' + linea.productoId">
+                        Comentario (opcional)
+                      </label>
+                      <textarea
+                        [id]="'comentario-' + linea.productoId"
+                        formControlName="comentario"
+                        maxlength="500"
+                        rows="3"
+                        [attr.aria-describedby]="'comentario-ayuda-' + linea.productoId">
+                      </textarea>
+                      <small [id]="'comentario-ayuda-' + linea.productoId">
+                        Máximo 500 caracteres.
+                      </small>
+
+                      @if (estado.mensaje) {
+                        <p class="mensaje-error" role="alert">{{ estado.mensaje }}</p>
+                      }
+
+                      <button
+                        type="submit"
+                        class="boton-primario"
+                        [disabled]="formulario.invalid || estado.enviando">
+                        {{ estado.enviando ? 'Enviando valoración...' : 'Enviar valoración' }}
+                      </button>
+                    </form>
+                  }
+                }
+              }
+            </article>
+          }
+        </section>
+      }
+
       <p class="total">Importe total: {{ pedido.importe | number:'1.2-2' }} €</p>
 
       @if (pedido.direccionEnvio; as direccion) {
