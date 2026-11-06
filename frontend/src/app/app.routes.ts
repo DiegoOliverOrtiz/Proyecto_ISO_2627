@@ -28,33 +28,40 @@ import { MisPedidos } from './pages/pedidos/mis-pedidos';
 export const routes: Routes = [
   {
     path: '',
+    title: 'Inicio · ESIBuy',
     component: Home
   },
   {
     path: 'login',
+    title: 'Iniciar sesión · ESIBuy',
     component: Login
   },
   {
     path: 'registro',
+    title: 'Crear cuenta · ESIBuy',
     component: Register
   },
   {
     path: 'recuperar-contrasena',
+    title: 'Recuperar contraseña · ESIBuy',
     component: RecuperacionContrasena
   },
   {
     path: 'perfil',
+    title: 'Mi perfil · ESIBuy',
     component: Perfil,
     canActivate: [autenticadoGuard]
   },
   {
     // HU-39: todo usuario tiene listas (al menos la de favoritos).
     path: 'listas',
+    title: 'Mis listas · ESIBuy',
     component: Listas,
     canActivate: [autenticadoGuard]
   },
   {
     path: 'perfil/direcciones',
+    title: 'Mis direcciones · ESIBuy',
     component: Direcciones,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
@@ -62,42 +69,49 @@ export const routes: Routes = [
 
   {
     path: 'perfil/pagos',
+    title: 'Métodos de pago · ESIBuy',
     component: Pagos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'admin',
+    title: 'Panel de administración · ESIBuy',
     component: PanelAdministrador,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'admin/usuarios',
+    title: 'Usuarios · ESIBuy',
     component: Usuarios,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'admin/usuarios/:id',
+    title: 'Detalle de usuario · ESIBuy',
     component: UsuarioDetalle,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'admin/categorias',
+    title: 'Categorías · ESIBuy',
     component: Categorias,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'admin/administradores',
+    title: 'Administradores · ESIBuy',
     component: Administradores,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'admin/administradores/nuevo',
+    title: 'Nuevo administrador · ESIBuy',
     component: CrearAdministrador,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
@@ -105,48 +119,56 @@ export const routes: Routes = [
   {
     // HU-34: catálogo de todos los vendedores en solo lectura.
     path: 'admin/productos',
+    title: 'Productos · ESIBuy',
     component: ProductosAdmin,
     canActivate: [rolGuard],
     data: { rol: 'ADMIN' }
   },
   {
     path: 'cliente/favoritos',
+    title: 'Mis favoritos · ESIBuy',
     component: Favoritos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'carrito',
+    title: 'Mi carrito · ESIBuy',
     component: Carrito,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'cliente/checkout',
+    title: 'Finalizar compra · ESIBuy',
     component: Checkout,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'cliente/pedidos',
+    title: 'Mis pedidos · ESIBuy',
     component: MisPedidos,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'cliente',
+    title: 'Catálogo · ESIBuy',
     component: PanelCliente,
     canActivate: [rolGuard],
     data: { rol: 'CLIENTE' }
   },
   {
     path: 'vendedor/pedidos',
+    title: 'Pedidos · ESIBuy',
     component: PedidosVendedor,
     canActivate: [rolGuard],
     data: { rol: 'VENDEDOR' }
   },
   {
     path: 'vendedor',
+    title: 'Mis productos · ESIBuy',
     component: PanelVendedor,
     canActivate: [rolGuard],
     data: { rol: 'VENDEDOR' }
