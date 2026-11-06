@@ -17,6 +17,7 @@ import es.uclm.esibuy.backend.model.Valoracion;
 public class ValoracionService {
     private static final int PUNTUACION_MINIMA = 1;
     private static final int PUNTUACION_MAXIMA = 5;
+    private static final int LONGITUD_MAXIMA_COMENTARIO = 500;
 
     private final ValoracionDAO valoracionDAO;
     private final PedidoDAO pedidoDAO;
@@ -39,6 +40,9 @@ public class ValoracionService {
             String comentario) {
         if (puntuacion < PUNTUACION_MINIMA || puntuacion > PUNTUACION_MAXIMA) {
             throw new IllegalArgumentException("La puntuación debe estar entre 1 y 5.");
+        }
+        if (comentario != null && comentario.length() > LONGITUD_MAXIMA_COMENTARIO) {
+            throw new IllegalArgumentException("El comentario no puede superar los 500 caracteres.");
         }
         validarIdentificador(pedidoId, "El pedido es obligatorio.");
         validarIdentificador(productoId, "El producto es obligatorio.");
