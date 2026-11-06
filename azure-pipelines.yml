@@ -163,11 +163,24 @@ stages:
         docker run --rm -v "$(Build.SourcesDirectory):/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 detect --source /repo --no-git --redact --verbose
       displayName: 'Gitleaks (secretos en el repositorio)'
+  
+  # ========== STAGE 4: SONARQUBE ==========
+- stage: Sonarqube
+  displayName: 'SonarQube Code Analysis'
+  dependsOn: [BuildBackend, BuildFrontend, SecretScan]
+  jobs:
+  - job: SonarqubeJob
+    displayName: 'SonarQube Scanner'
+    steps:
+    - script: sonar-scanner
+      displayName: 'Ejecutar análisis SonarQube'
+      env:
+        SONAR_TOKEN: $(SQ_TOKEN)
 
 # ========== FINAL NOTIFICATION ==========
 - stage: Notification
   displayName: 'Pipeline Complete'
-  dependsOn: [BuildBackend, BuildFrontend, SecretScan]
+  dependsOn: [BuildBackend, BuildFrontend, SecretScan, Sonarqube]
   condition: always()
   jobs:
   - job: NotifyOk
