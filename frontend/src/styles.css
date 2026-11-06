@@ -27,6 +27,8 @@
   --color-danger: #a63120;          /* 6,81:1 sobre blanco */
   --color-warning-text: #563d00;
   --color-warning-background: #fff2cd;
+  --color-warning-border: #e3b24d;        /* decorativo, siempre con texto */
+  --color-danger-background: #fbe9e6;     /* --color-danger encima da 5,81:1 */
 
   font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif;
   color: var(--color-ink);
