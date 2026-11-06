@@ -1,74 +1,5 @@
-:host {
-  display: block;
-  min-height: 100vh;
-  background: #f4f7f8;
-  color: #173042;
-}
+/* Mis pedidos. La página, botones y estados comunes vienen de ../tienda/tienda.css. */
 
-.cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 2rem;
-  background: #e8eef0;
-  border-bottom: 1px solid #d9e3e6;
-}
-
-.marca {
-  color: #255b4d;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.marca {
-  font-size: 1.2rem;
-  font-weight: 800;
-}
-
-.cabecera h1 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.cabecera nav {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  flex-wrap: wrap;
-}
-
-.enlace-cliente {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .65rem .9rem;
-  border: 1px solid #255b4d;
-  border-radius: 4px;
-  color: #255b4d;
-  background: #fff;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.icono-perfil {
-  width: 1.15rem;
-  height: 1.15rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.contenedor {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-}
-
-.encabezado,
 .cabecera-pedido,
 .cabecera-detalle {
   display: flex;
@@ -78,14 +9,12 @@
   flex-wrap: wrap;
 }
 
-.encabezado h2,
 .detalle h2 {
   margin-top: 0;
 }
 
-.encabezado p,
 .cabecera-pedido p {
-  color: #5c7180;
+  color: var(--color-text-secondary);
 }
 
 .seccion-pedidos {
@@ -93,7 +22,7 @@
 }
 
 .seccion-pedidos > h2 {
-  color: #255b4d;
+  color: var(--color-brand);
 }
 
 .lista-pedidos {
@@ -105,9 +34,9 @@
 .detalle,
 .estado-vacio {
   padding: 1.5rem;
-  border: 1px solid #dae3e6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: white;
+  background: var(--color-surface);
 }
 
 .tarjeta-pedido h3 {
@@ -115,11 +44,11 @@
   overflow-wrap: anywhere;
 }
 
-.estado {
+.chip-estado {
   padding: .45rem .85rem;
   border-radius: 999px;
-  background: #e5f3eb;
-  color: #255b4d;
+  background: var(--color-accent-subtle);
+  color: var(--color-brand);
   font-size: .85rem;
   font-weight: 700;
 }
@@ -128,7 +57,11 @@
   display: flex;
   gap: 1.5rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  margin: .25rem 0 1rem;
+}
+
+.resumen p {
+  margin: 0;
 }
 
 .acciones-pedido {
@@ -139,42 +72,35 @@
 
 .boton-primario,
 .boton-secundario,
-.boton-cancelar,
-.logout-button {
+.boton-cancelar {
   padding: .7rem 1rem;
-  border-radius: 4px;
+  border-radius: 8px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
-.logout-button {
-  border: 1px solid #c74b35;
-  color: #a63120;
-  background: #fff;
-}
-
 .boton-primario {
-  border: 1px solid #d36b54;
-  background: #d36b54;
-  color: white;
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-surface);
 }
 
 .boton-secundario {
-  border: 1px solid #255b4d;
-  background: white;
-  color: #255b4d;
+  border: 1px solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-brand);
 }
 
 .boton-cancelar {
-  border: 1px solid #c74b35;
-  color: #a63120;
-  background: #fff;
+  border: 1px solid var(--color-accent);
+  color: var(--color-danger);
+  background: var(--color-surface);
 }
 
 .estado-cancelado {
-  background: #fff0ed;
-  color: #a63120;
+  background: var(--color-danger-background);
+  color: var(--color-danger);
 }
 
 button:disabled {
@@ -182,13 +108,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.logout-button:focus-visible,
-.enlace-cliente:focus-visible,
 .boton-primario:focus-visible,
 .boton-secundario:focus-visible,
 .boton-valorar:focus-visible,
 .estrella-puntuacion:focus-visible {
-  outline: 2px solid #d36b54;
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -271,7 +195,7 @@ table {
 th,
 td {
   padding: .8rem;
-  border-bottom: 1px solid #e0e7e9;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .total {
@@ -305,12 +229,12 @@ td {
   bottom: -.1rem;
   left: .38rem;
   width: 2px;
-  background: #cbd5da;
+  background: var(--color-accent-subtle);
   content: '';
 }
 
 .historial li.conector-completado::before {
-  background: #b8d5ca;
+  background: var(--color-accent-subtle);
 }
 
 .punto {
@@ -319,11 +243,11 @@ td {
   height: .8rem;
   margin-top: .2rem;
   border-radius: 50%;
-  background: #aab8bf;
+  background: var(--color-accent-subtle);
 }
 
 .historial li.completado .punto {
-  background: #167a5b;
+  background: var(--color-brand);
 }
 
 .historial li div {
@@ -333,21 +257,21 @@ td {
 }
 
 .historial li strong {
-  color: #788892;
+  color: var(--color-text-secondary);
 }
 
 .historial li.completado strong {
-  color: #173042;
+  color: var(--color-text);
 }
 
 .historial time,
 .fecha-pendiente {
-  color: #526675;
+  color: var(--color-text-secondary);
   font-size: .9rem;
 }
 
 .fecha-pendiente {
-  color: #89979f;
+  color: var(--color-text-secondary);
 }
 
 .nota {
@@ -361,29 +285,21 @@ td {
 
 .mensaje-error {
   padding: 1rem;
-  border: 1px solid #e5b1a8;
-  border-radius: 4px;
-  background: #fff0ed;
-  color: #a63120;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 8px;
+  background: var(--color-danger-background);
+  color: var(--color-danger);
 }
 
 .mensaje-exito {
   padding: 1rem;
-  border: 1px solid #b8d5ca;
-  border-radius: 4px;
-  background: #e5f3eb;
-  color: #255b4d;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  color: var(--color-brand);
 }
 
 @media (max-width: 640px) {
-  .cabecera {
-    padding: 1rem;
-  }
-
-  .contenedor {
-    padding: 1.5rem 1rem 3rem;
-  }
-
   .tarjeta-pedido,
   .detalle {
     padding: 1rem;

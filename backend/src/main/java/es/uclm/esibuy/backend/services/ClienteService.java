@@ -65,7 +65,12 @@ public class ClienteService {
 		if (request == null) {
 			throw new InvalidRegistrationException();
 		}
-		soporteRegistro.validarSolicitud(request, request.contrasena());
+		soporteRegistro.validarSolicitud(
+				request,
+				request.contrasena(),
+				request.nombre(),
+				request.apellidos(),
+				request.email());
 		String email = soporteRegistro.normalizarCorreo(request.email());
 		soporteRegistro.comprobarCorreoDisponible(email);
 

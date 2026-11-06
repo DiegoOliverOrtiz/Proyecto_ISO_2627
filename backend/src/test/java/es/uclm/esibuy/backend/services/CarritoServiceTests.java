@@ -245,6 +245,19 @@ class CarritoServiceTests {
     }
 
     @Test
+    void cadaLineaIndicaElVendedorRealDelProducto() {
+        // A8: el carrito muestra el nombre comercial del vendedor, no un texto fijo.
+        producto.setVendedor("Tienda Ana");
+        prepararCarrito(new Carrito("cliente-a").conCantidad("producto-1", 1).conCantidad("eliminado", 1));
+        when(productoDAO.findById("eliminado")).thenReturn(Optional.empty());
+
+        var lineas = servicio.consultarCarrito().productos();
+
+        assertEquals("Tienda Ana", lineas.stream().filter(l -> l.productoId().equals("producto-1")).findFirst().orElseThrow().vendedor());
+        assertEquals(null, lineas.stream().filter(l -> l.productoId().equals("eliminado")).findFirst().orElseThrow().vendedor());
+    }
+
+    @Test
     void recalculaTodasLasLineasConPreciosActuales() {
         prepararCarrito(new Carrito("cliente-a").conCantidad("otro", 2));
         Producto otro = new Producto();

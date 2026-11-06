@@ -124,7 +124,8 @@ class HttpsTransportTests {
         Cliente user = new Cliente();
         user.setEmail("tls@example.com");
         user.setActivada(true);
-        when(authService.autenticar("tls@example.com", "test-password")).thenReturn(user);
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("tls@example.com"),
+            org.mockito.ArgumentMatchers.eq("test-password"), org.mockito.ArgumentMatchers.anyString())).thenReturn(user);
         var client = trustedClient();
         var csrf = client.send(HttpRequest.newBuilder(URI.create("https://localhost:" + port + "/usuarios/csrf"))
                 .GET().build(), HttpResponse.BodyHandlers.ofString());

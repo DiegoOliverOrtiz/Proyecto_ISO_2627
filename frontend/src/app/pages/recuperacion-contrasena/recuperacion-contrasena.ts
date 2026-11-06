@@ -8,7 +8,7 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { RecuperacionContrasenaService } from './recuperacion-contrasena.service';
 
@@ -57,13 +57,15 @@ const validadorCoincidenciaContrasenas: ValidatorFn = (
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-recuperacion-contrasena',
-  styleUrl: './recuperacion-contrasena.css',
+  styleUrls: ['../acceso/acceso.css', './recuperacion-contrasena.css'],
   templateUrl: './recuperacion-contrasena.html',
 })
 export class RecuperacionContrasena {
   private readonly formBuilder = inject(FormBuilder);
   private readonly recuperacionService = inject(RecuperacionContrasenaService);
-  private readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly token = this.route.snapshot.queryParamMap.get('token') ?? '';
 
   readonly modoRestablecimiento = computed(() => this.token.length > 0);
   readonly isLoading = signal(false);
@@ -91,6 +93,19 @@ export class RecuperacionContrasena {
 
   nuevaContrasenaOculta = true;
   confirmacionOculta = true;
+
+  constructor() {
+    if (this.token) {
+      // El token se queda en memoria y se quita de la URL para que no quede
+      // en el historial del navegador ni en capturas de pantalla.
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { token: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
+    }
+  }
 
   requisitos(): { label: string; cumplido: boolean }[] {
     const valor = this.restablecimientoForm.controls.nuevaContrasena.value;

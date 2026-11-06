@@ -62,7 +62,7 @@
 
 .eyebrow {
   margin: 0 0 .35rem;
-  color: #D36B54;
+  color: var(--color-danger);
   font-size: .8rem;
   font-weight: 700;
   letter-spacing: .08em;
@@ -91,7 +91,7 @@ h1 {
   min-height: 2.6rem;
   padding: .78rem 1.05rem;
   border-radius: 4px;
-  background: #D36B54;
+  background: var(--color-accent);
   color: #fff;
   font-weight: 700;
   text-decoration: none;
@@ -100,7 +100,7 @@ h1 {
 
 .primary-button:hover,
 .primary-button:focus-visible {
-  background: #BC5943;
+  background: var(--color-accent-hover);
 }
 
 .statistics {
@@ -176,6 +176,11 @@ button {
 
 input,
 select {
+  border-color: var(--color-border-input);
+}
+
+input,
+select {
   padding: 0 .7rem;
   background: #fff;
   color: #333333;
@@ -183,8 +188,8 @@ select {
 
 button {
   padding: 0 1rem;
-  border-color: #D36B54;
-  background: #D36B54;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
   color: #fff;
   cursor: pointer;
   font-weight: 700;
@@ -200,7 +205,7 @@ button:disabled {
 }
 
 button:hover:not(:disabled) {
-  background: #BC5943;
+  background: var(--color-accent-hover);
 }
 
 button:active:not(:disabled) {
@@ -327,7 +332,6 @@ th {
 .view-action:focus-visible {
   color: #fff;
   background: #255B4D;
-  outline: none;
   transform: translateY(-1px);
 }
 
@@ -633,4 +637,6 @@ th {
 
 .filters, .table-wrapper, .statistics article, .status, .success { border-radius: 10px; }
 .filters, .table-wrapper, .statistics article { box-shadow: 0 10px 25px rgba(37, 91, 77, .08); }
-.table-wrapper { overflow: hidden; }
+/* A6: la tabla (700 px mínimo) se desplaza dentro de su contenedor, no la página.
+   `position: relative` retiene también los textos ocultos (.visually-hidden) de la tabla. */
+.table-wrapper { position: relative; max-width: 100%; overflow-x: auto; }

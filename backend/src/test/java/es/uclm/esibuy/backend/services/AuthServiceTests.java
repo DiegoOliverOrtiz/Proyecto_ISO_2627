@@ -3,6 +3,7 @@ package es.uclm.esibuy.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -19,8 +20,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
+import es.uclm.esibuy.backend.exceptions.LoginRateLimitException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
+import es.uclm.esibuy.backend.security.PepperedBCryptPasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTests {
@@ -35,11 +38,14 @@ class AuthServiceTests {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private LoginAttemptService loginAttemptService;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(usuarioDAO, passwordEncoder);
+        authService = new AuthService(usuarioDAO, passwordEncoder, loginAttemptService);
     }
 
     @Test
@@ -48,7 +54,7 @@ class AuthServiceTests {
         when(usuarioDAO.findByEmail(CORREO)).thenReturn(Optional.of(cliente));
         when(passwordEncoder.matches(CONTRASENA, HASH)).thenReturn(true);
 
-        Usuario autenticado = authService.autenticar("  CLIENTE@EXAMPLE.COM ", CONTRASENA);
+        Usuario autenticado = authService.autenticar("  CLIENTE@EXAMPLE.COM ", CONTRASENA, "127.0.0.1");
 
         assertSame(cliente, autenticado);
         verify(usuarioDAO).findByEmail(CORREO);
@@ -59,14 +65,14 @@ class AuthServiceTests {
     void rechazaCorreoONullConErrorGenericoSinConsultarLaBaseDeDatos() {
         BadCredentialsException errorCorreo = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.autenticar(null, CONTRASENA));
+                () -> authService.autenticar(null, CONTRASENA, "127.0.0.1"));
         BadCredentialsException errorContrasena = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.autenticar(CORREO, null));
+                () -> authService.autenticar(CORREO, null, "127.0.0.1"));
 
         assertEquals("Correo o contraseña incorrectos.", errorCorreo.getMessage());
         assertEquals(errorCorreo.getMessage(), errorContrasena.getMessage());
-        verifyNoInteractions(usuarioDAO, passwordEncoder);
+        verifyNoInteractions(usuarioDAO, passwordEncoder, loginAttemptService);
     }
 
     @Test
@@ -75,7 +81,7 @@ class AuthServiceTests {
 
         BadCredentialsException error = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.autenticar(CORREO, CONTRASENA));
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
 
         assertEquals("Correo o contraseña incorrectos.", error.getMessage());
     }
@@ -88,10 +94,41 @@ class AuthServiceTests {
 
         BadCredentialsException error = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.autenticar(CORREO, CONTRASENA));
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
 
         assertEquals("Correo o contraseña incorrectos.", error.getMessage());
+        verify(loginAttemptService).registrarFallo(CORREO);
     }
+
+    @Test
+    void aplicaRetryAfterCuandoSeActivaElBackoffDeCuenta() {
+        Cliente cliente = crearCliente(true, false);
+        when(usuarioDAO.findByEmail(CORREO)).thenReturn(Optional.of(cliente));
+        when(passwordEncoder.matches(CONTRASENA, HASH)).thenReturn(false);
+        when(loginAttemptService.registrarFallo(CORREO)).thenReturn(30);
+
+        assertEquals(30, assertThrows(
+                LoginRateLimitException.class,
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"))
+                .getRetryAfterSeconds());
+    }
+
+            @Test
+            void actualizaHashBcryptAntiguoTrasAutenticacionCorrecta() {
+            Cliente cliente = crearCliente(true, false);
+            cliente.setContrasenaHash(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(4)
+                .encode(CONTRASENA));
+            PasswordEncoder pepperedEncoder = new PepperedBCryptPasswordEncoder(
+                "test-pepper-that-is-never-used-outside-tests-123456", 4);
+            when(usuarioDAO.findByEmail(CORREO)).thenReturn(Optional.of(cliente));
+
+            AuthService service = new AuthService(usuarioDAO, pepperedEncoder, loginAttemptService);
+            service.autenticar(CORREO, CONTRASENA, "127.0.0.1");
+
+            assertTrue(cliente.getContrasenaHash().startsWith("{bcrypt-pepper-v1}"));
+            assertTrue(pepperedEncoder.matches(CONTRASENA, cliente.getContrasenaHash()));
+            verify(usuarioDAO).save(cliente);
+            }
 
     @Test
     void rechazaUsuarioBloqueadoConElMismoErrorGenerico() {
@@ -101,7 +138,7 @@ class AuthServiceTests {
 
         BadCredentialsException error = assertThrows(
                 BadCredentialsException.class,
-                () -> authService.autenticar(CORREO, CONTRASENA));
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
 
         assertEquals("Correo o contraseña incorrectos.", error.getMessage());
     }
@@ -114,7 +151,7 @@ class AuthServiceTests {
 
         assertThrows(
                 AccountPendingException.class,
-                () -> authService.autenticar(CORREO, CONTRASENA));
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
     }
 
     private Cliente crearCliente(boolean activado, boolean bloqueado) {

@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -13,6 +14,7 @@ describe('RecuperacionContrasena', () => {
     solicitar: vi.fn<RecuperacionContrasenaService['solicitar']>(),
     confirmar: vi.fn<RecuperacionContrasenaService['confirmar']>()
   };
+  const routerMock = { navigate: vi.fn<Router['navigate']>() };
   let componente: RecuperacionContrasena;
 
   const crearComponente = (token = '') => {
@@ -20,6 +22,7 @@ describe('RecuperacionContrasena', () => {
       providers: [
         FormBuilder,
         { provide: RecuperacionContrasenaService, useValue: recuperacionServiceMock },
+        { provide: Router, useValue: routerMock },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -39,6 +42,7 @@ describe('RecuperacionContrasena', () => {
   beforeEach(() => {
     recuperacionServiceMock.solicitar.mockReturnValue(of({ message: 'Solicitud procesada.' }));
     recuperacionServiceMock.confirmar.mockReturnValue(of(undefined));
+    routerMock.navigate.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -166,5 +170,78 @@ describe('RecuperacionContrasena', () => {
       'No se pudo cambiar la contraseña. Comprueba el enlace e inténtalo de nuevo.'
     );
     expect(componente.isLoading()).toBe(false);
+  });
+});
+
+describe('RecuperacionContrasena · confirmación de contraseña (A22)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('no permite pegar, copiar, cortar ni soltar en «Repite la contraseña»', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'recuperar-contrasena', component: RecuperacionContrasena }]),
+        { provide: RecuperacionContrasenaService, useValue: { solicitar: vi.fn(), confirmar: vi.fn() } }
+      ]
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/recuperar-contrasena?token=token-recuperacion', RecuperacionContrasena);
+
+    const confirmacion: HTMLInputElement =
+      harness.routeNativeElement!.querySelector('#confirm-password')!;
+
+    for (const tipo of ['paste', 'copy', 'cut', 'drop']) {
+      const evento = new Event(tipo, { bubbles: true, cancelable: true });
+      confirmacion.dispatchEvent(evento);
+      expect(evento.defaultPrevented, tipo).toBe(true);
+    }
+    expect(confirmacion.getAttribute('autocomplete')).toBe('off');
+    expect(confirmacion.value).toBe('');
+  });
+});
+
+describe('RecuperacionContrasena · token fuera de la URL (M25)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('quita el token de la URL y lo sigue usando para cambiar la contraseña', async () => {
+    const confirmar = vi.fn<RecuperacionContrasenaService['confirmar']>()
+      .mockReturnValue(of(undefined));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'recuperar-contrasena', component: RecuperacionContrasena }]),
+        { provide: RecuperacionContrasenaService, useValue: { solicitar: vi.fn(), confirmar } }
+      ]
+    });
+    const harness = await RouterTestingHarness.create();
+    const componente = await harness.navigateByUrl(
+      '/recuperar-contrasena?token=token-recuperacion',
+      RecuperacionContrasena
+    );
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/recuperar-contrasena');
+    expect(componente.modoRestablecimiento()).toBe(true);
+
+    componente.restablecimientoForm.setValue({
+      nuevaContrasena: 'ClavePrueba9!',
+      confirmarContrasena: 'ClavePrueba9!'
+    });
+    componente.restablecerContrasena();
+
+    expect(confirmar).toHaveBeenCalledWith('token-recuperacion', 'ClavePrueba9!');
+  });
+
+  it('no navega si la URL no contiene token', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'recuperar-contrasena', component: RecuperacionContrasena }]),
+        { provide: RecuperacionContrasenaService, useValue: { solicitar: vi.fn(), confirmar: vi.fn() } }
+      ]
+    });
+    const harness = await RouterTestingHarness.create();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+
+    await harness.navigateByUrl('/recuperar-contrasena', RecuperacionContrasena);
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -15,9 +15,9 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
-import { AuthService } from '../login/auth.service';
 import {
   CambioEstadoPedido,
   EstadoPedido,
@@ -34,17 +34,15 @@ interface EstadoValoracionUI {
 @Component({
   selector: 'app-mis-pedidos',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
   templateUrl: './mis-pedidos.html',
-  styleUrl: './mis-pedidos.css'
+  styleUrls: ['../tienda/tienda.css', './mis-pedidos.css']
 })
 export class MisPedidos implements OnInit {
   private readonly servicio = inject(PedidosService);
-  private readonly servicioAutenticacion = inject(AuthService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly router = inject(Router);
 
-  readonly cerrandoSesion = signal(false);
-  readonly errorSesion = signal('');
   readonly pedidosActivos = signal<PedidoCliente[]>([]);
   readonly pedidosHistoricos = signal<PedidoCliente[]>([]);
   readonly cargandoActivos = signal(false);
@@ -298,14 +296,18 @@ export class MisPedidos implements OnInit {
     }));
   }
 
-  cancelarPedido(pedido: PedidoCliente): void {
+  async cancelarPedido(pedido: PedidoCliente): Promise<void> {
     if (this.pedidoCancelandoId() !== null || !this.puedeCancelar(pedido.estado)) {
       return;
     }
 
-    const confirmado = window.confirm(
-      `¿Quieres cancelar el pedido #${this.referenciaPedido(pedido.id)}?`
-    );
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Cancelar pedido',
+      mensaje: `¿Quieres cancelar el pedido #${this.referenciaPedido(pedido.id)}?`,
+      aceptar: 'Cancelar pedido',
+      cancelar: 'Volver',
+      peligro: true
+    });
     if (!confirmado) {
       return;
     }
@@ -342,7 +344,7 @@ export class MisPedidos implements OnInit {
     return estado === 'TRAMITADO_ENVIADO';
   }
 
-  confirmarRecepcion(pedido: PedidoCliente): void {
+  async confirmarRecepcion(pedido: PedidoCliente): Promise<void> {
     if (
       this.pedidoConfirmandoId() !== null ||
       this.pedidoCancelandoId() !== null ||
@@ -351,9 +353,11 @@ export class MisPedidos implements OnInit {
       return;
     }
 
-    const confirmado = window.confirm(
-      `¿Confirmas que has recibido el pedido #${this.referenciaPedido(pedido.id)}?`
-    );
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Confirmar recepción',
+      mensaje: `¿Confirmas que has recibido el pedido #${this.referenciaPedido(pedido.id)}?`,
+      aceptar: 'Sí, lo he recibido'
+    });
 
     if (!confirmado) {
       return;
@@ -463,24 +467,6 @@ export class MisPedidos implements OnInit {
     }
 
     return 'No se pudo guardar la valoración. Inténtalo de nuevo.';
-  }
-
-  cerrarSesion(): void {
-    this.cerrandoSesion.set(true);
-    this.errorSesion.set('');
-
-    this.servicioAutenticacion.cerrarSesion().subscribe({
-      next: () => {
-        this.cerrandoSesion.set(false);
-        void this.router.navigateByUrl('/login');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cerrandoSesion.set(false);
-        this.errorSesion.set(error.status === 0
-          ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
-          : 'No se pudo cerrar la sesión. Inténtalo de nuevo.');
-      }
-    });
   }
 
   textoEstado(estado: EstadoPedido): string {

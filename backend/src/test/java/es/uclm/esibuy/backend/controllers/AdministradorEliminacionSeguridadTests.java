@@ -95,7 +95,8 @@ class AdministradorEliminacionSeguridadTests {
 	void sesionDelAdministradorEliminado_dejaDeSerValidaTrasCerrarSusSesiones() throws Exception {
 		Administrador administrador = new Administrador();
 		administrador.setEmail(EMAIL);
-		when(authService.autenticar(EMAIL, PASSWORD)).thenReturn(administrador);
+		when(authService.autenticar(org.mockito.ArgumentMatchers.eq(EMAIL),
+				org.mockito.ArgumentMatchers.eq(PASSWORD), org.mockito.ArgumentMatchers.anyString())).thenReturn(administrador);
 
 		MockHttpSession sesion = (MockHttpSession) mockMvc.perform(post("/usuarios/login")
 						.with(csrf())

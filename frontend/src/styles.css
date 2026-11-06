@@ -9,6 +9,30 @@
   --color-coral-dark: #b9553e;
   --color-line: #d9e3e6;
   --color-paper: #f4f7f8;
+
+  /* Tokens semánticos (frontend/CLAUDE.md §2). Contraste comprobado con WCAG AA. */
+  --color-text: #173042;            /* 12,68:1 sobre el fondo */
+  --color-text-secondary: #536a75;  /* 5,70:1 sobre blanco */
+  --color-background: #f4f7f8;
+  --color-surface: #ffffff;
+  --color-border: #d9e3e6;          /* separadores, no controles */
+  --color-border-input: #7a8f97;    /* 3,39:1 sobre blanco */
+  --color-accent: #b9553e;          /* 4,74:1 con blanco */
+  --color-accent-hover: #a63c28;    /* 6,37:1 con blanco */
+  --color-accent-on: #ffffff;
+  --color-accent-subtle: #e8f2ed;
+  --color-brand: #255b4d;           /* 7,83:1 sobre blanco */
+  --color-focus: #255b4d;           /* 7,27:1 sobre el fondo */
+  --color-success: #255b4d;
+  --color-danger: #a63120;          /* 6,81:1 sobre blanco */
+  --color-warning-text: #563d00;
+  --color-warning-background: #fff2cd;
+  --color-warning-border: #e3b24d;        /* decorativo, siempre con texto */
+  --color-danger-background: #fbe9e6;     /* --color-danger encima da 5,81:1 */
+  --color-premium: #7a5418;               /* blanco 6,75:1; --color-premium-highlight 5,39:1 (M12) */
+  --color-premium-strong: #5a3d17;        /* inicio del degradado Premium */
+  --color-premium-highlight: #ffe3a1;     /* solo sobre --color-brand o --color-premium (A5) */
+
   font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif;
   color: var(--color-ink);
   background: var(--color-paper);
@@ -19,7 +43,7 @@
 *::after { box-sizing: border-box; }
 
 html,
-body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--color-paper); }
+body { min-height: 100vh; margin: 0; background: var(--color-paper); }
 
 button,
 input,
@@ -33,4 +57,4 @@ a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible { outline: 3px solid rgba(211, 107, 84, .35); outline-offset: 2px; }
+textarea:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }

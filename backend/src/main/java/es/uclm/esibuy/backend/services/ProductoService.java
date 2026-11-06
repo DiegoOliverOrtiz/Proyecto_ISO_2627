@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.services;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
 
@@ -94,10 +95,10 @@ public class ProductoService {
         Cliente cliente = obtenerClienteActivo(emailCliente);
         validarFiltros(filtros);
 
-        String nombre = filtros.nombre() == null ? "" : filtros.nombre().trim().toLowerCase(java.util.Locale.ROOT);
+        String nombre = normalizarBusqueda(filtros.nombre() == null ? "" : filtros.nombre().trim());
         return productoDAO.findByEsVisibleTrue().stream()
                 .filter(producto -> nombre.isEmpty()
-                        || producto.getNombre().toLowerCase(java.util.Locale.ROOT).contains(nombre))
+                        || normalizarBusqueda(producto.getNombre()).contains(nombre))
                 .filter(producto -> filtros.categoria() == null || filtros.categoria().isBlank()
                         || producto.getCategoria().equalsIgnoreCase(filtros.categoria().trim()))
                 .map(producto -> aProductoCatalogoResponse(producto, cliente.isEsPremium()))
@@ -408,5 +409,18 @@ public class ProductoService {
         } catch (RuntimeException exception) {
             LOGGER.warn("No se pudo limpiar la imagen de un producto eliminado.");
         }
+    }
+
+    /*
+     * M22: la búsqueda no distingue mayúsculas ni tildes («raton» encuentra «Ratón»).
+     * Se compara siempre como texto literal (contains), nunca como expresión regular.
+     */
+    static String normalizarBusqueda(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(java.util.Locale.ROOT);
     }
 }

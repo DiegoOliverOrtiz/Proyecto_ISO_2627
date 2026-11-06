@@ -15,6 +15,8 @@ export interface LineaCarritoResponse {
   stock: number | null;
   disponible: boolean;
   aviso: string | null;
+  // A8: nombre comercial del vendedor, o null si el producto se ha eliminado.
+  vendedor?: string | null;
 }
 
 export interface CarritoResponse {

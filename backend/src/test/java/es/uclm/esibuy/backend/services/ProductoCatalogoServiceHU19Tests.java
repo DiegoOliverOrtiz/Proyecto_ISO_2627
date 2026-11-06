@@ -182,6 +182,32 @@ class ProductoCatalogoServiceHU19Tests {
     }
 
     @Test
+    void laBusquedaPorNombreNoDistingueTildesNiMayusculas() {
+        Producto raton = crearProducto(ID_PRODUCTO, "Ratón inalámbrico", "Informática", 2, 25.0, 0, 0, false);
+        Producto cafe = crearProducto("cafe-1", "Café de Colombia", "Alimentación", 3, 9.0, 0, 0, false);
+        when(clienteDAO.findByEmail(EMAIL_CLIENTE)).thenReturn(Optional.of(crearCliente(false, true)));
+        when(productoDAO.findByEsVisibleTrue()).thenReturn(List.of(raton, cafe));
+
+        // M22: sin tildes, con tildes y en mayúsculas encuentran el mismo producto.
+        assertEquals(List.of("Ratón inalámbrico"), nombres(consultar(new FiltroProductosRequest("raton", null, null, null, null))));
+        assertEquals(List.of("Ratón inalámbrico"), nombres(consultar(new FiltroProductosRequest("INALAMBRICO", null, null, null, null))));
+        assertEquals(List.of("Café de Colombia"), nombres(consultar(new FiltroProductosRequest("café", null, null, null, null))));
+        assertEquals(List.of("Café de Colombia"), nombres(consultar(new FiltroProductosRequest("cafe", null, null, null, null))));
+    }
+
+    @Test
+    void laNormalizacionQuitaDiacriticosYMayusculas() {
+        // La ñ también pierde la virgulilla: «pina» encuentra «Piña», lo que es aceptable en una búsqueda.
+        assertEquals("pina colada", ProductoService.normalizarBusqueda("Piña Colada"));
+        assertEquals("aeiou u", ProductoService.normalizarBusqueda("ÁÉÍÓÚ Ü"));
+        assertEquals("", ProductoService.normalizarBusqueda(null));
+    }
+
+    private static List<String> nombres(List<ProductoCatalogoResponse> productos) {
+        return productos.stream().map(ProductoCatalogoResponse::nombre).toList();
+    }
+
+    @Test
     void rechazaClienteBloqueadoAntesDeConsultarProductos() {
         when(clienteDAO.findByEmail(EMAIL_CLIENTE)).thenReturn(Optional.of(crearCliente(false, true, true)));
 

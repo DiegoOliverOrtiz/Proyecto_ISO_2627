@@ -1,31 +1,17 @@
-<header class="cabecera">
-  <a routerLink="/cliente" class="marca">ESIBuy</a>
-
-  <h1>Mis pedidos</h1>
-
-  <nav aria-label="Navegación del cliente">
-    <a class="enlace-cliente" routerLink="/cliente">Catálogo</a>
-    <a class="enlace-cliente" routerLink="/perfil" aria-label="Abrir mi perfil">
-      <svg class="icono-perfil" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <circle cx="12" cy="8" r="3.5"></circle>
-        <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
-      </svg>
-      Mi perfil
-    </a>
+<main class="contenedor pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mis pedidos</h1>
+      <p class="pagina-descripcion">Consulta tus pedidos, su estado y la información del envío.</p>
+    </div>
     <button
-      class="logout-button"
       type="button"
-      [disabled]="cerrandoSesion()"
-      (click)="cerrarSesion()">
-      {{ cerrandoSesion() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+      class="boton-secundario"
+      [disabled]="cargandoActivos() || cargandoHistorico()"
+      (click)="cargarPedidos()">
+      Actualizar
     </button>
-  </nav>
-</header>
-
-<main class="contenedor">
-  @if (errorSesion()) {
-    <p class="mensaje-error" role="alert">{{ errorSesion() }}</p>
-  }
+  </div>
   @if (resultadoCancelacion()) {
     <p class="mensaje-exito" role="status">{{ resultadoCancelacion() }}</p>
   }
@@ -44,22 +30,6 @@
       {{ errorRecepcion() }}
     </p>
   }
-
-  <div class="encabezado">
-    <div>
-      <h2>Mis compras</h2>
-      <p>Consulta tus pedidos, su estado y la información disponible del envío.</p>
-    </div>
-
-    <button
-      type="button"
-      class="boton-secundario"
-      [disabled]="cargandoActivos() || cargandoHistorico()"
-      (click)="cargarPedidos()">
-      Actualizar
-    </button>
-  </div>
-
   <section class="seccion-pedidos" aria-labelledby="titulo-activos">
     <h2 id="titulo-activos">Pedidos activos</h2>
 
@@ -81,7 +51,7 @@
                 <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                 <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
               </div>
-              <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+              <span class="chip-estado">{{ textoEstado(pedido.estado) }}</span>
             </div>
 
             <div class="resumen">
@@ -90,7 +60,7 @@
             </div>
 
             <div class="acciones-pedido">
-              <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
                 Ver detalle y seguimiento
               </button>
               @if (puedeCancelar(pedido.estado)) {
@@ -141,7 +111,7 @@
                 <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                 <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
               </div>
-              <span class="estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
+              <span class="chip-estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
                 {{ textoEstado(pedido.estado) }}
               </span>
             </div>
@@ -152,7 +122,7 @@
             </div>
 
             <div class="acciones-pedido">
-              <button type="button" class="boton-primario" (click)="abrirDetalle(pedido.id)">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
                 Ver detalle y seguimiento
               </button>
             </div>

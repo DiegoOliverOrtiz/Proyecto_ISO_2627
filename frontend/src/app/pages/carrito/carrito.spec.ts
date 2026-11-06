@@ -7,6 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Carrito } from './carrito';
 import { CarritoResponse, LineaCarritoResponse } from './carrito.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
+
 
 describe('Carrito - HU-21', () => {
   let fixture: ComponentFixture<Carrito>;
@@ -113,24 +119,53 @@ describe('Carrito - HU-21', () => {
     expect(fixture.nativeElement.textContent).toContain('16.00 €');
   });
 
-  it('no descarta cuando se cancela la confirmación', () => {
+  it('no descarta cuando se cancela la confirmación', async () => {
     cargar();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const confirmar = simularConfirmacion(false);
     fixture.nativeElement.querySelector('.cart-summary .logout-button').click();
-    expect(window.confirm).toHaveBeenCalled();
+    await esperarConfirmacion();
+    expect(confirmar).toHaveBeenCalled();
     http.expectNone(`${environment.apiUrl}/usuarios/csrf`);
     expect(fixture.componentInstance.carrito()?.productos).toHaveLength(1);
   });
 
-  it('confirma el descarte y muestra estado vacío', () => {
+  it('confirma el descarte y muestra estado vacío', async () => {
     cargar();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirmar = simularConfirmacion(true);
     fixture.nativeElement.querySelector('.cart-summary .logout-button').click();
-    fixture.componentInstance.descartarCarrito();
-    expect(window.confirm).toHaveBeenCalledTimes(1);
+    await esperarConfirmacion();
+    expect(confirmar).toHaveBeenCalledTimes(1);
     responderMutacion('', { productos: [], importe: 0 });
     expect(fixture.nativeElement.textContent).toContain('Tu carrito está vacío');
     expect(fixture.nativeElement.textContent).toContain('Carrito descartado.');
+  });
+
+  it('muestra el vendedor real de cada línea y no un texto fijo (A8)', () => {
+    cargar([linea({ vendedor: 'Tienda Ana' }), linea({ productoId: 'p2', nombre: 'Producto B', vendedor: null })], 32);
+
+    const lineas = fixture.nativeElement.querySelectorAll('.cart-line');
+    expect(lineas[0].textContent).toContain('Vendedor: Tienda Ana');
+    expect(lineas[1].textContent).not.toContain('Vendedor');
+    expect(fixture.nativeElement.textContent).not.toContain('ESIBuy');
+  });
+
+  it('explica por qué «Comprar» está desactivado y no enseña el id de un producto sin nombre (M4, M6)', () => {
+    cargar([linea({ nombre: null, disponible: false, aviso: 'El producto ha sido eliminado.' })], 0);
+
+    const comprar: HTMLButtonElement = fixture.nativeElement.querySelector('.cart-summary .primary-button');
+    expect(comprar.disabled).toBe(true);
+    expect(comprar.getAttribute('aria-describedby')).toBe('motivo-comprar');
+    expect(fixture.nativeElement.querySelector('#motivo-comprar').textContent).toContain('para poder comprar');
+    expect(fixture.nativeElement.textContent).toContain('Producto sin nombre');
+    expect(fixture.nativeElement.textContent).not.toContain('Producto p1');
+  });
+
+  it('con el carrito vacío ofrece una sola acción (B5)', () => {
+    cargar([], 0);
+
+    const enlaces = fixture.nativeElement.querySelectorAll('a');
+    expect(enlaces.length).toBe(1);
+    expect(enlaces[0].textContent).toContain('Explorar productos');
   });
 
   it('conserva líneas no disponibles y permite eliminarlas', async () => {
@@ -246,11 +281,11 @@ describe('Carrito - HU-21', () => {
     expect(fixture.componentInstance.error()).toContain('No hay stock suficiente');
   });
 
-  it.each(['eliminar', 'descartar'])('muestra errores de %s sin perder las líneas', accion => {
+  it.each(['eliminar', 'descartar'])('muestra errores de %s sin perder las líneas', async accion => {
     cargar();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    simularConfirmacion(true);
     if (accion === 'eliminar') fixture.componentInstance.eliminarProducto(linea());
-    else fixture.componentInstance.descartarCarrito();
+    else await fixture.componentInstance.descartarCarrito();
     http.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({ token: 'csrf' });
     http.expectOne(`${url}${accion === 'eliminar' ? '/productos/p1' : ''}`)
       .flush({}, { status: 500, statusText: 'Error' });

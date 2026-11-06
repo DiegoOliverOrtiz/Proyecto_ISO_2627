@@ -1,27 +1,21 @@
 
-<main class="register-page">
+<main class="acceso">
 
-    <a class="brand" routerLink="/" aria-label="ESIBuy, inicio">
-        ESI<span>Buy</span>
-    </a>
+    <a class="acceso-marca" routerLink="/" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
 
-    <section class="register-shell" aria-labelledby="register-title">
+    <div class="acceso-cuerpo">
 
-        <div class="register-intro">
-            <p class="eyebrow">Únete a ESIBuy</p>
-            <h1 id="register-title">Una cuenta para comprar o vender.</h1>
-            <p class="intro-copy">
+        <section class="acceso-intro">
+            <p class="acceso-lema">Una cuenta para comprar o vender.</p>
+            <p class="acceso-texto">
                 Crea tu perfil y empieza a formar parte de una comunidad de compra segura.
             </p>
-        </div>
+        </section>
 
-        <section class="form-panel" aria-label="Formulario de registro">
+        <section class="acceso-tarjeta registro-tarjeta" aria-labelledby="register-title">
 
             <div class="panel-heading">
-                <div>
-                    <p class="eyebrow">Registro</p>
-                    <h2>Crear cuenta</h2>
-                </div>
+                <h1 id="register-title" class="acceso-titulo">Crear cuenta</h1>
 
                 <div class="avatar-wrap">
                     <img
@@ -56,9 +50,9 @@
 
             @if (feedback; as result) {
                 <output
-                    class="feedback"
-                    [class.success]="result.kind === 'success'"
-                    [class.error]="result.kind === 'error'"
+                    class="feedback aviso"
+                    [class.aviso-exito]="result.kind === 'success'"
+                    [class.aviso-error]="result.kind === 'error'"
                     aria-live="polite">
                     {{ result.text }}
                     @if (result.details?.length) {
@@ -77,8 +71,8 @@
 
                     <div class="form-grid">
 
-                        <label class="field">
-                            <span>Nombre</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Nombre</span>
                             <input
                                 type="text"
                                 formControlName="nombre"
@@ -86,12 +80,12 @@
                             />
 
                             @if (controlError(clienteForm, 'nombre'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Apellidos</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Apellidos</span>
                             <input
                                 type="text"
                                 formControlName="apellidos"
@@ -99,12 +93,12 @@
                             />
 
                             @if (controlError(clienteForm, 'apellidos'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Fecha de nacimiento</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Fecha de nacimiento</span>
                             <input
                                 type="date"
                                 [max]="latestBirthDate"
@@ -113,12 +107,12 @@
                             />
 
                             @if (controlError(clienteForm, 'fechaNacimiento'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>DNI</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">DNI/NIF</span>
                             <input
                                 type="text"
                                 formControlName="dniNif"
@@ -127,12 +121,12 @@
                             />
 
                             @if (controlError(clienteForm, 'dniNif'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field field-wide">
-                            <span>Correo electrónico</span>
+                        <label class="campo campo-ancho">
+                            <span class="campo-etiqueta">Correo electrónico</span>
                             <input
                                 type="email"
                                 formControlName="email"
@@ -140,12 +134,12 @@
                             />
 
                             @if (controlError(clienteForm, 'email'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Teléfono <em>Opcional</em></span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Teléfono <em class="campo-opcional">(opcional)</em></span>
                             <input
                                 type="tel"
                                 formControlName="telefono"
@@ -153,12 +147,12 @@
                             />
 
                             @if (controlError(clienteForm, 'telefono'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Imagen de perfil <em>Opcional</em></span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Imagen de perfil <em class="campo-opcional">(opcional)</em></span>
                             <input
                                 type="url"
                                 formControlName="imagenPerfil"
@@ -167,7 +161,7 @@
                             />
 
                             @if (controlError(clienteForm, 'imagenPerfil'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
@@ -197,9 +191,9 @@
 
                     <div class="form-grid password-grid">
 
-                        <label class="field">
-                            <span>Contraseña</span>
-                            <div class="password-input-wrap">
+                        <label class="campo">
+                            <span class="campo-etiqueta">Contraseña</span>
+                            <div class="contrasena">
                                 <input
                                     [type]="customerPasswordHidden ? 'password' : 'text'"
                                     formControlName="contrasena"
@@ -209,20 +203,20 @@
                                 />
                                 <button
                                     type="button"
-                                    class="eye-button"
+                                    class="boton-ojo"
                                     [attr.aria-label]="customerPasswordHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
-                                    (click)="customerPasswordHidden = !customerPasswordHidden">
-                                    {{ customerPasswordHidden ? '👁️' : '🙈' }}
+                                    [attr.aria-pressed]="!customerPasswordHidden"(click)="customerPasswordHidden = !customerPasswordHidden">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (customerPasswordHidden) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
                                 </button>
                             </div>
 
                             @if (customerPasswordFocused) {
-                                <div class="password-requirements" aria-live="polite">
+                                <div class="password-requirements requisitos" aria-live="polite">
                                     <strong>Requisitos:</strong>
                                     <ul>
                                         @for (requirement of passwordRequirements(clienteForm); track requirement.label) {
-                                            <li [class.met]="requirement.met">
-                                                <span class="requirement-status" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
+                                            <li [class.met]="requirement.met" [class.cumplido]="requirement.met">
+                                                <span class="requirement-status requisito-marca" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
                                                 <span>{{ requirement.label }}</span>
                                             </li>
                                         }
@@ -231,33 +225,37 @@
                             }
 
                             @if (controlError(clienteForm, 'contrasena'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Repetir contraseña</span>
-                            <div class="password-input-wrap">
+                        <label class="campo">
+                            <span class="campo-etiqueta">Repetir contraseña</span>
+                            <div class="contrasena">
                                 <input
                                     [type]="customerConfirmationHidden ? 'password' : 'text'"
                                     formControlName="repetirContrasena"
-                                    autocomplete="new-password"
+                                    autocomplete="off"
+                                    (paste)="$event.preventDefault()"
+                                    (copy)="$event.preventDefault()"
+                                    (cut)="$event.preventDefault()"
+                                    (drop)="$event.preventDefault()"
                                 />
                                 <button
                                     type="button"
-                                    class="eye-button"
+                                    class="boton-ojo"
                                     [attr.aria-label]="customerConfirmationHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
-                                    (click)="customerConfirmationHidden = !customerConfirmationHidden">
-                                    {{ customerConfirmationHidden ? '👁️' : '🙈' }}
+                                    [attr.aria-pressed]="!customerConfirmationHidden"(click)="customerConfirmationHidden = !customerConfirmationHidden">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (customerConfirmationHidden) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
                                 </button>
                             </div>
 
                             @if (controlError(clienteForm, 'repetirContrasena'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
 
                             @if (passwordMismatch(clienteForm)) {
-                                <small class="field-error">
+                                <small class="campo-error">
                                     Las contraseñas no coinciden.
                                 </small>
                             }
@@ -266,7 +264,7 @@
                     </div>
 
                     <button
-                        class="submit-button"
+                        class="boton-principal"
                         type="submit"
                         [disabled]="isSubmitting">
 
@@ -282,8 +280,8 @@
 
                     <div class="form-grid">
 
-                        <label class="field">
-                            <span>Nombre</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Nombre</span>
                             <input
                                 type="text"
                                 formControlName="nombre"
@@ -291,12 +289,12 @@
                             />
 
                             @if (controlError(vendedorForm, 'nombre'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Apellidos</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Apellidos</span>
                             <input
                                 type="text"
                                 formControlName="apellidos"
@@ -304,14 +302,14 @@
                             />
 
                             @if (controlError(vendedorForm, 'apellidos'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
                         <!-- Categorías obtenidas dinámicamente desde MongoDB -->
 
-                        <label class="field">
-                            <span>Categoría</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Categoría</span>
 
                             <select formControlName="categoriaId">
                                 <option value="" disabled>
@@ -326,27 +324,27 @@
                             </select>
 
                             @if (categoriesLoading) {
-                                <small class="field-hint">
+                                <small class="campo-ayuda">
                                     Cargando categorías...
                                 </small>
                             } @else if (categoriesError) {
-                                <small class="field-error">
+                                <small class="campo-error">
                                     No se pudieron cargar las categorías.
                                     Vuelve a seleccionar Vendedor para reintentarlo.
                                 </small>
                             } @else if (sellerCategories.length === 0) {
-                                <small class="field-hint">
+                                <small class="campo-ayuda">
                                     Actualmente no hay categorías disponibles.
                                 </small>
                             }
 
                             @if (controlError(vendedorForm, 'categoriaId'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Nombre comercial</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Nombre comercial</span>
                             <input
                                 type="text"
                                 formControlName="nombreComercial"
@@ -354,12 +352,12 @@
                             />
 
                             @if (controlError(vendedorForm, 'nombreComercial'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>DNI/NIF</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">DNI/NIF</span>
                             <input
                                 type="text"
                                 formControlName="dniNif"
@@ -368,12 +366,12 @@
                             />
 
                             @if (controlError(vendedorForm, 'dniNif'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Correo electrónico</span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Correo electrónico</span>
                             <input
                                 type="email"
                                 formControlName="email"
@@ -381,12 +379,12 @@
                             />
 
                             @if (controlError(vendedorForm, 'email'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Teléfono <em>Opcional</em></span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Teléfono <em class="campo-opcional">(opcional)</em></span>
                             <input
                                 type="tel"
                                 formControlName="telefono"
@@ -394,12 +392,12 @@
                             />
 
                             @if (controlError(vendedorForm, 'telefono'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Imagen de perfil <em>Opcional</em></span>
+                        <label class="campo">
+                            <span class="campo-etiqueta">Imagen de perfil <em class="campo-opcional">(opcional)</em></span>
                             <input
                                 type="url"
                                 formControlName="imagenPerfil"
@@ -408,13 +406,13 @@
                             />
 
                             @if (controlError(vendedorForm, 'imagenPerfil'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Contraseña</span>
-                            <div class="password-input-wrap">
+                        <label class="campo">
+                            <span class="campo-etiqueta">Contraseña</span>
+                            <div class="contrasena">
                                 <input
                                     [type]="sellerPasswordHidden ? 'password' : 'text'"
                                     formControlName="contrasena"
@@ -424,20 +422,20 @@
                                 />
                                 <button
                                     type="button"
-                                    class="eye-button"
+                                    class="boton-ojo"
                                     [attr.aria-label]="sellerPasswordHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
-                                    (click)="sellerPasswordHidden = !sellerPasswordHidden">
-                                    {{ sellerPasswordHidden ? '👁️' : '🙈' }}
+                                    [attr.aria-pressed]="!sellerPasswordHidden"(click)="sellerPasswordHidden = !sellerPasswordHidden">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (sellerPasswordHidden) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
                                 </button>
                             </div>
 
                             @if (sellerPasswordFocused) {
-                                <div class="password-requirements" aria-live="polite">
+                                <div class="password-requirements requisitos" aria-live="polite">
                                     <strong>Requisitos:</strong>
                                     <ul>
                                         @for (requirement of passwordRequirements(vendedorForm); track requirement.label) {
-                                            <li [class.met]="requirement.met">
-                                                <span class="requirement-status" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
+                                            <li [class.met]="requirement.met" [class.cumplido]="requirement.met">
+                                                <span class="requirement-status requisito-marca" aria-hidden="true">{{ requirement.met ? '✓' : '×' }}</span>
                                                 <span>{{ requirement.label }}</span>
                                             </li>
                                         }
@@ -446,33 +444,37 @@
                             }
 
                             @if (controlError(vendedorForm, 'contrasena'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
                         </label>
 
-                        <label class="field">
-                            <span>Repetir contraseña</span>
-                            <div class="password-input-wrap">
+                        <label class="campo">
+                            <span class="campo-etiqueta">Repetir contraseña</span>
+                            <div class="contrasena">
                                 <input
                                     [type]="sellerConfirmationHidden ? 'password' : 'text'"
                                     formControlName="repetirContrasena"
-                                    autocomplete="new-password"
+                                    autocomplete="off"
+                                    (paste)="$event.preventDefault()"
+                                    (copy)="$event.preventDefault()"
+                                    (cut)="$event.preventDefault()"
+                                    (drop)="$event.preventDefault()"
                                 />
                                 <button
                                     type="button"
-                                    class="eye-button"
+                                    class="boton-ojo"
                                     [attr.aria-label]="sellerConfirmationHidden ? 'Mostrar contraseña' : 'Ocultar contraseña'"
-                                    (click)="sellerConfirmationHidden = !sellerConfirmationHidden">
-                                    {{ sellerConfirmationHidden ? '👁️' : '🙈' }}
+                                    [attr.aria-pressed]="!sellerConfirmationHidden"(click)="sellerConfirmationHidden = !sellerConfirmationHidden">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">@if (sellerConfirmationHidden) {<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>} @else {<path d="M3 3l18 18"></path><path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>}</svg>
                                 </button>
                             </div>
 
                             @if (controlError(vendedorForm, 'repetirContrasena'); as error) {
-                                <small class="field-error">{{ error }}</small>
+                                <small class="campo-error">{{ error }}</small>
                             }
 
                             @if (passwordMismatch(vendedorForm)) {
-                                <small class="field-error">
+                                <small class="campo-error">
                                     Las contraseñas no coinciden.
                                 </small>
                             }
@@ -481,7 +483,7 @@
                     </div>
 
                     <button
-                        class="submit-button"
+                        class="boton-principal"
                         type="submit"
                         [disabled]="isSubmitting || categoriesLoading || categoriesError || sellerCategories.length === 0">
 
@@ -493,13 +495,13 @@
 
             }
 
-            <p class="login-prompt">
+            <p class="acceso-pie">
                 ¿Ya tienes cuenta?
-                <a routerLink="/login">Inicia sesión</a>
+                <a class="enlace" routerLink="/login">Inicia sesión</a>
             </p>
 
         </section>
 
-    </section>
+    </div>
 
 </main>

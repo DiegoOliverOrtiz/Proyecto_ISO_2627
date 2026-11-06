@@ -3,13 +3,19 @@ package es.uclm.esibuy.backend.services;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class BrevoEmailService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrevoEmailService.class);
 
     private final String apiKey;
     private final String emailRemitente;
@@ -24,6 +30,20 @@ public class BrevoEmailService {
         this.emailRemitente = emailRemitente;
         this.nombreRemitente = nombreRemitente;
         this.restClient = RestClient.create();
+    }
+
+    /**
+     * Envía el correo de recuperación fuera del hilo de la petición, para que
+     * la respuesta no tarde más cuando el correo existe. Los fallos solo se
+     * registran: el cliente siempre recibe la misma respuesta genérica.
+     */
+    @Async
+    public void enviarRecuperacionEnSegundoPlano(String destinatario, String enlace) {
+        try {
+            enviarRecuperacion(destinatario, enlace);
+        } catch (RestClientException | IllegalStateException exception) {
+            LOGGER.error("No se pudo enviar el correo de recuperación mediante Brevo.", exception);
+        }
     }
 
     public void enviarRecuperacion(String destinatario, String enlace) {

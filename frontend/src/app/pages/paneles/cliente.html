@@ -1,56 +1,13 @@
-<header class="client-header">
-  <h1>ESIBuy</h1>
-
-  <h2>Catálogo de productos</h2>
-
-  <nav class="client-actions" aria-label="Cuenta">
-    <a class="profile-link" routerLink="/perfil" aria-label="Abrir mi perfil">
-      <svg class="profile-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <circle cx="12" cy="8" r="3.5"></circle>
-
-        <path d="M5 20c.7-3.4 3.1-5 7-5s6.3 1.6 7 5"></path>
-      </svg>
-
-      Mi perfil
-    </a>
-
-    <button class="logout-button" type="button" [disabled]="cerrandoSesion()" (click)="cerrarSesion()">
-      {{
-      cerrandoSesion()
-      ? 'Cerrando sesión...'
-      : 'Cerrar sesión'
-      }}
-    </button>
-  </nav>
-</header>
-
-<nav class="client-actions favorites-access" aria-label="Acceso a favoritos">
-  <a class="profile-link" routerLink="/cliente/pedidos">
-    Mis pedidos
-  </a>
-  <a class="profile-link" routerLink="/cliente/favoritos">
-    <span aria-hidden="true">♥</span>
-    Mis favoritos
-  </a>
-  <a class="profile-link" routerLink="/listas">
-    <span aria-hidden="true">☰</span>
-    Mis listas
-  </a>
-</nav>
-
-<nav class="client-actions cart-access" aria-label="Carrito de compra">
-  <a class="profile-link" routerLink="/carrito">
-    <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M3 3h2l2.4 11.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6"></path>
-      <circle cx="10" cy="20" r="1"></circle>
-      <circle cx="19" cy="20" r="1"></circle>
-    </svg>
-    Mi carrito
-  </a>
-</nav>
 
 
-<main class="client-content">
+
+<main class="client-content pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Catálogo de productos</h1>
+      <p class="pagina-descripcion">Explora los productos de la comunidad y guarda tus favoritos.</p>
+    </div>
+  </div>
 
   @if (errorFavoritos()) {
   <p class="status-message error-message" role="alert">
@@ -104,9 +61,10 @@
   !hayFiltrosActivos()
   ) {
 
-  <p class="status-message">
-    Todavía no hay productos disponibles.
-  </p>
+  <div class="estado">
+    <p class="estado-titulo">Todavía no hay productos disponibles.</p>
+    <p>Vuelve más tarde: los vendedores añaden productos nuevos cada día.</p>
+  </div>
 
   } @else {
 
@@ -116,13 +74,18 @@
 
   <form class="catalog-filters" role="search" aria-label="Buscar y filtrar productos" (submit)="aplicarFiltros($event)">
 
-    <label>
+    <label class="filtro-busqueda">
       Buscar por nombre
 
       <input type="search" autocomplete="off" [value]="terminoBusqueda()" (input)="actualizarBusqueda($event)" />
     </label>
 
 
+    <button class="secondary-button boton-filtros" type="button" aria-controls="filtros-avanzados"
+      [attr.aria-expanded]="filtrosAbiertos()" (click)="alternarFiltros()">
+      Filtros{{ numeroFiltrosAvanzados() ? ' (' + numeroFiltrosAvanzados() + ')' : '' }}
+    </button>
+    <div id="filtros-avanzados" class="filtros-avanzados" [class.abiertos]="filtrosAbiertos()">
     <label>
       Categoría
 
@@ -186,6 +149,7 @@
       Solo favoritos
     </label>
 
+    </div>
     <button class="secondary-button" type="submit" [disabled]="cargandoCatalogo()">
       Aplicar filtros
     </button>
@@ -203,14 +167,16 @@
          =================================================== -->
 
   @if (productosMostrados().length === 0) {
-
-  <p class="status-message">
-    {{
-      soloFavoritos()
-        ? 'No tienes productos favoritos que coincidan con los filtros.'
-        : 'No se encontraron productos con esos filtros.'
-    }}
-  </p>
+  <div class="estado">
+    <p>
+      {{
+        soloFavoritos()
+          ? 'No tienes productos favoritos que coincidan con los filtros.'
+          : 'No se encontraron productos con esos filtros.'
+      }}
+    </p>
+    <button class="secondary-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+  </div>
 
   } @else {
 
@@ -225,11 +191,15 @@
               !puedeConsultarDetalle(producto)
             ">
 
-      @if (producto.imagen) {
-
-      <img class="product-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="180" />
-
-      }
+      <div class="marco-imagen product-image-frame">
+        @if (producto.imagen && !imagenesFallidas().has(producto.id)) {
+        <img class="product-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="240"
+          loading="lazy" (error)="marcarImagenFallida(producto.id)" />
+        } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 17l-5-5-9 8"></path></svg>
+        <span class="visually-hidden">Producto sin imagen</span>
+        }
+      </div>
 
       <div class="product-heading">
 
@@ -422,7 +392,8 @@
 
   @if (detalle(); as producto) {
 
-  <section class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <section class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title"
+    (keydown)="manejarTecladoDetalle($event)">
 
     <!-- ===================================================
            CABECERA DEL MODAL
@@ -463,15 +434,15 @@
 
     <div class="detail-product-visual">
 
-      @if (producto.imagen) {
-
-      <div class="detail-image-frame">
-
-        <img class="detail-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="520" height="320" />
-
+      <div class="marco-imagen detail-image-frame">
+        @if (producto.imagen && !imagenesFallidas().has(producto.id)) {
+        <img class="detail-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="520" height="390"
+          (error)="marcarImagenFallida(producto.id)" />
+        } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 17l-5-5-9 8"></path></svg>
+        <span class="visually-hidden">Producto sin imagen</span>
+        }
       </div>
-
-      }
 
 
       <!-- PRECIO -->
@@ -555,32 +526,20 @@
         </div>
 
 
+        @if (producto.descuento > 0) {
         <div class="detail-data-card">
-
-          <span class="detail-data-label">
-            Descuento
-          </span>
-
-          <strong>
-            {{ producto.descuento }}
-            %
-          </strong>
-
+          <span class="detail-data-label">Descuento</span>
+          <strong>{{ producto.descuento }} %</strong>
         </div>
+        }
 
 
+        @if (producto.descuentoPremium > 0) {
         <div class="detail-data-card">
-
-          <span class="detail-data-label">
-            Descuento Premium
-          </span>
-
-          <strong>
-            {{ producto.descuentoPremium }}
-            %
-          </strong>
-
+          <span class="detail-data-label">Descuento Premium</span>
+          <strong>{{ producto.descuentoPremium }} %</strong>
         </div>
+        }
 
 
         <div class="detail-data-card">

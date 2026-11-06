@@ -1,0 +1,51 @@
+<header class="cabecera">
+  <div class="barra">
+    <a class="marca" [routerLink]="rutaInicio()" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
+
+    @if (rol()) {
+      <button
+        class="boton-menu"
+        type="button"
+        aria-controls="navegacion-principal"
+        [attr.aria-expanded]="menuAbierto()"
+        (click)="alternarMenu()">
+        Menú
+      </button>
+    }
+  </div>
+
+  @if (rol()) {
+    <nav
+      id="navegacion-principal"
+      class="navegacion"
+      [class.abierta]="menuAbierto()"
+      aria-label="Navegación principal">
+      <ul>
+        @for (enlace of enlaces(); track enlace.ruta) {
+          <li>
+            <a
+              [routerLink]="enlace.ruta"
+              routerLinkActive="activo"
+              [routerLinkActiveOptions]="{ exact: enlace.exacto }"
+              ariaCurrentWhenActive="page"
+              (click)="cerrarMenu()">
+              {{ enlace.texto }}
+            </a>
+          </li>
+        }
+      </ul>
+
+      <button
+        class="cerrar-sesion"
+        type="button"
+        [disabled]="cerrandoSesion()"
+        (click)="cerrarSesion()">
+        {{ cerrandoSesion() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+      </button>
+    </nav>
+  }
+
+  @if (mensajeError()) {
+    <p class="error" role="alert">{{ mensajeError() }}</p>
+  }
+</header>
