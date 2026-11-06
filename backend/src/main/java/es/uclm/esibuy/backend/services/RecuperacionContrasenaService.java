@@ -12,13 +12,10 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.HexFormat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.client.RestClientException;
 
 import es.uclm.esibuy.backend.dao.TokenRecuperacionDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
@@ -30,8 +27,6 @@ import es.uclm.esibuy.backend.model.Usuario;
 @Service
 public class RecuperacionContrasenaService {
 
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(RecuperacionContrasenaService.class);
     private static final long MINUTOS_VALIDEZ_TOKEN = 30;
 
     private final UsuarioDAO usuarioDAO;
@@ -85,12 +80,8 @@ public class RecuperacionContrasenaService {
                 calcularHash(token), usuario.getId(), caducidad));
 
         String enlace = urlFrontend + "/recuperar-contrasena?token=" + token;
-        try {
-            brevoEmailService.enviarRecuperacion(usuario.getEmail(), enlace);
-        } catch (RestClientException | IllegalStateException exception) {
-            // Se mantiene una respuesta genérica al cliente para no revelar si el correo existe.
-            LOGGER.error("No se pudo enviar el correo de recuperación mediante Brevo.", exception);
-        }
+        // Sin esperar a Brevo: el tiempo de respuesta no revela si el correo existe.
+        brevoEmailService.enviarRecuperacionEnSegundoPlano(usuario.getEmail(), enlace);
     }
 
     public void completar(String token, String nuevaContrasena) {

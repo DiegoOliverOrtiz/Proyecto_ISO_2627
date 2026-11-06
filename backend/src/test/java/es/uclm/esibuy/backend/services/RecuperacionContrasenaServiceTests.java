@@ -108,7 +108,7 @@ class RecuperacionContrasenaServiceTests {
         assertTrue(guardado.getHashToken().matches("[0-9a-f]{64}"));
 
         ArgumentCaptor<String> enlaceCaptor = ArgumentCaptor.forClass(String.class);
-        verify(brevoEmailService).enviarRecuperacion(eq(EMAIL), enlaceCaptor.capture());
+        verify(brevoEmailService).enviarRecuperacionEnSegundoPlano(eq(EMAIL), enlaceCaptor.capture());
         String enlace = enlaceCaptor.getValue();
         assertTrue(enlace.startsWith("https://esibuy.example/recuperar-contrasena?token="));
         String tokenPlano = enlace.substring(enlace.lastIndexOf('=') + 1);
