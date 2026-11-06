@@ -1214,4 +1214,13 @@ describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
       expect(vista.querySelectorAll('li').length).toBe(1);
     });
   });
+  it('la casilla «Solo premium» va dentro de su etiqueta, para que no se estire como un campo de texto', () => {
+    const vista = crear([producto()]);
+    (vista.querySelector('button.añadirProductos') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const casilla = vista.querySelector('#solo-premium-producto') as HTMLInputElement;
+    expect(casilla.type).toBe('checkbox');
+    expect(casilla.closest('label')?.textContent).toContain('Solo para clientes premium');
+  });
 });

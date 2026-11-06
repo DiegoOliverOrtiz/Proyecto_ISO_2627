@@ -160,7 +160,7 @@
 
         <p class="total">
             Importe de tus productos:
-            {{ detalle.importeProductosPropios | number:'1.2-2' }} €
+            <span class="importe">{{ detalle.importeProductosPropios | number:'1.2-2' }} €</span>
         </p>
 
         @if (detalle.direccionEnvio; as direccion) {
