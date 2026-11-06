@@ -27,7 +27,7 @@ function crearControlNombre(): FormControl<string> {
   standalone: true,
   imports: [DecimalPipe, ReactiveFormsModule],
   templateUrl: './listas.html',
-  styleUrl: './listas.css'
+  styleUrls: ['../tienda/tienda.css', './listas.css']
 })
 export class Listas implements OnInit {
 
