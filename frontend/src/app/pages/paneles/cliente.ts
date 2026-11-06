@@ -1,6 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  OnInit,
+  signal
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FavoritosService } from '../favoritos/favoritos.service';
 import { ListasService, ResumenLista } from '../listas/listas.service';
@@ -47,6 +56,11 @@ export class PanelCliente implements OnInit {
 
   readonly detalle = signal<ProductoCatalogo | null>(null);
   readonly cargandoDetalle = signal(false);
+
+  // C2: elemento que abrió el detalle, para devolverle el foco al cerrarlo.
+  private origenDetalle: HTMLElement | null = null;
+  private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly inyector = inject(Injector);
   readonly errorDetalle = signal('');
 
   /*
@@ -335,6 +349,10 @@ export class PanelCliente implements OnInit {
 
     this.cargandoDetalle.set(true);
 
+    this.origenDetalle = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
     this.cargarListas();
 
     /*
@@ -351,6 +369,14 @@ export class PanelCliente implements OnInit {
         next: (detalle) => {
 
           this.detalle.set(detalle);
+
+          // C2: al abrirse, el foco entra en el diálogo (botón «Cerrar»).
+          afterNextRender(
+            () => this.elemento.nativeElement
+              .querySelector<HTMLElement>('.product-detail .detail-close')
+              ?.focus(),
+            { injector: this.inyector }
+          );
 
           /*
            * Garantizamos que cada producto
@@ -506,6 +532,51 @@ export class PanelCliente implements OnInit {
     this.cantidadDetalle.set(1);
 
     this.errorDetalle.set('');
+
+    // C2: el foco vuelve al botón «Ver detalle» que abrió el diálogo.
+    const origen = this.origenDetalle;
+    this.origenDetalle = null;
+    if (origen?.isConnected) {
+      origen.focus();
+    }
+  }
+
+  /*
+   * C2: Escape cierra el detalle y Tab no sale de él
+   * (del último elemento vuelve al primero y al revés).
+   */
+  manejarTecladoDetalle(evento: KeyboardEvent): void {
+    if (evento.key === 'Escape') {
+      evento.preventDefault();
+      this.cerrarDetalle();
+      return;
+    }
+
+    if (evento.key !== 'Tab') {
+      return;
+    }
+
+    const dialogo = evento.currentTarget as HTMLElement;
+    const enfocables = Array.from(
+      dialogo.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
+
+    if (enfocables.length === 0) {
+      return;
+    }
+
+    const primero = enfocables[0];
+    const ultimo = enfocables[enfocables.length - 1];
+
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault();
+      ultimo.focus();
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault();
+      primero.focus();
+    }
   }
 
 
