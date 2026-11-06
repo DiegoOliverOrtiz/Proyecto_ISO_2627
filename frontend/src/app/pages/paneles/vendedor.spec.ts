@@ -1006,4 +1006,22 @@ describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
     expect(vista.querySelector('.boton-estado')?.classList).toContain('boton-secundario');
     expect(vista.querySelector('.boton-eliminar')?.classList).toContain('boton-peligro');
   });
+  it('la búsqueda por nombre no distingue tildes ni mayúsculas (M22)', () => {
+    const vista = crear([producto({ id: 'a', nombre: 'Ratón inalámbrico' }), producto({ id: 'b', nombre: 'Teclado' })]);
+
+    fixture.componentInstance.terminoBusqueda.set('RATON');
+    fixture.detectChanges();
+
+    const titulos = Array.from(vista.querySelectorAll('li h2')).map((h) => h.textContent?.trim());
+    expect(titulos).toEqual(['Ratón inalámbrico']);
+  });
+
+  it('busca con tilde en el texto y sin tilde en el nombre (M22)', () => {
+    const vista = crear([producto({ id: 'a', nombre: 'Cafe molido' })]);
+
+    fixture.componentInstance.terminoBusqueda.set('café');
+    fixture.detectChanges();
+
+    expect(vista.querySelectorAll('li').length).toBe(1);
+  });
 });

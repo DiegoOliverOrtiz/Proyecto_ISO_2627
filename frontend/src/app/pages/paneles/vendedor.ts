@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { normalizarTexto } from '../../shared/texto/normalizar-texto';
 import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { VendedorService } from './vendedor.service';
@@ -44,14 +45,14 @@ export class PanelVendedor implements OnInit {
     )
   );
   readonly productosFiltrados = computed(() => {
-    // El texto se compara como literal con includes(): nunca se interpreta como expresión regular.
-    const termino = this.terminoBusqueda().trim().toLowerCase();
+    // El texto se compara como literal con includes(), sin tildes ni mayúsculas (M22): nunca es una expresión regular.
+    const termino = normalizarTexto(this.terminoBusqueda().trim());
     const categoria = this.categoriaFiltro();
     const estado = this.estadoFiltro();
 
     return this.productos().filter(
       (producto) =>
-        producto.nombre.toLowerCase().includes(termino) &&
+        normalizarTexto(producto.nombre).includes(termino) &&
         (categoria === '' || producto.categoria === categoria) &&
         (estado === 'todos' || producto.esVisible === (estado === 'activos'))
     );
