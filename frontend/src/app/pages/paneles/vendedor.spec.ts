@@ -462,7 +462,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
 
     it('oculta el botón superior mientras el formulario está abierto (solo queda Cancelar junto a Guardar)', () => {
       const botonSuperior = () => fixture.nativeElement.querySelector('button.añadirProductos');
-      expect(botonSuperior()?.textContent?.trim()).toBe('Añadir Producto');
+      expect(botonSuperior()?.textContent?.trim()).toBe('Añadir producto');
 
       component.editarProducto(productoConDatos);
       fixture.detectChanges();

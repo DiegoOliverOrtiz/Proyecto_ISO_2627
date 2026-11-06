@@ -11,7 +11,7 @@ export type EstadoFiltro = 'todos' | 'activos' | 'desactivados';
   selector: 'app-panel-vendedor',
   standalone: true,
   imports: [ReactiveFormsModule],
-  styleUrl: './vendedor.css',
+  styleUrls: ['../tienda/tienda.css', './vendedor.css'],
   templateUrl: './vendedor.html',
 })
 export class PanelVendedor implements OnInit {

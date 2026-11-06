@@ -1,12 +1,8 @@
-<header class="cabecera">
-    <h1>Mis pedidos</h1>
-</header>
-
-<main class="contenedor">
-    <div class="encabezado">
+<main class="pagina">
+    <div class="pagina-cabecera">
         <div>
-            <h2>Pedidos de mis productos</h2>
-            <p>
+            <h1 class="pagina-titulo">Pedidos de mis productos</h1>
+            <p class="pagina-descripcion">
                 Consulta los pedidos recibidos y su estado.
                 Solo se muestran los productos de tu tienda.
             </p>
@@ -30,31 +26,31 @@
     </div>
 
     @if (mensajeExito()) {
-    <p class="mensaje-exito" role="status">{{ mensajeExito() }}</p>
+    <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
     }
 
     @if (errorAccion()) {
-    <p class="mensaje-error" role="alert">{{ errorAccion() }}</p>
+    <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
     }
 
     @if (cargando()) {
-    <p role="status">Cargando pedidos...</p>
+    <p class="estado" role="status">Cargando pedidos...</p>
     } @else if (error()) {
-    <p class="mensaje-error" role="alert">{{ error() }}</p>
+    <p class="aviso aviso-error" role="alert">{{ error() }}</p>
     } @else if (pedidos().length === 0) {
-    <div class="estado-vacio">
+    <div class="estado">
         @if (pestana() === 'activos') {
-        <h3>No tienes pedidos activos</h3>
+        <p class="estado-titulo">No tienes pedidos activos</p>
         <p>Los pedidos aparecerán aquí cuando los clientes completen el pago.</p>
         } @else {
-        <h3>Tu histórico está vacío</h3>
+        <p class="estado-titulo">Tu histórico está vacío</p>
         <p>Los pedidos finalizados aparecerán aquí.</p>
         }
     </div>
     } @else {
     <div class="lista-pedidos">
         @for (pedido of pedidos(); track pedido.id) {
-        <article class="tarjeta-pedido">
+        <article class="tarjeta tarjeta-pedido">
             <div class="cabecera-pedido">
                 <div>
                     <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
@@ -65,7 +61,7 @@
                     <p>Cliente: {{ pedido.clienteNombre }}</p>
                 </div>
 
-                <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+                <span class="chip chip-neutro">{{ textoEstado(pedido.estado) }}</span>
             </div>
 
             <div class="resumen">
@@ -86,7 +82,7 @@
                 </button>
 
                 @if (puedeAceptar(pedido)) {
-                <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+                <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
                     (click)="aceptarPedido(pedido)">
                     {{ pedidoEnProceso() === pedido.id ? 'Aceptando...' : 'Aceptar y enviar' }}
                 </button>
@@ -98,15 +94,15 @@
     }
 
     @if (cargandoDetalle()) {
-    <p role="status">Cargando detalle del pedido...</p>
+    <p class="estado" role="status">Cargando detalle del pedido...</p>
     }
 
     @if (errorDetalle()) {
-    <p class="mensaje-error" role="alert">{{ errorDetalle() }}</p>
+    <p class="aviso aviso-error" role="alert">{{ errorDetalle() }}</p>
     }
 
     @if (pedidoSeleccionado(); as detalle) {
-    <section class="detalle" aria-label="Detalle del pedido">
+    <section class="tarjeta detalle" aria-label="Detalle del pedido">
         <div class="cabecera-detalle">
             <div>
                 <h2>Detalle del pedido</h2>
@@ -180,7 +176,7 @@
 
         @if (puedeAceptar(detalle)) {
         <div class="acciones">
-            <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+            <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
                 (click)="aceptarPedido(detalle)">
                 {{ pedidoEnProceso() === detalle.id ? 'Aceptando...' : 'Aceptar y enviar' }}
             </button>

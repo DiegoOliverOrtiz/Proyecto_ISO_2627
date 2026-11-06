@@ -1,25 +1,24 @@
-<header class="header">
-    <h1 class="titulo">Catálogo de productos</h1>
-
-    <h2 class="vendedor">{{ nombreComercial() }}</h2>
+<main class="pagina">
+<header class="pagina-cabecera">
+    <div>
+        <h1 class="pagina-titulo">Catálogo de productos</h1>
+        <p class="pagina-descripcion">{{ nombreComercial() }}</p>
+    </div>
+    @if (!mostrandoFormulario()) {
+    <button class="boton-principal añadirProductos" type="button" (click)="alternarFormulario()">Añadir producto</button>
+    }
 </header>
 
-<div class="acciones-catalogo">
-    @if (!mostrandoFormulario()) {
-    <button class="añadirProductos" type="button" (click)="alternarFormulario()">Añadir Producto</button>
-    }
-</div>
-
 @if (mensajeError()) {
-<p role="alert">{{ mensajeError() }}</p>
+<p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
 }
 
 @if (mensajeExito()) {
-<output class="mensaje-exito">{{ mensajeExito() }}</output>
+<output class="aviso aviso-exito">{{ mensajeExito() }}</output>
 }
 
 @if (mostrandoFormulario()) {
-<form class="formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()"
+<form class="tarjeta formulario-producto" [formGroup]="formularioProducto" (ngSubmit)="guardarProducto()"
     [attr.aria-label]="productoEnEdicion() ? 'Modificar producto' : 'Crear producto'">
     <div class="campo">
         <label for="nombre-producto">Nombre</label>
@@ -130,7 +129,7 @@
 
     <div class="acciones-formulario">
         <button class="boton-secundario" type="button" (click)="alternarFormulario()">Cancelar</button>
-        <button class="boton-primario" type="submit" [disabled]="enviandoProducto()">
+        <button class="boton-principal" type="submit" [disabled]="enviandoProducto()">
             @if (productoEnEdicion()) {
             {{ enviandoProducto() ? 'Guardando...' : 'Guardar cambios' }}
             } @else {
@@ -141,13 +140,13 @@
 </form>
 }
 
-<main>
+<section aria-label="Catálogo">
     @if (cargandoProductos()) {
-    <output>Cargando productos...</output>
+    <output class="estado">Cargando productos...</output>
     } @else if (errorCatalogo()) {
-    <p role="alert">{{ errorCatalogo() }}</p>
+    <p class="estado" role="alert">{{ errorCatalogo() }}</p>
     } @else if (productos().length === 0) {
-    <p>Aún no tienes productos registrados.</p>
+    <p class="estado">Aún no tienes productos registrados.</p>
     } @else {
     <form class="filtros-catalogo" role="search" aria-label="Buscar y filtrar productos"
         (submit)="$event.preventDefault()">
@@ -179,11 +178,11 @@
     </form>
 
     @if (productosFiltrados().length === 0) {
-    <p>No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
+    <p class="estado">No se encontraron productos que coincidan con la búsqueda o los filtros.</p>
     } @else {
     <ul aria-label="Mis productos">
         @for (producto of productosFiltrados(); track producto.id) {
-        <li [class.producto-desactivado]="!producto.esVisible">
+        <li class="tarjeta" [class.producto-desactivado]="!producto.esVisible">
             @if (producto.imagen) {
             <img class="imagen-producto" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320"
                 height="180" />
@@ -237,4 +236,5 @@
     </ul>
     }
     }
+</section>
 </main>

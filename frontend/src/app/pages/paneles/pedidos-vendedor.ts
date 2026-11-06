@@ -15,7 +15,7 @@ type PestanaPedidos = 'activos' | 'historico';
   standalone: true,
   imports: [DatePipe],
   templateUrl: './pedidos-vendedor.html',
-  styleUrl: './pedidos-vendedor.css'
+  styleUrls: ['../tienda/tienda.css', './pedidos-vendedor.css']
 })
 export class PedidosVendedor implements OnInit {
   private readonly servicio = inject(PedidosVendedorService);
