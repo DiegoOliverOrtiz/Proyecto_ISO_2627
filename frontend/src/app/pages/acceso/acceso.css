@@ -355,6 +355,12 @@
   background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
 }
 
+.aviso-info {
+  border-color: var(--color-brand);
+  color: var(--color-text);
+  background: var(--color-accent-subtle);
+}
+
 .aviso-exito {
   border-color: var(--color-success);
   color: var(--color-success);

@@ -20,6 +20,9 @@
           @if (mensajeExito()) {
             <output class="aviso aviso-exito">{{ mensajeExito() }}</output>
           }
+          @if (mensajeInfo()) {
+            <output class="aviso aviso-info">{{ mensajeInfo() }}</output>
+          }
 
           <div class="campo">
             <label for="email">Correo electrónico</label>

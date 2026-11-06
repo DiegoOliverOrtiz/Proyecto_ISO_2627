@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService, RespuestaInicioSesion } from '../../pages/login/auth.service';
+import { olvidarSesion } from '../../pages/login/marca-sesion';
 import { rutaParaRol } from '../../pages/login/rutas-por-rol';
 
 type Rol = RespuestaInicioSesion['role'];
@@ -86,6 +87,7 @@ export class Cabecera {
     this.servicioAutenticacion.cerrarSesion().subscribe({
       next: () => {
         this.cerrandoSesion.set(false);
+        olvidarSesion();
         void this.enrutador.navigateByUrl('/login');
       },
       error: (error: HttpErrorResponse) => {

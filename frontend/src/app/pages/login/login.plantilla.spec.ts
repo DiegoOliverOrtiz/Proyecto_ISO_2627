@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Login } from './login';
@@ -58,5 +58,26 @@ describe('Login · plantilla accesible (UI-acceso)', () => {
     expect(correo.getAttribute('aria-describedby')).toBe('email-error');
     expect(raiz.querySelector('#email-error')?.textContent).toContain('El correo es obligatorio.');
     expect(raiz.querySelector('#password')?.getAttribute('aria-describedby')).toBe('password-error');
+  });
+});
+
+describe('Login · aviso cuando no hay sesión (A12)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('con motivo «sin-sesion» invita a iniciar sesión sin hablar de bloqueos', () => {
+    TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({ motivo: 'sin-sesion' }) } } }
+      ]
+    });
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+
+    expect(raiz.querySelector('.aviso-info')?.textContent).toContain('Inicia sesión para continuar.');
+    expect(raiz.querySelector('[role="alert"]')).toBeNull();
+    expect(raiz.textContent).not.toContain('bloqueada');
   });
 });

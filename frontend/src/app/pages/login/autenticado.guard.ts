@@ -3,6 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from './auth.service';
+import { motivoSinSesion } from './marca-sesion';
 
 export const autenticadoGuard: CanActivateFn = () => {
   const servicioAutenticacion = inject(AuthService);
@@ -13,7 +14,7 @@ export const autenticadoGuard: CanActivateFn = () => {
     catchError(() =>
       of(
         enrutador.createUrlTree(['/login'], {
-          queryParams: { motivo: 'sesion-expirada' }
+          queryParams: { motivo: motivoSinSesion() }
         })
       )
     )
