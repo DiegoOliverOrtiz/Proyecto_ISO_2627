@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -166,5 +167,31 @@ describe('RecuperacionContrasena', () => {
       'No se pudo cambiar la contraseña. Comprueba el enlace e inténtalo de nuevo.'
     );
     expect(componente.isLoading()).toBe(false);
+  });
+});
+
+describe('RecuperacionContrasena · confirmación de contraseña (A22)', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('no permite pegar, copiar, cortar ni soltar en «Repite la contraseña»', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'recuperar-contrasena', component: RecuperacionContrasena }]),
+        { provide: RecuperacionContrasenaService, useValue: { solicitar: vi.fn(), confirmar: vi.fn() } }
+      ]
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/recuperar-contrasena?token=token-recuperacion', RecuperacionContrasena);
+
+    const confirmacion: HTMLInputElement =
+      harness.routeNativeElement!.querySelector('#confirm-password')!;
+
+    for (const tipo of ['paste', 'copy', 'cut', 'drop']) {
+      const evento = new Event(tipo, { bubbles: true, cancelable: true });
+      confirmacion.dispatchEvent(evento);
+      expect(evento.defaultPrevented, tipo).toBe(true);
+    }
+    expect(confirmacion.getAttribute('autocomplete')).toBe('off');
+    expect(confirmacion.value).toBe('');
   });
 });
