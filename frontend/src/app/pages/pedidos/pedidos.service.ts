@@ -48,6 +48,21 @@ export interface PedidoCliente {
   historialEstados: CambioEstadoPedido[];
 }
 
+export interface EstadoValoracion {
+  valorada: boolean;
+}
+
+export interface CrearValoracion {
+  puntuacion: number;
+  comentario: string;
+}
+
+export interface ValoracionCliente extends CrearValoracion {
+  id: string;
+  pedidoId: string;
+  productoId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PedidosService {
   private readonly http = inject(HttpClient);
@@ -101,6 +116,43 @@ export class PedidosService {
           this.http.post<PedidoCliente>(
             `${this.baseUrl}/${encodeURIComponent(pedidoId)}/confirmar-recepcion`,
             null,
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({ 'X-XSRF-TOKEN': token })
+            }
+          )
+        )
+      );
+  }
+
+  consultarEstadoValoracion(
+    pedidoId: string,
+    productoId: string
+  ): Observable<EstadoValoracion> {
+    return this.http.get<EstadoValoracion>(
+      `${this.baseUrl}/${encodeURIComponent(pedidoId)}`
+        + `/productos/${encodeURIComponent(productoId)}`
+        + '/valoraciones/estado',
+      { withCredentials: true }
+    );
+  }
+
+  valorarProducto(
+    pedidoId: string,
+    productoId: string,
+    valoracion: CrearValoracion
+  ): Observable<ValoracionCliente> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap(({ token }) =>
+          this.http.post<ValoracionCliente>(
+            `${this.baseUrl}/${encodeURIComponent(pedidoId)}`
+              + `/productos/${encodeURIComponent(productoId)}`
+              + '/valoraciones',
+            valoracion,
             {
               withCredentials: true,
               headers: new HttpHeaders({ 'X-XSRF-TOKEN': token })

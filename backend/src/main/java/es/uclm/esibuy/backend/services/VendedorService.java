@@ -72,7 +72,9 @@ public class VendedorService {
                 request.nombre(),
                 request.apellidos(),
                 request.email(),
-                request.nombreComercial());
+                request.nombreComercial(),
+                request.telefono(),
+                request.dniNif());
 		String email = soporteRegistro.normalizarCorreo(request.email());
         String nombreComercial = request.nombreComercial().trim();
         String categoriaId = request.categoriaId().trim();

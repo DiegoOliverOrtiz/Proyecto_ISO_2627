@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,7 @@ import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.RecuperacionContrasenaService;
 import es.uclm.esibuy.backend.services.VendedorService;
+import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = {
@@ -96,11 +99,38 @@ class AuthControllerSecurityTests {
         MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
         assertNotNull(sesion);
         assertEquals(30 * 60, sesion.getMaxInactiveInterval());
+        assertTrue(sesion.getAttribute(SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN) instanceof Instant);
 
         mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("cliente@example.com"))
                 .andExpect(jsonPath("$.role").value("CLIENTE"));
+    }
+
+    @Test
+    void sesionActivaSeInvalidaAlCumplirElTimeoutAbsoluto() throws Exception {
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(crearCliente(true));
+
+        MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
+        assertNotNull(sesion);
+        sesion.setAttribute(
+                SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN,
+                Instant.now().minusSeconds(8 * 60 * 60));
+
+        mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
+                .andExpect(status().isUnauthorized());
+
+        assertTrue(sesion.isInvalid());
     }
 
     @Test

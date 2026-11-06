@@ -24,6 +24,12 @@ describe('PanelCliente - catálogo HU-19', () => {
   });
 
   afterEach(() => {
+    for (const peticion of httpMock.match((request) =>
+      request.url.endsWith('/valoraciones')
+    )) {
+      peticion.flush({ media: 0, total: 0, valoraciones: [] });
+    }
+
     const peticionesFavoritos = httpMock.match(
       `${environment.apiUrl}/usuarios/favoritos`
     );
@@ -193,6 +199,45 @@ describe('PanelCliente - catálogo HU-19', () => {
       .toContain('quedan pocas unidades (4)');
   });
 
+  it('muestra media y comentarios anónimos en el detalle del producto', () => {
+    const producto = crearProducto('valoraciones-1', false, true, 4);
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush([producto]);
+    fixture.detectChanges();
+
+    fixture.nativeElement
+      .querySelector('.product-card .product-actions .secondary-button')
+      .click();
+    httpMock.expectOne(`${environment.apiUrl}/usuarios/listas`).flush([]);
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos/valoraciones-1`)
+      .flush({
+        ...producto,
+        precioOriginal: 25,
+        descuentoAplicado: 0,
+        descripcion: 'Descripción',
+        vendedor: 'Tienda',
+        esVisible: true
+      });
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos/valoraciones-1/valoraciones`)
+      .flush({
+        media: 4.5,
+        total: 2,
+        valoraciones: [
+          { puntuacion: 5, comentario: 'Excelente' },
+          { puntuacion: 4, comentario: '<img src=x onerror=alert(1)>' }
+        ]
+      });
+    fixture.detectChanges();
+
+    const opiniones = fixture.nativeElement.querySelector('.detail-reviews');
+    expect(opiniones.textContent).toContain('4.5 / 5');
+    expect(opiniones.textContent).toContain('2 valoraciones');
+    expect(opiniones.textContent).toContain('Excelente');
+    expect(opiniones.textContent).toContain('<img src=x onerror=alert(1)>');
+    expect(opiniones.querySelector('img')).toBeNull();
+    expect(opiniones.textContent).toContain('Cliente verificado');
+    expect(opiniones.textContent).not.toContain('clienteId');
+  });
+
   it('no muestra el aviso de stock bajo cuando quedan cinco unidades', () => {
     httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush([
       crearProducto('stock-limite', false, true, 5)
@@ -299,7 +344,7 @@ describe('PanelCliente - catálogo HU-19', () => {
     expect(peticion.request.body.cantidad).toBe(2);
     peticion.flush({ productos: [], importe: 50 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.product-detail [role="status"]').textContent)
+    expect(fixture.nativeElement.querySelector('.product-detail .detail-purchase + .status-message, .product-detail output.status-message').textContent)
       .toContain('Producto añadido al carrito.');
     expect(fixture.componentInstance.detalle()?.stock).toBe(10);
     expect(fixture.componentInstance.cantidadDetalle()).toBe(2);

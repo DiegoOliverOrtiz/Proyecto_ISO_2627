@@ -25,6 +25,7 @@ import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.SesionService;
 import es.uclm.esibuy.backend.services.TotpService;
@@ -143,6 +144,7 @@ public class AuthController {
         HttpSession sesion = request.getSession(true);
         request.changeSessionId();
         sesion.setMaxInactiveInterval(30 * 60);
+        sesion.setAttribute(SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN, Instant.now());
         sesionService.registrarSesion(sesion.getId(), usuarioValidado.getEmail());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();

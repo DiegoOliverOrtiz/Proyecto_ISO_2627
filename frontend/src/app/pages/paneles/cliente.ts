@@ -17,7 +17,12 @@ import { ListasService, ResumenLista } from '../listas/listas.service';
 
 import { AuthService } from '../login/auth.service';
 import { CarritoService } from '../carrito/carrito.service';
-import { FiltrosCatalogo, ProductoCatalogo, ProductoService } from './producto.service';
+import {
+  FiltrosCatalogo,
+  ProductoCatalogo,
+  ProductoService,
+  ValoracionesProducto
+} from './producto.service';
 
 @Component({
   selector: 'app-panel-cliente',
@@ -63,6 +68,9 @@ export class PanelCliente implements OnInit {
   private readonly elemento = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly inyector = inject(Injector);
   readonly errorDetalle = signal('');
+  readonly valoraciones = signal<ValoracionesProducto | null>(null);
+  readonly cargandoValoraciones = signal(false);
+  readonly errorValoraciones = signal('');
 
   /*
    * Cantidad seleccionada en el modal de detalle.
@@ -411,6 +419,7 @@ export class PanelCliente implements OnInit {
         next: (detalle) => {
 
           this.detalle.set(detalle);
+          this.cargarValoracionesProducto(detalle.id);
 
           // C2: al abrirse, el foco entra en el diálogo (botón «Cerrar»).
           afterNextRender(
@@ -457,6 +466,34 @@ export class PanelCliente implements OnInit {
           }
         }
       });
+  }
+
+  cargarValoracionesProducto(productoId: string): void {
+    this.valoraciones.set(null);
+    this.errorValoraciones.set('');
+    this.cargandoValoraciones.set(true);
+
+    this.servicioProductos.consultarValoraciones(productoId).subscribe({
+      next: (valoraciones) => {
+        if (this.detalle()?.id !== productoId) return;
+        this.valoraciones.set(valoraciones);
+        this.cargandoValoraciones.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        if (this.detalle()?.id !== productoId) return;
+        this.cargandoValoraciones.set(false);
+        if (error.status === 401) {
+          void this.enrutador.navigate(['/login'], {
+            queryParams: { motivo: 'sesion-expirada' }
+          });
+          this.errorValoraciones.set('Tu sesión ha caducado. Inicia sesión nuevamente.');
+        } else if (error.status === 0) {
+          this.errorValoraciones.set('No se pudieron cargar las valoraciones. Comprueba tu conexión e inténtalo de nuevo.');
+        } else {
+          this.errorValoraciones.set('No se pudieron cargar las valoraciones de este producto.');
+        }
+      }
+    });
   }
 
 
@@ -570,6 +607,9 @@ export class PanelCliente implements OnInit {
   cerrarDetalle(): void {
 
     this.detalle.set(null);
+    this.valoraciones.set(null);
+    this.cargandoValoraciones.set(false);
+    this.errorValoraciones.set('');
 
     this.cantidadDetalle.set(1);
 

@@ -76,6 +76,17 @@ public class PasswordPolicy {
 					"contrasena",
 					"La contraseña no puede contener datos personales ni el nombre de la aplicación.");
 		}
+
+		String normalizedPasswordDigits = digitsOnly(password);
+		boolean containsPersonalNumber = identifiers.stream()
+				.filter(value -> value != null && !value.isBlank())
+				.flatMap(value -> numericIdentifierVariants(value).stream())
+				.anyMatch(normalizedPasswordDigits::contains);
+		if (containsPersonalNumber) {
+			throw new InvalidRegistrationException(
+					"contrasena",
+					"La contraseña no puede contener la fecha de nacimiento, el teléfono ni el DNI.");
+		}
 	}
 
 	public boolean matchesRecentPassword(String candidate, Iterable<String> passwordHashes, PasswordEncoder encoder) {
@@ -106,7 +117,8 @@ public class PasswordPolicy {
 	private static Set<String> identifierTokens(String value) {
 		String normalized = normalizeIdentifier(value).replaceAll("[^\\p{L}\\p{N}]+", " ");
 		return java.util.Arrays.stream(normalized.split("\\s+"))
-				.filter(token -> token.codePointCount(0, token.length()) >= 3)
+				.filter(token -> token.codePointCount(0, token.length()) >= 3
+						&& token.codePoints().anyMatch(Character::isLetter))
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
@@ -114,5 +126,25 @@ public class PasswordPolicy {
 		return Normalizer.normalize(value, Normalizer.Form.NFKD)
 				.toLowerCase(Locale.ROOT)
 				.replaceAll("\\p{M}+", "");
+	}
+
+	private static String digitsOnly(String value) {
+		StringBuilder digits = new StringBuilder();
+		value.codePoints()
+				.map(Character::getNumericValue)
+				.filter(digit -> digit >= 0 && digit <= 9)
+				.forEach(digit -> digits.append((char) ('0' + digit)));
+		return digits.toString();
+	}
+
+	private static Set<String> numericIdentifierVariants(String value) {
+		String digits = digitsOnly(value);
+		if (digits.length() < 7) {
+			return Set.of();
+		}
+		if (digits.length() > 9) {
+			return Set.of(digits, digits.substring(digits.length() - 9));
+		}
+		return Set.of(digits);
 	}
 }

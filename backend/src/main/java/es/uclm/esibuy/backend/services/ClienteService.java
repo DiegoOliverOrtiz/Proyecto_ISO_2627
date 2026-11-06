@@ -3,6 +3,7 @@ package es.uclm.esibuy.backend.services;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ import es.uclm.esibuy.backend.model.Direccion;
 
 @Service
 public class ClienteService {
+	private static final DateTimeFormatter FORMATO_FECHA_IDENTIFICATIVA =
+			DateTimeFormatter.ofPattern("ddMMyyyy");
 
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
@@ -70,7 +73,12 @@ public class ClienteService {
 				request.contrasena(),
 				request.nombre(),
 				request.apellidos(),
-				request.email());
+				request.email(),
+				request.fechaNacimiento() == null
+						? null
+						: request.fechaNacimiento().format(FORMATO_FECHA_IDENTIFICATIVA),
+				request.telefono(),
+				request.dniNif());
 		String email = soporteRegistro.normalizarCorreo(request.email());
 		soporteRegistro.comprobarCorreoDisponible(email);
 

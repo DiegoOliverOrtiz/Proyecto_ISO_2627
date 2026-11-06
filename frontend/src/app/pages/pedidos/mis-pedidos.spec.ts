@@ -20,9 +20,20 @@ const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(res
 describe('MisPedidos - HU-38 confirmar recepción', () => {
   let fixture: ComponentFixture<MisPedidos>;
   let http: HttpTestingController;
+  let descriptorScrollIntoView: PropertyDescriptor | undefined;
+  let scrollIntoView: ReturnType<typeof vi.fn>;
 
   const baseUrl = `${environment.apiUrl}/cliente/pedidos`;
   const csrfUrl = `${environment.apiUrl}/usuarios/csrf`;
+  const valoracionUrl = (
+    pedidoId: string,
+    productoId: string
+  ): string =>
+    `${baseUrl}/${pedidoId}/productos/${productoId}/valoraciones`;
+  const estadoValoracionUrl = (
+    pedidoId: string,
+    productoId: string
+  ): string => `${valoracionUrl(pedidoId, productoId)}/estado`;
 
   const pedido = (
     id: string,
@@ -55,6 +66,18 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
   const enviado = pedido('pedido-enviado', 'TRAMITADO_ENVIADO');
   const pagado = pedido('pedido-pagado', 'PAGADO_COMPLETADO');
   const finalizado = pedido('pedido-enviado', 'FINALIZADO');
+  const pedidoFinalizadoConProducto: PedidoCliente = {
+    ...finalizado,
+    id: 'pedido-finalizado',
+    lineas: [{
+      productoId: 'producto-1',
+      nombreProducto: 'Producto de prueba',
+      precioCompra: 25,
+      cantidad: 1,
+      vendedorId: 'vendedor-1',
+      nombreVendedor: 'Tienda de prueba'
+    }]
+  };
 
   function cargar(
     activos: PedidoCliente[] = [enviado],
@@ -78,6 +101,16 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
   }
 
   beforeEach(() => {
+    descriptorScrollIntoView = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'scrollIntoView'
+    );
+    scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView
+    });
+
     TestBed.configureTestingModule({
       imports: [MisPedidos],
       providers: [
@@ -95,6 +128,15 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
   afterEach(() => {
     http.verify();
     vi.restoreAllMocks();
+    if (descriptorScrollIntoView) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'scrollIntoView',
+        descriptorScrollIntoView
+      );
+    } else {
+      delete (HTMLElement.prototype as Partial<HTMLElement>).scrollIntoView;
+    }
     TestBed.resetTestingModule();
   });
 
@@ -212,5 +254,128 @@ describe('MisPedidos - HU-38 confirmar recepción', () => {
 
     expect(fixture.nativeElement.textContent)
       .toContain('El pedido ya no está en estado enviado.');
+  });
+
+  it('solo permite valorar productos de pedidos finalizados', () => {
+    cargar([enviado], [pedidoFinalizadoConProducto]);
+
+    fixture.componentInstance.abrirDetalle(pedidoFinalizadoConProducto.id);
+    http.expectOne(`${baseUrl}/${pedidoFinalizadoConProducto.id}`)
+      .flush(pedidoFinalizadoConProducto);
+    http.expectOne(estadoValoracionUrl(
+      pedidoFinalizadoConProducto.id,
+      'producto-1'
+    )).flush({ valorada: false });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#boton-valorar-producto-1'))
+      .not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#formulario-valoracion-producto-1'))
+      .toBeNull();
+
+    fixture.componentInstance.abrirDetalle(enviado.id);
+    http.expectOne(`${baseUrl}/${enviado.id}`).flush(enviado);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent)
+      .not.toContain('Valorar producto');
+  });
+
+  it('desplaza suavemente hasta el detalle cuando termina de cargar', () => {
+    cargar([enviado]);
+
+    const boton = (fixture.nativeElement as HTMLElement).querySelector(
+      '#titulo-activos ~ .lista-pedidos .tarjeta-pedido .boton-secundario'
+    ) as HTMLButtonElement;
+    boton.click();
+
+    http.expectOne(`${baseUrl}/${enviado.id}`).flush(enviado);
+    fixture.detectChanges();
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  });
+
+  it('muestra el formulario para una valoración pendiente y la marca tras enviarla', () => {
+    cargar([], [pedidoFinalizadoConProducto]);
+
+    fixture.componentInstance.abrirDetalle(pedidoFinalizadoConProducto.id);
+    http.expectOne(`${baseUrl}/${pedidoFinalizadoConProducto.id}`)
+      .flush(pedidoFinalizadoConProducto);
+    http.expectOne(estadoValoracionUrl(
+      pedidoFinalizadoConProducto.id,
+      'producto-1'
+    )).flush({ valorada: false });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#formulario-valoracion-producto-1'))
+      .toBeNull();
+    fixture.nativeElement.querySelector('#boton-valorar-producto-1').click();
+    fixture.detectChanges();
+
+    const estrellas: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.estrella-puntuacion')
+    );
+    const comentario: HTMLTextAreaElement | null =
+      fixture.nativeElement.querySelector('#comentario-producto-1');
+    const boton: HTMLButtonElement | null =
+      fixture.nativeElement.querySelector('#formulario-valoracion-producto-1 button[type="submit"]');
+
+    expect(estrellas).toHaveLength(5);
+    expect(comentario).not.toBeNull();
+    expect(comentario?.getAttribute('maxlength')).toBe('500');
+    expect(boton).not.toBeNull();
+
+    fixture.nativeElement.querySelector('#estrella-producto-1-4').click();
+    fixture.componentInstance.formularioValoracion('producto-1')!
+      .controls.comentario.setValue('Buen producto');
+    fixture.detectChanges();
+    expect(boton!.disabled).toBe(false);
+    fixture.nativeElement
+      .querySelector('#formulario-valoracion-producto-1')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    http.expectOne(csrfUrl).flush({ token: 'csrf-token' });
+    const peticion = http.expectOne(
+      valoracionUrl(pedidoFinalizadoConProducto.id, 'producto-1')
+    );
+    expect(peticion.request.method).toBe('POST');
+    expect(peticion.request.body).toEqual({
+      puntuacion: 4,
+      comentario: 'Buen producto'
+    });
+    peticion.flush({
+      id: 'valoracion-1',
+      pedidoId: pedidoFinalizadoConProducto.id,
+      productoId: 'producto-1',
+      puntuacion: 4,
+      comentario: 'Buen producto'
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent)
+      .toContain('Ya valorado');
+    expect(fixture.nativeElement.textContent)
+      .not.toContain('Valorar producto');
+  });
+
+  it('no muestra formulario si el producto ya está valorado', () => {
+    cargar([], [pedidoFinalizadoConProducto]);
+
+    fixture.componentInstance.abrirDetalle(pedidoFinalizadoConProducto.id);
+    http.expectOne(`${baseUrl}/${pedidoFinalizadoConProducto.id}`)
+      .flush(pedidoFinalizadoConProducto);
+    http.expectOne(estadoValoracionUrl(
+      pedidoFinalizadoConProducto.id,
+      'producto-1'
+    )).flush({ valorada: true });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent)
+      .toContain('Ya valorado');
+    expect(fixture.nativeElement.textContent)
+      .not.toContain('Valorar producto');
   });
 });

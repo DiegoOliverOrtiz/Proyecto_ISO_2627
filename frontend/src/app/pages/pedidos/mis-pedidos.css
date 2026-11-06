@@ -64,9 +64,10 @@
   margin: 0;
 }
 
-/* Las acciones de cada pedido, separadas entre sí. */
-.tarjeta-pedido > button {
-  margin: 0 .5rem .5rem 0;
+.acciones-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
 }
 
 .boton-primario,
@@ -108,7 +109,9 @@ button:disabled {
 }
 
 .boton-primario:focus-visible,
-.boton-secundario:focus-visible {
+.boton-secundario:focus-visible,
+.boton-valorar:focus-visible,
+.estrella-puntuacion:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -120,6 +123,67 @@ button:disabled {
 .tabla-contenedor {
   overflow-x: auto;
 }
+
+.boton-valorar {
+  padding: .4rem .7rem;
+  border: 1px solid #d36b54;
+  border-radius: 4px;
+  color: #a63120;
+  background: #fff;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fila-valoracion > td {
+  padding: 1rem;
+  background: #f7f9fa;
+}
+
+.fila-valoracion form {
+  display: grid;
+  gap: .65rem;
+  max-width: 36rem;
+}
+
+.fila-valoracion textarea {
+  width: 100%;
+  padding: .65rem;
+  border: 1px solid #7a8f97;
+  border-radius: 4px;
+  color: #173042;
+  background: #fff;
+}
+
+.puntuacion-estrellas {
+  display: flex;
+  gap: .25rem;
+}
+
+.estrella-puntuacion {
+  padding: .1rem;
+  border: 0;
+  color: #aab8bf;
+  background: transparent;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.estrella-puntuacion.seleccionada {
+  color: #d36b2e;
+}
+
+.etiqueta-estrellas {
+  font-weight: 700;
+}
+
+.fila-valoracion small {
+  color: #526675;
+}
+
+.valoracion-completada { color: #255b4d; }
 
 table {
   width: 100%;
