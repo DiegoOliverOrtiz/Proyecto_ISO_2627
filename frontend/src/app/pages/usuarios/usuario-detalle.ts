@@ -9,6 +9,7 @@ import {
   Validators
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import {
   ModificarUsuarioRequest,
   UsuarioAdministracion,
@@ -96,6 +97,9 @@ export class UsuarioDetalle implements OnInit {
   private readonly administradorService =
     inject(AdministradorService);
 
+  private readonly confirmacion =
+    inject(ConfirmacionService);
+
   private readonly formBuilder =
     inject(FormBuilder);
 
@@ -111,6 +115,13 @@ export class UsuarioDetalle implements OnInit {
     signal('');
 
   readonly mensajeFormulario =
+    signal('');
+
+  // Avisos en pantalla en lugar de alert() (M8).
+  readonly mensajeExito =
+    signal('');
+
+  readonly errorAccion =
     signal('');
 
   readonly modoEdicion =
@@ -347,6 +358,7 @@ export class UsuarioDetalle implements OnInit {
     }
 
     this.mensajeFormulario.set('');
+    this.mensajeExito.set('');
 
     this.usuariosService
       .modificarUsuario(
@@ -365,7 +377,7 @@ export class UsuarioDetalle implements OnInit {
             false
           );
 
-          window.alert(
+          this.mensajeExito.set(
             'Los datos del usuario se han actualizado correctamente.'
           );
 
@@ -425,15 +437,18 @@ export class UsuarioDetalle implements OnInit {
 
   }
 
-  eliminarAdministrador(
+  async eliminarAdministrador(
     id: string,
     nombre: string
-  ): void {
+  ): Promise<void> {
 
     const seguro =
-      window.confirm(
-        `¿Estás seguro de que deseas eliminar al administrador ${nombre}?\n\nEsta es una acción destructiva y no se puede deshacer.`
-      );
+      await this.confirmacion.confirmar({
+        titulo: 'Eliminar administrador',
+        mensaje: `¿Estás seguro de que deseas eliminar al administrador ${nombre}? Es una acción destructiva y no se puede deshacer.`,
+        aceptar: 'Eliminar administrador',
+        peligro: true
+      });
 
     if (!seguro) {
       return;
@@ -458,7 +473,7 @@ export class UsuarioDetalle implements OnInit {
           const mensajeBackend =
             error.error?.error;
 
-          window.alert(
+          this.errorAccion.set(
             mensajeBackend ||
             'No se pudo eliminar el administrador. Inténtalo de nuevo.'
           );

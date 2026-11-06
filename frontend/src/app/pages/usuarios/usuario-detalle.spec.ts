@@ -101,4 +101,18 @@ describe('UsuarioDetalle (UI-admin)', () => {
 
     expect(vista.querySelector('.estado[role="alert"]')).not.toBeNull();
   });
+  describe('avisos en pantalla en lugar de alert() (M8)', () => {
+    it('al guardar muestra el éxito en un aviso, no en un alert', () => {
+      const alerta = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+      servicio.modificarUsuario.mockReturnValue(of({ ...base, nombre: 'Mario Luis' }));
+      const vista = crear(base, true);
+
+      const componente = fixture.componentInstance;
+      componente.guardarCambios();
+      fixture.detectChanges();
+
+      expect(alerta).not.toHaveBeenCalled();
+      expect(vista.querySelector('.aviso-exito')?.textContent).toContain('actualizado correctamente');
+    });
+  });
 });

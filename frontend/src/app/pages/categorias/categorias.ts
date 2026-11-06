@@ -6,6 +6,7 @@ import {
   Validators
 } from '@angular/forms';
 
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import {
   Categoria,
   CategoriasService,
@@ -21,6 +22,7 @@ import {
 })
 export class Categorias implements OnInit {
   private readonly categoriasService = inject(CategoriasService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly formBuilder = inject(FormBuilder);
 
   readonly categorias = signal<Categoria[]>([]);
@@ -216,10 +218,13 @@ export class Categorias implements OnInit {
     });
   }
 
-  eliminarCategoria(categoria: Categoria): void {
-    const confirmar = window.confirm(
-      `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`
-    );
+  async eliminarCategoria(categoria: Categoria): Promise<void> {
+    const confirmar = await this.confirmacion.confirmar({
+      titulo: 'Eliminar categoría',
+      mensaje: `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`,
+      aceptar: 'Eliminar categoría',
+      peligro: true
+    });
 
     if (!confirmar) {
       return;

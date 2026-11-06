@@ -76,6 +76,14 @@
 
       </header>
 
+      @if (mensajeExito()) {
+        <output class="aviso aviso-exito">{{ mensajeExito() }}</output>
+      }
+
+      @if (errorAccion()) {
+        <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
+      }
+
       @if (!modoEdicion()) {
 
         <section class="tarjeta detail-card">

@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { HttpErrorResponse } from '@angular/common/http';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import { AuthService } from '../login/auth.service';
 import { ListadoUsuarios, UsuarioAdministracion, UsuariosService } from '../usuarios/usuarios.service';
 import { AdministradorService } from './administrador.service';
@@ -27,6 +29,7 @@ describe('Administradores (UI-admin)', () => {
   };
 
   const usuariosService = { consultarUsuarios: vi.fn() };
+  const administradorService = { eliminarAdministrador: vi.fn() };
 
   beforeEach(async () => {
     usuariosService.consultarUsuarios.mockReturnValue(of(listado));
@@ -35,7 +38,7 @@ describe('Administradores (UI-admin)', () => {
       providers: [
         provideRouter([]),
         { provide: UsuariosService, useValue: usuariosService },
-        { provide: AdministradorService, useValue: {} },
+        { provide: AdministradorService, useValue: administradorService },
         { provide: AuthService, useValue: { obtenerSesionActual: () => of({ email: 'ada@esibuy.com', role: 'ADMIN' }) } }
       ]
     }).compileComponents();
@@ -85,5 +88,44 @@ describe('Administradores (UI-admin)', () => {
     expect(anadir.textContent?.trim()).toBe('Añadir administrador');
     expect(anadir.getAttribute('href')).toBe('/admin/administradores/nuevo');
     expect(vista.querySelectorAll('h1').length).toBe(1);
+  });
+  describe('diálogo común y errores en pantalla (M8)', () => {
+    const componente = () => fixture.componentInstance;
+
+    it('eliminar pide confirmación con el diálogo propio y marca la acción como peligrosa', async () => {
+      const confirmar = vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(false);
+
+      await componente().eliminar('a3', 'Carla');
+
+      expect(confirmar).toHaveBeenCalledWith(
+        expect.objectContaining({ titulo: 'Eliminar administrador', peligro: true })
+      );
+      expect(administradorService.eliminarAdministrador).not.toHaveBeenCalled();
+    });
+
+    it('si el backend rechaza el borrado, el motivo sale como aviso y no en un alert', async () => {
+      vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(true);
+      const alerta = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+      administradorService.eliminarAdministrador.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { error: 'No se puede eliminar al último administrador.' } }))
+      );
+
+      await componente().eliminar('a3', 'Carla');
+      fixture.detectChanges();
+
+      expect(alerta).not.toHaveBeenCalled();
+      const vista = fixture.nativeElement as HTMLElement;
+      expect(vista.querySelector('.aviso-error')?.textContent).toContain('último administrador');
+      expect(vista.querySelectorAll('tbody tr').length).toBe(3);
+    });
+
+    it('bloquear tu propia cuenta se rechaza con un aviso y sin ocultar la tabla', async () => {
+      await componente().bloquear(listado.contenido[0]);
+      fixture.detectChanges();
+
+      const vista = fixture.nativeElement as HTMLElement;
+      expect(vista.querySelector('.aviso-error')?.textContent).toContain('No puedes bloquear tu propia cuenta');
+      expect(vista.querySelectorAll('tbody tr').length).toBe(3);
+    });
   });
 });

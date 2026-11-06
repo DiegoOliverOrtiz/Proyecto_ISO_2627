@@ -8,6 +8,13 @@ import {
 import { vi } from 'vitest';
 
 import { Categorias } from './categorias';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
+
 import { environment } from '../../../environments/environment';
 
 describe('Categorias', () => {
@@ -312,8 +319,8 @@ describe('Categorias', () => {
     expect(nombreEnTarjeta.textContent).toBe('Deportes');
   });
 
-  it('elimina una categoria y la quita del listado', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('elimina una categoria y la quita del listado', async () => {
+    simularConfirmacion(true);
 
     fixture.detectChanges();
 
@@ -336,6 +343,7 @@ describe('Categorias', () => {
     ) as HTMLButtonElement;
 
     botonEliminar.click();
+    await esperarConfirmacion();
 
     const solicitudCsrf = httpMock.expectOne(
       `${environment.apiUrl}/usuarios/csrf`
@@ -368,8 +376,8 @@ describe('Categorias', () => {
     );
   });
 
-  it('no elimina la categoria si se cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('no elimina la categoria si se cancela la confirmacion', async () => {
+    const confirmar = simularConfirmacion(false);
 
     fixture.detectChanges();
 
@@ -392,8 +400,9 @@ describe('Categorias', () => {
     ) as HTMLButtonElement;
 
     botonEliminar.click();
+    await esperarConfirmacion();
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirmar).toHaveBeenCalled();
 
     fixture.detectChanges();
 
@@ -401,8 +410,8 @@ describe('Categorias', () => {
     expect(fixture.nativeElement.textContent).toContain('Deportes');
   });
 
-  it('muestra el error del backend si la categoria tiene productos asociados', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('muestra el error del backend si la categoria tiene productos asociados', async () => {
+    simularConfirmacion(true);
 
     fixture.detectChanges();
 
@@ -425,6 +434,7 @@ describe('Categorias', () => {
     ) as HTMLButtonElement;
 
     botonEliminar.click();
+    await esperarConfirmacion();
 
     const solicitudCsrf = httpMock.expectOne(
       `${environment.apiUrl}/usuarios/csrf`
