@@ -31,6 +31,7 @@ import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
+import es.uclm.esibuy.backend.exceptions.LoginRateLimitException;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -72,7 +73,8 @@ class AuthControllerSecurityTests {
     @Test
     void loginGuardaLaSesionYPermiteRecuperarla() throws Exception {
         Cliente cliente = crearCliente(true);
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(cliente);
 
         MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
@@ -100,7 +102,8 @@ class AuthControllerSecurityTests {
     void loginDevuelveElRolAdminParaAdministradores() throws Exception {
         Administrador administrador = new Administrador();
         administrador.setEmail("admin@example.com");
-        when(authService.autenticar("admin@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("admin@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(administrador);
 
         mockMvc.perform(post("/usuarios/login")
@@ -117,7 +120,8 @@ class AuthControllerSecurityTests {
     void loginDevuelveElRolVendedorParaVendedores() throws Exception {
         Vendedor vendedor = new Vendedor();
         vendedor.setEmail("vendedor@example.com");
-        when(authService.autenticar("vendedor@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("vendedor@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(vendedor);
 
         mockMvc.perform(post("/usuarios/login")
@@ -132,7 +136,8 @@ class AuthControllerSecurityTests {
 
     @Test
     void loginRechazaCredencialesIncorrectasConRespuesta401() throws Exception {
-        when(authService.autenticar("cliente@example.com", "incorrecta"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("incorrecta"), org.mockito.ArgumentMatchers.anyString()))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException(
                         "Correo o contraseña incorrectos."));
 
@@ -147,8 +152,28 @@ class AuthControllerSecurityTests {
     }
 
     @Test
+    void loginLimitadoDevuelve429YRetryAfter() throws Exception {
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenThrow(new LoginRateLimitException(30));
+
+        mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Retry-After", "30"))
+                .andExpect(jsonPath("$.error").value(
+                        "Demasiados intentos de inicio de sesión. Espera antes de volver a intentarlo."));
+    }
+
+    @Test
     void loginInactivoDevuelveAvisoDeCuentaPendiente() throws Exception {
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenThrow(new AccountPendingException());
 
         mockMvc.perform(post("/usuarios/login")
@@ -163,7 +188,8 @@ class AuthControllerSecurityTests {
 
     @Test
     void logoutInvalidaLaSesion() throws Exception {
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(crearCliente(true));
 
         MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")

@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -22,6 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import es.uclm.esibuy.backend.security.PepperedBCryptPasswordEncoder;
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfiguration {
@@ -30,8 +31,9 @@ public class SecurityConfiguration {
         private static final String RUTA_CATEGORIAS = "/categorias/**";
 
         @Bean
-        PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
+        PasswordEncoder passwordEncoder(
+                        @Value("${app.security.password.pepper:}") String pepper) {
+                return new PepperedBCryptPasswordEncoder(pepper, 12);
         }
 
         @Bean

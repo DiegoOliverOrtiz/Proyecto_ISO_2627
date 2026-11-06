@@ -67,7 +67,13 @@ public class VendedorService {
         if (request == null) {
             throw new InvalidRegistrationException();
         }
-        soporteRegistro.validarSolicitud(request, request.contrasena());
+        soporteRegistro.validarSolicitud(
+                request,
+                request.contrasena(),
+                request.nombre(),
+                request.apellidos(),
+                request.email(),
+                request.nombreComercial());
 		String email = soporteRegistro.normalizarCorreo(request.email());
         String nombreComercial = request.nombreComercial().trim();
         String categoriaId = request.categoriaId().trim();

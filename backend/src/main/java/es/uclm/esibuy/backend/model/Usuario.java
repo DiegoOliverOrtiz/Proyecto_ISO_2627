@@ -118,6 +118,15 @@ public abstract class Usuario {
 		}
 	}
 
+	public void actualizarContrasenaHash(String nuevoHash) {
+		String hashAnterior = contrasenaHash;
+		contrasenaHash = nuevoHash;
+		if (historialContrasenasHash != null && !historialContrasenasHash.isEmpty()
+				&& java.util.Objects.equals(historialContrasenasHash.get(0), hashAnterior)) {
+			historialContrasenasHash.set(0, nuevoHash);
+		}
+	}
+
 	public String getTelefono() {
 		return telefono;
 	}

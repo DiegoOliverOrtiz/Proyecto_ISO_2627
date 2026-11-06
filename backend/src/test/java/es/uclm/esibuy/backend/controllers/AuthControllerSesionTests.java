@@ -47,7 +47,8 @@ class AuthControllerSesionTests {
 	void iniciarSesion_registraLaSesionConElEmailDelUsuario() {
 		Administrador administrador = new Administrador();
 		administrador.setEmail(EMAIL);
-		when(authService.autenticar(EMAIL, PASSWORD)).thenReturn(administrador);
+		when(authService.autenticar(org.mockito.ArgumentMatchers.eq(EMAIL),
+				org.mockito.ArgumentMatchers.eq(PASSWORD), org.mockito.ArgumentMatchers.anyString())).thenReturn(administrador);
 		MockHttpServletRequest request = new MockHttpServletRequest();
 		MockHttpServletResponse response = new MockHttpServletResponse();
 

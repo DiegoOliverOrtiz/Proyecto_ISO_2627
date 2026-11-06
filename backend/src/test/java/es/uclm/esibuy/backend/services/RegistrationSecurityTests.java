@@ -83,6 +83,22 @@ class RegistrationSecurityTests {
     }
 
     @Test
+    void rejectsPasswordContainingNormalizedPersonalDataOrApplicationName() {
+        PasswordPolicy policy = new PasswordPolicy();
+
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("GarcíaClave9!", List.of("Ana", "García", "ana@example.com")));
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("MiEsibuyClave9!", List.of("Otra persona")));
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("TiendaLunaClave9!", List.of("Tienda Luna")));
+        policy.validate("ClaveSegura9!", List.of("Ana", "García", "ana@example.com", "Tienda Luna"));
+    }
+
+    @Test
     void checksRecentPasswordHashesAndKeepsHistoryBounded() {
         PasswordEncoder encoder = new BCryptPasswordEncoder();
         String encoded = encoder.encode("ClaveSegura9!");
@@ -195,7 +211,7 @@ class RegistrationSecurityTests {
     @Test
     void storesSellerWithEncodedPasswordAndRejectsDuplicateCommercialName() {
 
-        String rawPassword = "SeguraVenta9!";
+        String rawPassword = "V4!qZ8#nLp";
         String categoriaId = "6abe34098deff53da8a2c052";
 
         // Simulamos que la categoría existe.
@@ -289,7 +305,7 @@ class RegistrationSecurityTests {
                 "García",
                 "12345678Z",
                 "tienda@example.com",
-                "SeguraVenta9!",
+                "V4!qZ8#nLp",
                 categoriaId,
                 "Tienda Segura",
                 null,

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
+import es.uclm.esibuy.backend.exceptions.LoginRateLimitException;
 
 @RestControllerAdvice(assignableTypes = AuthController.class)
 public class AuthExceptionHandler {
@@ -15,6 +16,13 @@ public class AuthExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> manejarCredencialesIncorrectas(BadCredentialsException excepcion) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiErrorResponse(excepcion.getMessage()));
+    }
+
+    @ExceptionHandler(LoginRateLimitException.class)
+    public ResponseEntity<ApiErrorResponse> manejarLimiteIntentos(LoginRateLimitException excepcion) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Integer.toString(excepcion.getRetryAfterSeconds()))
                 .body(new ApiErrorResponse(excepcion.getMessage()));
     }
 
