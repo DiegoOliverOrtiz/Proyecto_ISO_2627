@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import {
   CambioEstadoPedido,
@@ -13,7 +13,7 @@ import {
 @Component({
   selector: 'app-mis-pedidos',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe],
   templateUrl: './mis-pedidos.html',
   styleUrl: './mis-pedidos.css'
 })
