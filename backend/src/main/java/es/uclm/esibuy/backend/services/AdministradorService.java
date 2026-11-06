@@ -45,18 +45,7 @@ public class AdministradorService {
 	private final Validator validator;
 	private final SesionService sesionService;
 	private final FavoritosRegistroService favoritosRegistroService;
-
-	public AdministradorService(
-			AdministradorDAO administradorDAO,
-			CategoriaDAO categoriaDAO,
-			UsuarioDAO usuarioDAO,
-			PasswordEncoder passwordEncoder,
-			PasswordPolicy passwordPolicy,
-			Validator validator,
-			SesionService sesionService) {
-		this(administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
-				passwordPolicy, validator, sesionService, null);
-	}
+	private final AuditoriaService auditoriaService;
 
 	@Autowired
 	public AdministradorService(
@@ -67,7 +56,8 @@ public class AdministradorService {
 			PasswordPolicy passwordPolicy,
 			Validator validator,
 			SesionService sesionService,
-			FavoritosRegistroService favoritosRegistroService) {
+			FavoritosRegistroService favoritosRegistroService,
+			AuditoriaService auditoriaService) {
 
 		this.administradorDAO = administradorDAO;
 		this.categoriaDAO = categoriaDAO;
@@ -77,6 +67,7 @@ public class AdministradorService {
 		this.validator = validator;
 		this.sesionService = sesionService;
 		this.favoritosRegistroService = favoritosRegistroService;
+		this.auditoriaService = auditoriaService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
@@ -300,6 +291,8 @@ public class AdministradorService {
 					administradorDAO.save(
 							administrador);
 
+			auditoriaService.registrarAltaAdministrador();
+
 			if (favoritosRegistroService != null) {
 				favoritosRegistroService.crearListaPredeterminada(
 					guardado.getId()
@@ -444,6 +437,7 @@ public class AdministradorService {
 		}
 
 		administradorDAO.delete(objetivo);
+		auditoriaService.registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
 
 		sesionService.cerrarSesiones(
 				objetivo.getEmail());

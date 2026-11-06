@@ -32,4 +32,29 @@ class AuditoriaServiceTests {
         assertTrue(salida.getOut().contains(
                 "evento_seguridad=contrasena_restablecida usuario_id=usuario-1 resultado=exito"));
     }
+
+    @Test
+    void registraFallosYBloqueosDeLoginSinDatosPersonales(CapturedOutput salida) {
+        auditoria.registrarIntentoLoginFallido();
+        auditoria.registrarBloqueoLogin(30);
+
+        assertTrue(salida.getOut().contains(
+                "evento_seguridad=login_fallido resultado=credenciales_invalidas"));
+        assertTrue(salida.getOut().contains(
+                "evento_seguridad=login_bloqueado retry_after_segundos=30"));
+        assertFalse(salida.getOut().contains("@"));
+        assertFalse(salida.getOut().contains("192.0.2."));
+    }
+
+    @Test
+    void registraAltasYEliminacionesAdministrativasSinIdentificadoresPersonales(CapturedOutput salida) {
+        auditoria.registrarAltaAdministrador();
+        auditoria.registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
+
+        assertTrue(salida.getOut().contains(
+                "evento_seguridad=alta_administrador resultado=exito"));
+        assertTrue(salida.getOut().contains(
+                "evento_seguridad=usuario_eliminado_por_administrador tipo_usuario=ADMINISTRADOR resultado=exito"));
+        assertFalse(salida.getOut().contains("@"));
+    }
 }

@@ -53,6 +53,9 @@ class AdministradorServiceTests {
 	@Mock
 	private SesionService sesionService;
 
+	@Mock
+	private AuditoriaService auditoriaService;
+
 	@Test
 	void registersAdministratorWithEncodedPasswordAndOptionalAdministrativeData() {
 		when(usuarioDAO.existsByEmail("admin@example.com")).thenReturn(false);
@@ -70,7 +73,9 @@ class AdministradorServiceTests {
 				passwordEncoder,
 				new PasswordPolicy(),
 				VALIDATOR,
-				sesionService);
+				sesionService,
+				null,
+				auditoriaService);
 		RegistroAdministradorRequest request = new RegistroAdministradorRequest(
 				"Primero",
 				"Administrador",
@@ -86,6 +91,7 @@ class AdministradorServiceTests {
 		assertEquals("administrador", response.tipoUsuario());
 		ArgumentCaptor<Administrador> saved = ArgumentCaptor.forClass(Administrador.class);
 		verify(administradorDAO).save(saved.capture());
+		verify(auditoriaService).registrarAltaAdministrador();
 		assertEquals("bcrypt-admin-hash", saved.getValue().getContrasenaHash());
 		assertEquals(List.of("bcrypt-admin-hash"), saved.getValue().getHistorialContrasenasHash());
 		assertEquals("ADMIN", saved.getValue().getRol());
@@ -101,7 +107,9 @@ class AdministradorServiceTests {
 				passwordEncoder,
 				new PasswordPolicy(),
 				VALIDATOR,
-				sesionService);
+				sesionService,
+				null,
+				auditoriaService);
 		RegistroAdministradorRequest request = new RegistroAdministradorRequest(
 				"Primero", "Administrador", "admin@example.com", "GestorX9!Clave", null, null, null);
 
@@ -138,7 +146,7 @@ class AdministradorServiceTests {
 
 		AdministradorService service = new AdministradorService(
 				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
-				new PasswordPolicy(), VALIDATOR, sesionService);
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
 		ModificarUsuarioRequest request = new ModificarUsuarioRequest(
 				"Nombre actualizado", "Apellidos actualizados", "600123123", null,
 				null, null, "Toledo", null);
@@ -167,7 +175,7 @@ class AdministradorServiceTests {
 
 		AdministradorService service = new AdministradorService(
 				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
-				new PasswordPolicy(), VALIDATOR, sesionService);
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
 		ModificarUsuarioRequest request = new ModificarUsuarioRequest(
 				"Ana actualizada", "García", "600123123", null,
 				"87654321B", LocalDate.of(2000, 2, 2), "Sede ignorada", "cat-ignorada");
@@ -195,7 +203,7 @@ class AdministradorServiceTests {
 
 		AdministradorService service = new AdministradorService(
 				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
-				new PasswordPolicy(), VALIDATOR, sesionService);
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
 		ModificarUsuarioRequest request = new ModificarUsuarioRequest(
 				"Ana", "García", null, null, null,
 				LocalDate.of(1990, 1, 1), null, null, true);
