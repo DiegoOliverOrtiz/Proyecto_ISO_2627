@@ -24,6 +24,7 @@ import { Direcciones } from './pages/direcciones/direcciones';
 import { Pagos } from './pages/pagos/pagos';
 import { PedidosVendedor } from './pages/paneles/pedidos-vendedor';
 import { MisPedidos } from './pages/pedidos/mis-pedidos';
+import { NoEncontrada } from './pages/no-encontrada/no-encontrada';
 
 export const routes: Routes = [
   {
@@ -172,5 +173,11 @@ export const routes: Routes = [
     component: PanelVendedor,
     canActivate: [rolGuard],
     data: { rol: 'VENDEDOR' }
+  },
+  {
+    // Debe ir siempre al final: recoge cualquier ruta que no exista.
+    path: '**',
+    title: 'Página no encontrada · ESIBuy',
+    component: NoEncontrada
   }
 ];
