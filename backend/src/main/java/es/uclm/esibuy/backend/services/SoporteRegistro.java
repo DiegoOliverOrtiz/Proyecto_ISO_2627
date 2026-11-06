@@ -1,6 +1,7 @@
 package es.uclm.esibuy.backend.services;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,7 +54,10 @@ public class SoporteRegistro {
 			throw new InvalidRegistrationException(errores);
 		}
 
-		politicaContrasenas.validate(contrasena, List.of(datosPersonales));
+		List<String> datosNoNulos = Arrays.stream(datosPersonales)
+				.filter(dato -> dato != null && !dato.isBlank())
+				.toList();
+		politicaContrasenas.validate(contrasena, datosNoNulos);
 	}
 
 	public String normalizarCorreo(String correo) {

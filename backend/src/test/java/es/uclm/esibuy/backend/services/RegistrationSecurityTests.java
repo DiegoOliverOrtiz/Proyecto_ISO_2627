@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -99,6 +100,74 @@ class RegistrationSecurityTests {
                 InvalidRegistrationException.class,
                 () -> policy.validate("TiendaLunaClave9!", sellerIdentifiers));
         policy.validate("ClaveSegura9!", List.of("Ana", "García", "ana@example.com", "Tienda Luna"));
+    }
+
+    @Test
+    void rejectsPasswordContainingBirthDatePhoneOrDniNumbers() {
+        PasswordPolicy policy = new PasswordPolicy();
+
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!19061972Za", List.of("19061972")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!600123456Za", List.of("+34 600 123 456")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!12345678Za", List.of("12345678Z")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!12345678Za", List.of("12345678")));
+
+        policy.validate("Qx!1972Za", List.of("19061972"));
+        policy.validate("Qx!1234567Za", List.of("+34 600 123 456"));
+    }
+
+    @Test
+    void customerRegistrationPassesBirthDatePhoneAndDniToPasswordPolicy() {
+        ClienteService service = new ClienteService(
+                clienteDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+        List<String> personalPasswords = List.of(
+                "Qx!19061972Za",
+                "Qx!600123456Za",
+                "Qx!12345678Za");
+
+        for (String password : personalPasswords) {
+            RegistroClienteRequest request = new RegistroClienteRequest(
+                    "Ana",
+                    "García",
+                    LocalDate.of(1972, Month.JUNE, 19),
+                    "12345678Z",
+                    "ana@example.com",
+                    password,
+                    "+34 600 123 456",
+                    null,
+                    false);
+
+            assertThrows(InvalidRegistrationException.class, () -> service.registrar(request));
+        }
+
+        verifyNoInteractions(clienteDAO, usuarioDAO);
+    }
+
+    @Test
+    void sellerRegistrationPassesPhoneAndDniToPasswordPolicy() {
+        VendedorService service = new VendedorService(
+                vendedorDAO,
+                categoriaDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+        RegistroVendedorRequest request = new RegistroVendedorRequest(
+                "Ana",
+                "García",
+                "12345678Z",
+                "ana@example.com",
+                "Qx!600123456Za",
+                "000000000000000000000000",
+                "Tienda Segura",
+                "+34 600 123 456",
+                null);
+
+        assertThrows(InvalidRegistrationException.class, () -> service.registrar(request));
+        verifyNoInteractions(vendedorDAO, categoriaDAO, usuarioDAO);
     }
 
     @Test
