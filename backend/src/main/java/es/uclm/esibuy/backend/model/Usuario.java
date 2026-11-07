@@ -54,6 +54,7 @@ public abstract class Usuario {
 	private Instant caducidadTotpPendiente;
 
 	private boolean totpActivado;
+	private boolean emailOtpActivado;
 
 	@JsonIgnore
 	private List<String> codigosRespaldoTotp = new ArrayList<>();
@@ -184,6 +185,14 @@ public abstract class Usuario {
 
 	public void setCaducidadTotpPendiente(Instant caducidadTotpPendiente) {
 		this.caducidadTotpPendiente = caducidadTotpPendiente;
+	}
+
+	public boolean isEmailOtpActivado() {
+		return emailOtpActivado;
+	}
+
+	public void setEmailOtpActivado(boolean emailOtpActivado) {
+		this.emailOtpActivado = emailOtpActivado;
 	}
 
 	public boolean isTotpActivado() {

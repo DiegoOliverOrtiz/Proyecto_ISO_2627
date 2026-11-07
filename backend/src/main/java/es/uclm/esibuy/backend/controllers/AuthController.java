@@ -264,7 +264,7 @@ public class AuthController {
             if (!totpService.verificarSegundoFactor(usuario, peticion.code())) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
-            if (requiereTotpObligatorio(usuario)) {
+            if (RolUsuario.requiereTercerFactor(usuario)) {
                 boolean codigoEmailEnviado = iniciarTercerFactor(usuario, sesion);
                 return ResponseEntity.status(HttpStatus.ACCEPTED)
                         .body(new LoginResponse(
@@ -383,7 +383,7 @@ public class AuthController {
                 || usuario.getSecretoTotpCifrado() == null
                 || !usuario.getSecretoTotpCifrado().equals(
                         sesion.getAttribute(SESION_3FA_SECRETO))
-                || !requiereTotpObligatorio(usuario)) {
+                || !RolUsuario.requiereTercerFactor(usuario)) {
             limpiarTercerFactorPendiente(sesion);
             return null;
         }

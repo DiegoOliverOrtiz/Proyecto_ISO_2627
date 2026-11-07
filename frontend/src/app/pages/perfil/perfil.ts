@@ -65,6 +65,8 @@ export class Perfil {
   readonly codigoTOTP = signal('');
   readonly mensajeTOTP = signal('');
   readonly errorTOTP = signal('');
+  readonly guardandoEmailOtp = signal(false);
+  readonly errorEmailOtp = signal('');
 
   /** Nombre legible del tipo de usuario (el backend envía el valor del enum). */
   nombreTipoUsuario(tipo: string): string {
@@ -349,7 +351,62 @@ export class Perfil {
     });
   }
 
+  actualizarPreferenciaEmailOtp(evento: Event): void {
+    const control = evento.target as HTMLInputElement;
+    const activado = control.checked;
+    // Mostrar únicamente la preferencia confirmada por el servidor.
+    control.checked = this.perfil()?.emailOtpActivado ?? false;
+    this.cambiarEmailOtp(activado);
+  }
+
+  cambiarEmailOtp(activado: boolean): void {
+    const datos = this.perfil();
+
+    if (!datos || datos.tipoUsuario !== 'CLIENTE' || this.guardandoEmailOtp() || this.cargandoTOTP()) {
+      return;
+    }
+
+    if (activado && !datos.totpActivado) {
+      this.errorEmailOtp.set(
+        'Activa primero la verificación con tu aplicación de autenticación.'
+      );
+      return;
+    }
+
+    this.guardandoEmailOtp.set(true);
+    this.errorEmailOtp.set('');
+
+    this.servicioPerfil.modificarPreferenciaTercerFactor(activado)
+      .subscribe({
+        next: () => {
+          this.guardandoEmailOtp.set(false);
+
+          this.perfil.update(actual =>
+            actual
+              ? { ...actual, emailOtpActivado: activado }
+              : actual
+          );
+
+          this.mensajeExito.set(
+            activado
+              ? 'Has activado la verificación adicional por correo.'
+              : 'Has desactivado la verificación adicional por correo.'
+          );
+        },
+        error: () => {
+          this.guardandoEmailOtp.set(false);
+          this.errorEmailOtp.set(
+            'No se pudo actualizar la configuración de seguridad.'
+          );
+        }
+      });
+  }
+
   async desactivarTOTP(): Promise<void> {
+    if (this.perfil()?.emailOtpActivado || this.guardandoEmailOtp()) {
+      this.errorTOTP.set('Desactiva primero la verificación por correo.');
+      return;
+    }
     const codigo = this.codigoTOTP().replace(/[\s-]/g, '').toUpperCase();
     if (!/^(\d{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
       this.errorTOTP.set('Introduce un código actual de la aplicación o un código de respaldo para desactivar TOTP.');

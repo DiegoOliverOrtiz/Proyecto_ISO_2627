@@ -4,15 +4,18 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.function.IntSupplier;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -31,14 +34,25 @@ public class EmailOtpService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    private final Clock clock;
+    private final IntSupplier generador;
     private final String claveHmac;
     private final BrevoEmailService brevoEmailService;
     private final LoginAttemptStore loginAttemptStore;
 
+    @Autowired
     public EmailOtpService(
             @Value("${app.security.email-otp.hmac-key:}") String claveHmac,
             BrevoEmailService brevoEmailService,
             LoginAttemptStore loginAttemptStore) {
+        this(claveHmac, brevoEmailService, loginAttemptStore, Clock.systemUTC(),
+                () -> SECURE_RANDOM.nextInt(1_000_000));
+    }
+
+    EmailOtpService(String claveHmac, BrevoEmailService brevoEmailService,
+            LoginAttemptStore loginAttemptStore, Clock clock, IntSupplier generador) {
+        this.clock = clock;
+        this.generador = generador;
         this.claveHmac = claveHmac;
         this.brevoEmailService = brevoEmailService;
         this.loginAttemptStore = loginAttemptStore;
@@ -47,7 +61,7 @@ public class EmailOtpService {
     public void iniciar(HttpSession sesion, String email) {
         String codigo = generarCodigo();
         String hmac = calcularHmac(sesion.getId(), email, codigo);
-        Instant ahora = Instant.now();
+        Instant ahora = clock.instant();
         reservarEnvio(email, ahora);
         enviar(sesion, email, codigo);
         sesion.setAttribute(
@@ -67,7 +81,7 @@ public class EmailOtpService {
             iniciar(sesion, email);
             return new ResultadoReenvio(EstadoReenvio.ENVIADO, 0);
         }
-        if (!reto.email().equals(email) || !Instant.now().isBefore(reto.caducidad())) {
+        if (!reto.email().equals(email) || !clock.instant().isBefore(reto.caducidad())) {
             limpiar(sesion);
             return new ResultadoReenvio(EstadoReenvio.CADUCADO, 0);
         }
@@ -82,7 +96,7 @@ public class EmailOtpService {
 
         String codigo = generarCodigo();
         String hmac = calcularHmac(sesion.getId(), email, codigo);
-        Instant ahora = Instant.now();
+        Instant ahora = clock.instant();
         reservarEnvio(email, ahora);
         enviar(sesion, email, codigo);
         sesion.setAttribute(
@@ -99,7 +113,7 @@ public class EmailOtpService {
 
     public ResultadoVerificacion verificar(HttpSession sesion, String email, String codigo) {
         RetoEmail reto = obtenerReto(sesion);
-        if (reto == null || !reto.email().equals(email) || !Instant.now().isBefore(reto.caducidad())) {
+        if (reto == null || !reto.email().equals(email) || !clock.instant().isBefore(reto.caducidad())) {
             limpiar(sesion);
             return ResultadoVerificacion.CADUCADO;
         }
@@ -157,7 +171,7 @@ public class EmailOtpService {
     }
 
     private String generarCodigo() {
-        return String.format(Locale.ROOT, "%06d", SECURE_RANDOM.nextInt(1_000_000));
+        return String.format(Locale.ROOT, "%06d", generador.getAsInt());
     }
 
     private String calcularHmac(String idSesion, String email, String codigo) {
@@ -182,7 +196,7 @@ public class EmailOtpService {
     }
 
     private int segundosRestantes(Instant instante) {
-        long milisegundos = Duration.between(Instant.now(), instante).toMillis();
+        long milisegundos = Duration.between(clock.instant(), instante).toMillis();
         return (int) Math.max(0, (milisegundos + 999) / 1000);
     }
 

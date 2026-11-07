@@ -1,6 +1,8 @@
 package es.uclm.esibuy.backend.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -50,6 +52,20 @@ public class PerfilService {
         administradorService.modificarUsuario(usuario.getId(), request);
 
         return consultarPerfil(emailAutenticado);
+    }
+
+    public void modificarPreferenciaTercerFactor(String email, boolean activado) {
+        Usuario usuario = buscarUsuarioAutenticado(email);
+        if (!(usuario instanceof Cliente)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "La verificación por correo es obligatoria para este rol.");
+        }
+        if (activado && !usuario.isTotpActivado()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Activa primero el segundo factor TOTP.");
+        }
+        usuario.setEmailOtpActivado(activado);
+        usuarioDAO.save(usuario);
     }
 
     private Usuario buscarUsuarioAutenticado(String emailAutenticado) {
@@ -109,7 +125,7 @@ public class PerfilService {
                 sede,
                 fechaIncorporacion,
                 rol,
-                usuario.isTotpActivado());
+                usuario.isTotpActivado(), usuario.isEmailOtpActivado());
     }
 
     private String buscarNombreCategoria(String categoriaId) {
