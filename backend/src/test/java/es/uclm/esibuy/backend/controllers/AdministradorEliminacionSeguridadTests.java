@@ -26,6 +26,7 @@ import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.SesionService;
 
@@ -36,6 +37,9 @@ class AdministradorEliminacionSeguridadTests {
 
     @MockitoBean
     private es.uclm.esibuy.backend.services.TotpService totpService;
+
+    @MockitoBean
+    private EmailOtpService emailOtpService;
 
 	private static final String EMAIL = "admin.eliminado@esibuy.es";
 	private static final String PASSWORD = "Clave-Segura-1";
@@ -116,16 +120,32 @@ class AdministradorEliminacionSeguridadTests {
 		when(totpService.verificarSegundoFactor(administrador, "123456"))
 		        .thenReturn(true);
 
-		MockHttpSession sesion =
+		MockHttpSession sesionTercerFactor =
 		        (MockHttpSession) mockMvc.perform(post("/usuarios/login/2fa")
 		                .session(sesionPendiente)
 		                .with(csrf())
 		                .contentType(MediaType.APPLICATION_JSON)
 		                .content("{\"code\":\"123456\"}"))
-		                .andExpect(status().isOk())
+		                .andExpect(status().isAccepted())
 		                .andReturn()
 		                .getRequest()
 		                .getSession(false);
+
+		org.mockito.Mockito.when(emailOtpService.verificar(
+				org.mockito.ArgumentMatchers.any(),
+				org.mockito.ArgumentMatchers.eq(EMAIL),
+				org.mockito.ArgumentMatchers.eq("654321")))
+				.thenReturn(EmailOtpService.ResultadoVerificacion.VALIDO);
+		MockHttpSession sesion =
+				(MockHttpSession) mockMvc.perform(post("/usuarios/login/3fa/verificar")
+						.session(sesionTercerFactor)
+						.with(csrf())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"code\":\"654321\"}"))
+						.andExpect(status().isOk())
+						.andReturn()
+						.getRequest()
+						.getSession(false);
 
 		mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
 				.andExpect(status().isOk());

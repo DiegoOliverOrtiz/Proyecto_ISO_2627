@@ -5,10 +5,12 @@ public record LoginResponse(
         String role,
         boolean requiresTwoFactor,
         String twoFactorToken,
-        boolean requiresTwoFactorSetup) {
+        boolean requiresTwoFactorSetup,
+        boolean requiresEmailVerification,
+        boolean emailVerificationEmailSent) {
 
     public LoginResponse(String email, String role) {
-        this(email, role, false, null, false);
+        this(email, role, false, null, false, false, false);
     }
 
     public LoginResponse(
@@ -16,6 +18,15 @@ public record LoginResponse(
             String role,
             boolean requiresTwoFactor,
             String twoFactorToken) {
-        this(email, role, requiresTwoFactor, twoFactorToken, false);
+        this(email, role, requiresTwoFactor, twoFactorToken, false, false, false);
+    }
+
+    public LoginResponse(
+            String email,
+            String role,
+            boolean requiresTwoFactor,
+            String twoFactorToken,
+            boolean requiresTwoFactorSetup) {
+        this(email, role, requiresTwoFactor, twoFactorToken, requiresTwoFactorSetup, false, false);
     }
 }

@@ -75,4 +75,32 @@ public class BrevoEmailService {
                 .retrieve()
                 .toBodilessEntity();
     }
+
+    public void enviarCodigoAutenticacion(String destinatario, String codigo) {
+        if (apiKey.isBlank() || emailRemitente.isBlank()) {
+            throw new IllegalStateException(
+                    "Falta configurar la API de Brevo o el remitente.");
+        }
+
+        Map<String, Object> cuerpo = Map.of(
+                "sender", Map.of(
+                        "name", nombreRemitente,
+                        "email", emailRemitente),
+                "to", List.of(Map.of("email", destinatario)),
+                "subject", "Código de verificación de ESIBuy",
+                "textContent", """
+                        Tu código de verificación de ESIBuy es: %s
+
+                        Caduca en 10 minutos y solo se puede utilizar una vez.
+                        Si no estás intentando iniciar sesión, ignora este correo.
+                        """.formatted(codigo));
+
+        restClient.post()
+                .uri("https://api.brevo.com/v3/smtp/email")
+                .header("api-key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(cuerpo)
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

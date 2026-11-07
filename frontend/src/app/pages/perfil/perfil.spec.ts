@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Perfil } from './perfil';
 import { PerfilResponse, PerfilService } from './perfil.service';
@@ -17,7 +17,7 @@ const perfilCliente: PerfilResponse = {
   email: 'ana@esibuy.com', telefono: '******123', imagenPerfil: null,
   dniNif: '12*******', fechaNacimiento: null, esPremium: true,
   nombreComercial: null, categoria: null, sede: null,
-  fechaIncorporacion: null, rol: null, totpActivado: false,
+  fechaIncorporacion: null, rol: null, totpActivado: false, emailOtpActivado: false,
 };
 
 const perfilVendedor: PerfilResponse = {
@@ -25,7 +25,7 @@ const perfilVendedor: PerfilResponse = {
   email: 'luis@esibuy.com', telefono: null, imagenPerfil: null,
   dniNif: '45*******', fechaNacimiento: null, esPremium: null,
   nombreComercial: 'UrbanStyle', categoria: 'Tecnología', sede: null,
-  fechaIncorporacion: null, rol: null, categoriaId: 'cat-1', totpActivado: false,
+  fechaIncorporacion: null, rol: null, categoriaId: 'cat-1', totpActivado: false, emailOtpActivado: false,
 };
 
 const perfilAdministrador: PerfilResponse = {
@@ -33,7 +33,7 @@ const perfilAdministrador: PerfilResponse = {
   email: 'admin@esibuy.com', telefono: null, imagenPerfil: null,
   dniNif: null, fechaNacimiento: null, esPremium: null,
   nombreComercial: null, categoria: null, sede: 'Central',
-  fechaIncorporacion: '2026-01-01', rol: 'ADMIN', totpActivado: false,
+  fechaIncorporacion: '2026-01-01', rol: 'ADMIN', totpActivado: false, emailOtpActivado: false,
 };
 
 describe('Perfil', () => {
@@ -46,6 +46,7 @@ describe('Perfil', () => {
     cambiarTipoCliente: ReturnType<typeof vi.fn>;
     confirmarSegundoFactor: ReturnType<typeof vi.fn>;
     desactivarSegundoFactor: ReturnType<typeof vi.fn>;
+    modificarPreferenciaTercerFactor: ReturnType<typeof vi.fn>;
     darDeBajaCuenta: ReturnType<typeof vi.fn>;
   };
 
@@ -65,6 +66,7 @@ describe('Perfil', () => {
       confirmarSegundoFactor: vi.fn(),
       desactivarSegundoFactor: vi.fn(),
       darDeBajaCuenta: vi.fn(),
+      modificarPreferenciaTercerFactor: vi.fn(),
     };
     await TestBed.configureTestingModule({
       imports: [Perfil],
@@ -98,7 +100,7 @@ describe('Perfil', () => {
   });
 
   it('requiere un codigo antes de solicitar la desactivacion de TOTP', () => {
-    crearComponente(of({ ...perfilCliente, totpActivado: true }));
+    crearComponente(of({ ...perfilCliente, totpActivado: true, emailOtpActivado: false, }));
     componente.desactivarTOTP();
     expect(perfilServiceMock.desactivarSegundoFactor).not.toHaveBeenCalled();
     expect(componente.perfil()?.totpActivado).toBe(true);
@@ -106,7 +108,7 @@ describe('Perfil', () => {
   });
 
   it('envia el codigo escrito en el formulario y limpia los respaldos al desactivar', async () => {
-    crearComponente(of({ ...perfilCliente, totpActivado: true }));
+    crearComponente(of({ ...perfilCliente, totpActivado: true, emailOtpActivado: false, }));
     await fixture.whenStable();
     const entrada: HTMLInputElement = fixture.nativeElement.querySelector('#totp-disable-code');
     entrada.value = '081804';
@@ -125,7 +127,7 @@ describe('Perfil', () => {
   });
 
   it('mantiene TOTP activado y muestra el bloqueo temporal si se agotan los intentos', async () => {
-    crearComponente(of({ ...perfilCliente, totpActivado: true }));
+    crearComponente(of({ ...perfilCliente, totpActivado: true, emailOtpActivado: false, }));
     componente.codigoTOTP.set('123456');
     simularConfirmacion(true);
     perfilServiceMock.desactivarSegundoFactor.mockReturnValue(throwError(() =>
@@ -481,5 +483,61 @@ describe('Perfil', () => {
       expect(fixture.nativeElement.querySelector('#' + dni.getAttribute('aria-describedby')).textContent)
         .toContain('Déjalo vacío para conservar el actual');
     });
+  });
+  it('solo ofrece correo a clientes con TOTP y evita duplicados', () => {
+    crearComponente(of(perfilCliente));
+    const checkbox = fixture.nativeElement.querySelector('#tercer-factor-titulo')
+      .closest('section').querySelector('input');
+    expect(checkbox.disabled).toBe(true);
+    componente.cambiarEmailOtp(true);
+    expect(perfilServiceMock.modificarPreferenciaTercerFactor).not.toHaveBeenCalled();
+    componente.perfil.set({ ...perfilCliente, totpActivado: true });
+    const pendiente = new Subject<void>();
+    perfilServiceMock.modificarPreferenciaTercerFactor.mockReturnValue(pendiente);
+    componente.cambiarEmailOtp(true);
+    componente.cambiarEmailOtp(true);
+    expect(perfilServiceMock.modificarPreferenciaTercerFactor).toHaveBeenCalledTimes(1);
+    expect(componente.guardandoEmailOtp()).toBe(true);
+    pendiente.next();
+    pendiente.complete();
+    expect(componente.perfil()?.emailOtpActivado).toBe(true);
+    expect(componente.guardandoEmailOtp()).toBe(false);
+  });
+
+  it('restaura el checkbox si el servidor rechaza la activación', () => {
+    crearComponente(of({ ...perfilCliente, totpActivado: true }));
+    perfilServiceMock.modificarPreferenciaTercerFactor.mockReturnValue(throwError(() => new Error('fallo')));
+    const checkbox: HTMLInputElement = fixture.nativeElement.querySelector('#tercer-factor-titulo')
+      .closest('section').querySelector('input');
+    checkbox.click();
+    fixture.detectChanges();
+    expect(checkbox.checked).toBe(false);
+    expect(componente.perfil()?.emailOtpActivado).toBe(false);
+  });
+
+  it('desactiva correo y conserva la preferencia ante error', () => {
+    crearComponente(of({ ...perfilCliente, totpActivado: true, emailOtpActivado: true }));
+    perfilServiceMock.modificarPreferenciaTercerFactor.mockReturnValue(throwError(() => new Error('fallo')));
+    componente.cambiarEmailOtp(false);
+    expect(componente.perfil()?.emailOtpActivado).toBe(true);
+    expect(componente.errorEmailOtp()).not.toBe('');
+    perfilServiceMock.modificarPreferenciaTercerFactor.mockReturnValue(of(undefined));
+    componente.cambiarEmailOtp(false);
+    expect(componente.perfil()?.emailOtpActivado).toBe(false);
+  });
+
+  it('no desactiva TOTP mientras correo esté activo', async () => {
+    crearComponente(of({ ...perfilCliente, totpActivado: true, emailOtpActivado: true }));
+    expect(fixture.nativeElement.querySelector('#totp-disable-code')).toBeNull();
+    await componente.desactivarTOTP();
+    expect(perfilServiceMock.desactivarSegundoFactor).not.toHaveBeenCalled();
+    expect(componente.errorTOTP()).toContain('Desactiva primero');
+  });
+
+  it.each([perfilVendedor, perfilAdministrador])('no ofrece cambiar correo a $tipoUsuario', datos => {
+    crearComponente(of(datos));
+    expect(fixture.nativeElement.querySelector('#tercer-factor-titulo')).toBeNull();
+    componente.cambiarEmailOtp(false);
+    expect(perfilServiceMock.modificarPreferenciaTercerFactor).not.toHaveBeenCalled();
   });
 });

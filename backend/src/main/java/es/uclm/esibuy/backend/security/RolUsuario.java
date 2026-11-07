@@ -31,4 +31,8 @@ public final class RolUsuario {
         return usuario instanceof Vendedor
                 || usuario instanceof Administrador;
     }
+    public static boolean requiereTercerFactor(Usuario usuario) {
+        return requiereTotpObligatorio(usuario)
+                || (usuario instanceof Cliente && usuario.isTotpActivado() && usuario.isEmailOtpActivado());
+    }
 }
