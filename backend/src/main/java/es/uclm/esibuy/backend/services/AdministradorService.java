@@ -224,7 +224,7 @@ public class AdministradorService {
 	}
 
 	private void validarDniNif(String dniNif) {
-		if (!dniNif.matches("^[0-9]{8}[A-Za-z]$")) {
+		if (!dniNif.matches("^\\d{8}[A-Za-z]$")) {
 			throw new IllegalArgumentException("El DNI/NIF debe tener 8 números y una letra.");
 		}
 	}
