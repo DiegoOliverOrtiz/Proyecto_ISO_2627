@@ -29,6 +29,7 @@ export interface PerfilResponse {
   fechaIncorporacion: string | null;
   rol: string | null;
   totpActivado: boolean;
+  emailOtpActivado: boolean;
 }
 
 export interface TwoFactorSetupResponse {
@@ -124,6 +125,10 @@ export class PerfilService {
     return this.peticionConCsrf<TwoFactorConfirmationResponse>('POST', '/usuarios/2fa/confirmar', { code });
   }
 
+  modificarPreferenciaTercerFactor(activado: boolean): Observable<void> {
+    return this.peticionConCsrf<void>('PUT', '/usuarios/3fa/preferencia', { activado });
+  }
+
   desactivarSegundoFactor(code: string): Observable<void> {
     return this.peticionConCsrf<void>('DELETE', '/usuarios/2fa', { code });
   }
@@ -138,7 +143,7 @@ export class PerfilService {
     );
   }
 
-  private peticionConCsrf<T>(method: 'POST' | 'DELETE', ruta: string, body?: unknown): Observable<T> {
+  private peticionConCsrf<T>(method: 'POST' | 'DELETE' | 'PUT', ruta: string, body?: unknown): Observable<T> {
     return this.http.get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true }).pipe(
       switchMap((respuestaCsrf) => this.http.request<T>(method, `${environment.apiUrl}${ruta}`, {
         body,

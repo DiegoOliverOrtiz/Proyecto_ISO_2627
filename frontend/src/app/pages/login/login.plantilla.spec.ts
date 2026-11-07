@@ -47,6 +47,15 @@ describe('Login · plantilla accesible (UI-acceso)', () => {
     expect(raiz.querySelector('#password')?.getAttribute('type')).toBe('text');
   });
 
+  it('presenta un campo accesible para el tercer factor por correo', () => {
+    fixture.componentInstance.requiereVerificacionEmail.set(true);
+    fixture.detectChanges();
+
+    expect(raiz.querySelector('h1')?.textContent?.trim()).toBe('Verificar correo electrónico');
+    expect(raiz.querySelector('#email-otp-code')?.getAttribute('autocomplete')).toBe('one-time-code');
+    expect(raiz.querySelector('button[type="submit"]')?.textContent).toContain('Verificar código');
+  });
+
   it('asocia cada error a su campo con aria-invalid y aria-describedby (M3)', () => {
     const correo = raiz.querySelector<HTMLInputElement>('#email')!;
     expect(correo.getAttribute('aria-invalid')).toBe('false');

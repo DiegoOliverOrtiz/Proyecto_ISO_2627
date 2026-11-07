@@ -34,6 +34,7 @@ import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.SesionService;
 import es.uclm.esibuy.backend.services.TotpService;
 
@@ -47,9 +48,11 @@ class AuthControllerAltaTotpObligatoriaTests {
 
     private final AuthService auth = mock(AuthService.class);
     private final TotpService totp = mock(TotpService.class);
+    private final EmailOtpService emailOtp = mock(EmailOtpService.class);
     private final SesionService sesiones = mock(SesionService.class);
     private final SecurityContextRepository contextos = mock(SecurityContextRepository.class);
-    private final AuthController controller = new AuthController(auth, contextos, sesiones, totp);
+    private final AuthController controller = new AuthController(
+            auth, contextos, sesiones, totp, emailOtp);
     private final MockHttpServletResponse response = new MockHttpServletResponse();
     private Vendedor vendedor;
 
@@ -190,26 +193,35 @@ class AuthControllerAltaTotpObligatoriaTests {
     @Test
     void confirmarSinSesionResponde401() {
         var respuesta = controller.confirmarAltaObligatoria(
-                new TwoFactorCodeRequest(CODIGO), new MockHttpServletRequest(), response);
+                new TwoFactorCodeRequest(CODIGO), new MockHttpServletRequest());
 
         assertEquals(HttpStatus.UNAUTHORIZED, respuesta.getStatusCode());
         verifyNoInteractions(totp, sesiones);
     }
 
     @Test
-    void confirmarConUnCodigoValidoCompletaElLoginYDevuelveLosCodigosDeRespaldo() {
+    void confirmarConUnCodigoValidoIniciaElTercerFactorYDevuelveLosCodigosDeRespaldo() {
         var request = iniciarAltaPendiente();
         when(totp.confirmarConfiguracion(vendedor, CODIGO))
                 .thenReturn(new TwoFactorConfirmationResponse(true, List.of("respaldo-1", "respaldo-2")));
 
-        var respuesta = controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request, response);
+        var respuesta = controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request);
 
-        assertEquals(HttpStatus.OK, respuesta.getStatusCode());
+        assertEquals(HttpStatus.ACCEPTED, respuesta.getStatusCode());
         assertEquals(vendedor.getEmail(), respuesta.getBody().login().email());
         assertEquals("VENDEDOR", respuesta.getBody().login().role());
         assertEquals(List.of("respaldo-1", "respaldo-2"), respuesta.getBody().backupCodes());
-        assertEquals(vendedor.getEmail(), SecurityContextHolder.getContext().getAuthentication().getName());
-        verify(sesiones).registrarSesion(request.getSession().getId(), vendedor.getEmail());
+        assertTrue(respuesta.getBody().login().requiresEmailVerification());
+        assertTrue(respuesta.getBody().login().emailVerificationEmailSent());
+        assertFalse(respuesta.getBody().login().requiresTwoFactor());
+        assertFalse(respuesta.getBody().login().requiresTwoFactorSetup());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verifyNoInteractions(sesiones, contextos);
+        verify(emailOtp).iniciar(request.getSession(), vendedor.getEmail());
+        assertEquals(vendedor.getEmail(),
+                request.getSession().getAttribute(AuthController.SESION_3FA_EMAIL));
+        assertTrue(((Instant) request.getSession().getAttribute(AuthController.SESION_3FA_CADUCIDAD))
+                .isAfter(Instant.now()));
         assertNull(request.getSession().getAttribute(AuthController.SESION_EMAIL_2FA_PENDIENTE));
         assertNull(request.getSession().getAttribute(AuthController.SESION_2FA_ALTA));
     }
@@ -221,7 +233,7 @@ class AuthControllerAltaTotpObligatoriaTests {
                 .thenThrow(new IllegalArgumentException("El código TOTP no es válido o ya se ha utilizado."));
 
         assertThrows(IllegalArgumentException.class,
-                () -> controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request, response));
+                () -> controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request));
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals(vendedor.getEmail(), request.getSession().getAttribute(AuthController.SESION_EMAIL_2FA_PENDIENTE));
@@ -233,7 +245,7 @@ class AuthControllerAltaTotpObligatoriaTests {
         var request = iniciarAltaPendiente();
         request.getSession().setAttribute(AuthController.SESION_2FA_CADUCIDAD, Instant.now().minusSeconds(1));
 
-        var respuesta = controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request, response);
+        var respuesta = controller.confirmarAltaObligatoria(new TwoFactorCodeRequest(CODIGO), request);
 
         assertEquals(HttpStatus.UNAUTHORIZED, respuesta.getStatusCode());
         verify(totp, never()).confirmarConfiguracion(vendedor, CODIGO);

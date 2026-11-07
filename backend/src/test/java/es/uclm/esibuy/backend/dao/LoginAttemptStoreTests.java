@@ -156,4 +156,23 @@ class LoginAttemptStoreTests {
         assertEquals(2, queries.getAllValues().get(4).getQueryObject()
                 .get("adaptiveAttempts", Document.class).get("$lt"));
     }
+    @Test
+    void correoUsaVentanaDeDiezMinutosCincoEnviosYClaveNormalizada() {
+        Instant now = Instant.parse("2026-11-07T10:00:00Z");
+        when(mongo.indexOps(COLLECTION)).thenReturn(mock(IndexOperations.class));
+        when(mongo.updateFirst(any(Query.class), any(Update.class), eq(COLLECTION)))
+                .thenReturn(UpdateResult.acknowledged(0, 0L, null));
+        when(mongo.findOne(any(Query.class), eq(Document.class), eq(COLLECTION)))
+                .thenReturn(new Document("windowStart", Date.from(now.minusSeconds(100))));
+        LoginAttemptStore store = new LoginAttemptStore(mongo, PEPPER);
+        assertEquals(500, store.reservarEnvioOtp(" ANA@EXAMPLE.COM ", now));
+        assertEquals(500, store.reservarEnvioOtp("ana@example.com", now));
+        ArgumentCaptor<Query> queries = ArgumentCaptor.forClass(Query.class);
+        verify(mongo, org.mockito.Mockito.times(4)).updateFirst(queries.capture(), any(Update.class), eq(COLLECTION));
+        Document reserva = queries.getAllValues().get(1).getQueryObject();
+        assertEquals(5, reserva.get("attempts", Document.class).get("$lt"));
+        assertEquals(Date.from(now.minusSeconds(600)), reserva.get("windowStart", Document.class).get("$gt"));
+        assertEquals(reserva.get("_id"), queries.getAllValues().get(3).getQueryObject().get("_id"));
+        assertFalse(reserva.toJson().contains("ana@example.com"));
+    }
 }

@@ -80,7 +80,7 @@
           @if (datos.totpActivado) {
             <p>El acceso con contraseña está protegido con un código adicional.</p>
 
-            @if (datos.tipoUsuario === 'CLIENTE') {
+            @if (datos.tipoUsuario === 'CLIENTE' && !datos.emailOtpActivado) {
               <label class="totp-code-label" for="totp-disable-code">
                 Código actual o de respaldo
               </label>
@@ -105,6 +105,8 @@
                 [disabled]="cargandoTOTP()">
                 Desactivar TOTP
               </button>
+            } @else if (datos.emailOtpActivado && datos.tipoUsuario === 'CLIENTE') {
+              <p>Desactiva primero la verificación por correo para poder desactivar TOTP.</p>
             } @else {
               <p>La verificación en dos pasos es obligatoria para tu rol y no puede desactivarse.</p>
             }
@@ -141,6 +143,50 @@
           }
         </div>
       </section>
+      }
+
+      @if (datos.tipoUsuario === 'CLIENTE') {
+        <section class="two-factor-card"
+                 aria-labelledby="tercer-factor-titulo">
+
+          <div class="two-factor-heading">
+            <p class="account-type-kicker">Seguridad</p>
+
+            <h3 id="tercer-factor-titulo">
+              Tercer factor de autenticación
+            </h3>
+
+            <p>
+              Al activarla, tendrás que confirmar un código
+              enviado a tu correo después de introducir
+              la contraseña y el código de tu aplicación.
+            </p>
+
+            @if (!datos.totpActivado) {
+              <p>
+                Para activar esta opción, primero configura
+                el segundo factor de autenticación.
+              </p>
+            }
+
+            <label>
+              <input
+                type="checkbox"
+                [checked]="datos.emailOtpActivado"
+                [disabled]="guardandoEmailOtp() || cargandoTOTP() || !datos.totpActivado"
+                (change)="actualizarPreferenciaEmailOtp($event)"
+              />
+
+              Exigir código por correo al iniciar sesión
+            </label>
+
+            @if (errorEmailOtp()) {
+              <p class="field-error" role="alert">
+                {{ errorEmailOtp() }}
+              </p>
+            }
+          </div>
+        </section>
       }
 
       @if (datos.tipoUsuario === 'CLIENTE' && !editando()) {
