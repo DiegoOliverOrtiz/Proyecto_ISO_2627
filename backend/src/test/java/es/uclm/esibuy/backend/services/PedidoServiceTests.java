@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.mongodb.MongoException;
@@ -72,7 +71,7 @@ class PedidoServiceTests {
         producto.setVendedor("Tienda original");
         producto.setEsVisible(true);
         carrito = new Carrito("cliente-a").conCantidad("producto-1", 2);
-        operacion = UUID.randomUUID().toString();
+        operacion = "6f1c2a3e-8b4d-4c7a-9e2f-1a2b3c4d5e6f";
         autenticar("ROLE_CLIENTE");
     }
 
