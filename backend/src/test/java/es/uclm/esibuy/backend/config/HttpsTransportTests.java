@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
@@ -45,7 +44,9 @@ import es.uclm.esibuy.backend.services.AuthService;
 })
 class HttpsTransportTests {
     private static Path keyStorePath;
-    private static final String PASSWORD = UUID.randomUUID().toString();
+    // Clave del keystore autofirmado que el propio test genera en un directorio temporal y borra al
+    // terminar. No protege nada real.
+    private static final String PASSWORD = "esibuy-tls-keystore-de-prueba"; // gitleaks:allow
 
     @MockitoBean
     private MongoClient mongoClient;
