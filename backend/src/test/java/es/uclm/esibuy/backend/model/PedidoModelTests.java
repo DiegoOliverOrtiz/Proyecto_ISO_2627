@@ -41,8 +41,10 @@ class PedidoModelTests {
         Instant fecha = Instant.parse("2026-10-31T12:00:00Z");
         LineaPedido linea = new LineaPedido("producto-1", "Producto comprado", new BigDecimal("80.25"),
                 2, "vendedor-1", "Tienda original");
-        Pedido pedido = new Pedido("cliente-1", List.of(linea), estado, new BigDecimal("160.50"),
-                fecha, estado == EstadoPedido.EN_PROCESO ? null : fecha, direccion(), "metodo-1");
+        Pedido pedido = Pedido.builder().clienteId("cliente-1").lineas(List.of(linea)).estado(estado)
+                .importe(new BigDecimal("160.50")).fechaCreacion(fecha)
+                .fechaPago(estado == EstadoPedido.EN_PROCESO ? null : fecha)
+                .direccionEnvio(direccion()).metodoPagoId("metodo-1").build();
 
         Document documento = new Document();
         converter.write(pedido, documento);
@@ -79,8 +81,8 @@ class PedidoModelTests {
         LineaPedido original = new LineaPedido("producto-1", "Nombre original", new BigDecimal("10.00"),
                 1, "vendedor-1", "Tienda original");
         lineas.add(original);
-        Pedido pedido = new Pedido("cliente-1", lineas, EstadoPedido.EN_PROCESO,
-                new BigDecimal("10.00"), Instant.now(), null, null, null);
+        Pedido pedido = Pedido.builder().clienteId("cliente-1").lineas(lineas).estado(EstadoPedido.EN_PROCESO)
+                .importe(new BigDecimal("10.00")).fechaCreacion(Instant.now()).build();
         lineas.clear();
 
         assertEquals(List.of(original), pedido.getLineas());
@@ -94,8 +96,9 @@ class PedidoModelTests {
     @Test
     void conservaDireccionAunqueCambieLaOriginalOLaDevuelta() {
         Direccion original = direccion();
-        Pedido pedido = new Pedido("cliente-1", List.of(), EstadoPedido.EN_PROCESO,
-                BigDecimal.ZERO, Instant.now(), null, original, "metodo-1");
+        Pedido pedido = Pedido.builder().clienteId("cliente-1").lineas(List.of()).estado(EstadoPedido.EN_PROCESO)
+                .importe(BigDecimal.ZERO).fechaCreacion(Instant.now()).direccionEnvio(original)
+                .metodoPagoId("metodo-1").build();
         original.setCalle("Otra calle");
         original.setPiso("99");
         pedido.getDireccionEnvio().setCiudad("Otra ciudad");
@@ -110,8 +113,8 @@ class PedidoModelTests {
 
     @Test
     void conservaElNombreDelClienteAlMarcarElPedidoComoPagado() {
-        Pedido pedido = new Pedido("cliente-1", List.of(), EstadoPedido.EN_PROCESO,
-                BigDecimal.ZERO, Instant.now(), null, null, null);
+        Pedido pedido = Pedido.builder().clienteId("cliente-1").lineas(List.of()).estado(EstadoPedido.EN_PROCESO)
+                .importe(BigDecimal.ZERO).fechaCreacion(Instant.now()).build();
         pedido.setClienteNombre("Ana García");
 
         Pedido pagado = pedido.pagado(Instant.now());

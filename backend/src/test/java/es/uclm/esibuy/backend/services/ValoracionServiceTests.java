@@ -117,22 +117,21 @@ class ValoracionServiceTests {
     @Test
     void rechazaValorarUnProductoQueNoEstaEnElPedidoFinalizado() {
         when(pedidoDAO.findByIdAndClienteId(PEDIDO_ID, CLIENTE_ID))
-                .thenReturn(Optional.of(new Pedido(
-                        PEDIDO_ID,
-                        CLIENTE_ID,
-                        List.of(new LineaPedido(
+                .thenReturn(Optional.of(Pedido.builder()
+                        .id(PEDIDO_ID)
+                        .clienteId(CLIENTE_ID)
+                        .lineas(List.of(new LineaPedido(
                                 "otro-producto",
                                 "Otro producto",
                                 BigDecimal.TEN,
                                 1,
                                 "vendedor-1",
-                                "Tienda")),
-                        EstadoPedido.FINALIZADO,
-                        BigDecimal.TEN,
-                        Instant.now(),
-                        Instant.now(),
-                        null,
-                        null)));
+                                "Tienda")))
+                        .estado(EstadoPedido.FINALIZADO)
+                        .importe(BigDecimal.TEN)
+                        .fechaCreacion(Instant.now())
+                        .fechaPago(Instant.now())
+                        .build()));
 
         assertThrows(IllegalArgumentException.class,
                 () -> valorar(5, "Buen producto"));
@@ -185,21 +184,20 @@ class ValoracionServiceTests {
     }
 
     private static Pedido crearPedido(EstadoPedido estado) {
-        return new Pedido(
-                PEDIDO_ID,
-                CLIENTE_ID,
-                List.of(new LineaPedido(
+        return Pedido.builder()
+                .id(PEDIDO_ID)
+                .clienteId(CLIENTE_ID)
+                .lineas(List.of(new LineaPedido(
                         PRODUCTO_ID,
                         "Producto",
                         BigDecimal.TEN,
                         1,
                         "vendedor-1",
-                        "Tienda")),
-                estado,
-                BigDecimal.TEN,
-                Instant.now(),
-                Instant.now(),
-                null,
-                null);
+                        "Tienda")))
+                .estado(estado)
+                .importe(BigDecimal.TEN)
+                .fechaCreacion(Instant.now())
+                .fechaPago(Instant.now())
+                .build();
     }
 }

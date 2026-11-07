@@ -88,8 +88,16 @@ final class CompraPedido {
             productos.add(producto);
             importe = importe.add(calculo.subtotal());
         }
-        Pedido pedido = new Pedido(pedidoId, cliente.getId(), lineas, EstadoPedido.EN_PROCESO,
-                importe, Instant.now(), null, direccion, metodoPagoId);
+        Pedido pedido = Pedido.builder()
+                .id(pedidoId)
+                .clienteId(cliente.getId())
+                .lineas(lineas)
+                .estado(EstadoPedido.EN_PROCESO)
+                .importe(importe)
+                .fechaCreacion(Instant.now())
+                .direccionEnvio(direccion)
+                .metodoPagoId(metodoPagoId)
+                .build();
         pedido.setClienteNombre((cliente.getNombre() + " " + cliente.getApellidos()).trim());
         pedidoDAO.insert(pedido);
         for (int i = 0; i < productos.size(); i++) {
