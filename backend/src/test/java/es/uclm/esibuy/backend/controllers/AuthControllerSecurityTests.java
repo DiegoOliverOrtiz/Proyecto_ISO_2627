@@ -147,8 +147,10 @@ class AuthControllerSecurityTests {
                         .content("""
                                 {"email":"admin@example.com","password":"ClaveSegura9!"}
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andExpect(jsonPath("$.requiresTwoFactor").value(true))
+                .andExpect(jsonPath("$.requiresTwoFactorSetup").value(true));
     }
 
     @Test
@@ -165,8 +167,10 @@ class AuthControllerSecurityTests {
                         .content("""
                                 {"email":"vendedor@example.com","password":"ClaveSegura9!"}
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("VENDEDOR"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.role").value("VENDEDOR"))
+                .andExpect(jsonPath("$.requiresTwoFactor").value(true))
+                .andExpect(jsonPath("$.requiresTwoFactorSetup").value(true));
     }
 
     @Test

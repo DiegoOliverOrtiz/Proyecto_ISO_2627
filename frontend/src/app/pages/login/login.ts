@@ -28,6 +28,10 @@ export class Login {
   mensajeExito = signal('');
   mensajeInfo = signal('');
   requiereSegundoFactor = signal(false);
+  requiereAltaTotp = signal(false);
+  qrTotp = signal('');
+  codigosRespaldo = signal<string[]>([]);
+  rolTrasAlta: 'ADMIN' | 'VENDEDOR' | null = null;
   codigoSegundoFactor = '';
 
   constructor(
@@ -69,6 +73,11 @@ export class Login {
   }
 
   onSubmit(): void {
+    if (this.requiereAltaTotp()) {
+      this.confirmarAltaTotp();
+      return;
+    }
+
     if (this.requiereSegundoFactor()) {
       this.verificarSegundoFactor();
       return;
@@ -86,6 +95,15 @@ export class Login {
       ).subscribe({
         next: (respuesta) => {
           this.isLoading.set(false);
+          if (respuesta.requiresTwoFactorSetup) {
+            this.requiereAltaTotp.set(true);
+
+            this.rolTrasAlta =
+              respuesta.role === 'ADMIN' ? 'ADMIN' : 'VENDEDOR';
+
+            this.cargarQrTotp();
+            return;
+          }
           if (respuesta.requiresTwoFactor) {
             this.requiereSegundoFactor.set(true);
             this.mensajeExito.set('Introduce el código de tu aplicación de autenticación.');
@@ -114,6 +132,81 @@ export class Login {
     } else {
       this.loginForm.markAllAsTouched();
     }
+  }
+
+  cargarQrTotp(): void {
+    this.isLoading.set(true);
+
+    this.authService.configurarTotpObligatorio().subscribe({
+      next: ({ qrDataUrl }) => {
+        this.isLoading.set(false);
+        this.qrTotp.set(qrDataUrl);
+
+        this.mensajeExito.set(
+          'Escanea el QR con tu aplicación de autenticación y confirma el código.'
+        );
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.mensajeError.set(
+          'No se pudo generar el QR. Vuelve a iniciar sesión.'
+        );
+      }
+    });
+  }
+
+  confirmarAltaTotp(): void {
+    if (!/^\d{6}$/.test(this.codigoSegundoFactor.trim())) {
+      this.mensajeError.set(
+        'Introduce el código de 6 cifras de la aplicación.'
+      );
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.mensajeError.set('');
+
+    this.authService
+      .confirmarTotpObligatorio(this.codigoSegundoFactor.trim())
+      .subscribe({
+        next: ({ login, backupCodes }) => {
+          this.isLoading.set(false);
+          this.requiereAltaTotp.set(false);
+          this.codigosRespaldo.set(backupCodes);
+
+          this.rolTrasAlta =
+            login.role === 'ADMIN' ? 'ADMIN' : 'VENDEDOR';
+
+          marcarSesionIniciada();
+          this.codigoSegundoFactor = '';
+        },
+        error: (error: HttpErrorResponse) => {
+          this.isLoading.set(false);
+
+          if (error.status === 401 || error.status === 410) {
+            this.volverAlInicioSesion();
+            this.mensajeError.set(
+              'La configuración ha caducado. Inicia sesión de nuevo.'
+            );
+            return;
+          }
+
+          this.mensajeError.set(
+            'El código no es válido o ha caducado. Compruébalo y vuelve a intentarlo.'
+          );
+        }
+      });
+  }
+
+  continuarTrasAlta(): void {
+    const rol = this.rolTrasAlta;
+
+    if (!rol) {
+      return;
+    }
+
+    this.codigosRespaldo.set([]);
+    this.router.navigateByUrl(rutaParaRol(rol));
   }
 
   verificarSegundoFactor(): void {
@@ -146,7 +239,12 @@ export class Login {
 
   volverAlInicioSesion(): void {
     this.requiereSegundoFactor.set(false);
+    this.requiereAltaTotp.set(false);
+    this.qrTotp.set('');
+    this.codigosRespaldo.set([]);
+    this.rolTrasAlta = null;
     this.codigoSegundoFactor = '';
+
     this.loginForm.controls['password'].reset('');
     this.mensajeError.set('');
     this.mensajeExito.set('');
