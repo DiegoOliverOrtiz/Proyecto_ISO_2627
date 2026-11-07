@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -104,7 +105,18 @@ public class SecurityConfiguration {
                                                                 (request, response, authentication) -> response
                                                                                 .setStatus(204)))
 
-                                .authorizeHttpRequests(authorize -> authorize
+                                // El orden importa: primero las rutas públicas y después las de cada rol.
+                                .authorizeHttpRequests(authorize -> {
+                                        permitirRutasPublicas(authorize);
+                                        restringirPorRol(authorize);
+                                });
+
+                return http.build();
+        }
+
+        private static void permitirRutasPublicas(
+                        AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authorize) {
+                authorize
                                                 .requestMatchers(
                                                                 HttpMethod.OPTIONS,
                                                                 "/**")
@@ -170,8 +182,12 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias/registro")
-                                                .permitAll()
+                                                .permitAll();
+        }
 
+        private static void restringirPorRol(
+                        AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authorize) {
+                authorize
                                                 // HU11 + HU17: los vendedores necesitan consultar categorías para
                                                 // asociar productos
                                                 .requestMatchers(
@@ -207,9 +223,7 @@ public class SecurityConfiguration {
                                                                 "/administrador/**")
                                                 .hasRole(ROL_ADMIN)
 
-                                                .anyRequest().authenticated());
-
-                return http.build();
+                                                .anyRequest().authenticated();
         }
 
         @Bean
