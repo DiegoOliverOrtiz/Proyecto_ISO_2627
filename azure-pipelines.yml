@@ -1,35 +1,34 @@
 # Azure Pipelines Configuration - ESIBuy
-# Pipeline as Code: validación automática al integrar en main y develop
-# (los push a ramas feature/* no lanzan la pipeline, para no saturar el agente propio)
-# El análisis de seguridad (CodeQL) se ejecuta en GitHub Actions: .github/workflows/codeql.yml
-# SonarQube se ejecuta de forma manual en local (no forma parte de esta pipeline)
+# CI: push a main/develop y validación de PR hacia main/develop.
+# CodeQL se ejecuta en GitHub Actions: .github/workflows/codeql.yml
+# SonarQube analiza Backend y Frontend como dos proyectos existentes.
+# Tanto main como develop ejecutan ambos análisis (Community: comparten historial por proyecto).
 
 trigger:
   branches:
     include:
-    - main                 # Rama de producción
-    - develop             # Rama de integración
+      - main
+      - develop
   paths:
     exclude:
-    - README.md           # Ignore documentación
-    - docs/**             # Ignore carpeta de docs
+      - README.md
+      - docs/**
 
-# Pull requests hacia las ramas de integración y estables (se validan antes del merge)
 pr:
   branches:
     include:
-    - main
-    - develop
+      - main
+      - develop
 
 pool:
-  name: Default             # Agente propio (WSL Ubuntu); ver documents/sprint2/instruccionesCI-CD.md
+  name: Default
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(Pipeline.Workspace)/.m2/repository'
   NODE_VERSION: '22.x'
-stages:
 
+stages:
 # ========== STAGE 1: BUILD BACKEND ==========
 - stage: BuildBackend
   displayName: 'Build & Test Backend'
@@ -37,14 +36,11 @@ stages:
   - job: MavenBuild
     displayName: 'Maven Compile & Tests'
     steps:
-
-    # Paso 1: Comprobar Java 21 (instalado en el agente propio; JavaToolInstaller@0 exigiría JAVA_HOME_21_X64)
     - script: |
         java -version
         java -version 2>&1 | grep -q '"21' || { echo "##vso[task.logissue type=error]Se requiere Java 21 en el agente"; exit 1; }
       displayName: 'Comprobar Java 21'
 
-    # Paso 2: Cache Maven (acelera builds posteriores)
     - task: Cache@2
       inputs:
         key: 'maven | "$(Agent.OS)" | backend/pom.xml'
@@ -53,8 +49,7 @@ stages:
         path: $(MAVEN_CACHE_FOLDER)
       displayName: 'Cache Maven dependencies'
 
-    # Paso 3: Compilación + tests + informe JaCoCo (el pom.xml aún no define umbral de cobertura)
-    # BackendApplicationTests (@SpringBootTest) necesita conexión a MongoDB, por eso se excluye en CI
+    # BackendApplicationTests necesita MongoDB: se omite en CI.
     - script: |
         chmod +x mvnw
         ./mvnw -B clean verify \
@@ -63,7 +58,6 @@ stages:
       workingDirectory: backend
       displayName: 'Maven Build (Compile + JUnit + Coverage report)'
 
-    # Paso 4: Publicar resultados de tests
     - task: PublishTestResults@2
       inputs:
         testResultsFormat: 'JUnit'
@@ -72,15 +66,12 @@ stages:
       displayName: 'Publish JUnit Test Results'
       condition: always()
 
-    # Paso 5: Publicar reporte de cobertura
     - task: PublishCodeCoverageResults@2
       inputs:
         summaryFileLocation: '$(System.DefaultWorkingDirectory)/backend/target/site/jacoco/jacoco.xml'
       displayName: 'Publish JaCoCo Coverage Report'
       condition: always()
 
-    # Paso 6: Análisis de dependencias del backend (falla con CVSS >= 9, severidad crítica).
-    # NVD_API_KEY: variable secreta; la base de datos de vulnerabilidades se cachea entre ejecuciones.
     - task: Cache@2
       inputs:
         key: 'dependency-check | "$(Agent.OS)" | "$(Build.BuildNumber)"'
@@ -108,7 +99,6 @@ stages:
         SONATYPE_USERNAME: $(SONATYPE_USERNAME)
         SONATYPE_TOKEN: $(SONATYPE_TOKEN)
 
-    # Paso 7: Publicar artefacto (JAR compilado)
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(System.DefaultWorkingDirectory)/backend/target/backend-0.0.1-SNAPSHOT.jar'
@@ -116,8 +106,15 @@ stages:
       displayName: 'Publish Backend JAR'
       condition: succeeded()
 
+    # SonarScanner necesita los .class y jacoco.xml en otro job.
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/backend/target'
+        artifact: 'sonar-backend'
+      displayName: 'Publicar compilación y cobertura para SonarQube'
+      condition: succeeded()
+
 # ========== STAGE 2: BUILD FRONTEND ==========
-# Independiente del backend: se ejecuta en paralelo
 - stage: BuildFrontend
   displayName: 'Build & Test Frontend'
   dependsOn: []
@@ -125,7 +122,6 @@ stages:
   - job: NPMBuild
     displayName: 'Angular Build & Tests'
     steps:
-
     - task: NodeTool@0
       inputs:
         versionSpec: $(NODE_VERSION)
@@ -135,23 +131,43 @@ stages:
       workingDirectory: frontend
       displayName: 'npm install (clean)'
 
-    # Falla ante dependencias con severidad crítica (requisito: 0 vulnerabilidades críticas/bloqueantes)
     - script: npm audit --audit-level=critical
       workingDirectory: frontend
       displayName: 'npm audit (dependencias, umbral crítico)'
 
-    # Cobertura mínima 60 % (statements y lines) definida en angular.json: falla si no se alcanza
     - script: npm test -- --watch=false --coverage
       workingDirectory: frontend
-      displayName: 'npm test (Vitest + cobertura ≥60%)'
+      displayName: 'npm test (Vitest + cobertura >=60%)'
 
     - script: npm run build
       workingDirectory: frontend
       displayName: 'npm build (production)'
+
+    # Necesita un reporter LCOV activado en las pruebas Angular/Vitest.
+    - script: |
+        LCOV_FILE="$(find "$(Build.SourcesDirectory)/frontend" \
+          -type f -name lcov.info \
+          -not -path '*/node_modules/*' \
+          -print -quit)"
+        if [ -z "$LCOV_FILE" ]; then
+          echo '##vso[task.logissue type=error]No se ha generado lcov.info. Habilita el reporter LCOV en Angular/Vitest.'
+          exit 1
+        fi
+        mkdir -p "$(Build.ArtifactStagingDirectory)/sonar-frontend"
+        # SF:src/... es relativo al directorio frontend; Sonar analiza desde la raíz del repo.
+        sed -e 's|^SF:src/|SF:frontend/src/|' \
+            -e 's|^SF:\./src/|SF:frontend/src/|' \
+            "$LCOV_FILE" > "$(Build.ArtifactStagingDirectory)/sonar-frontend/lcov.info"
+      displayName: 'Preparar cobertura Angular para SonarQube'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/sonar-frontend'
+        artifact: 'sonar-frontend'
+      displayName: 'Publicar cobertura Angular'
+      condition: succeeded()
+
 # ========== STAGE 3: ESCÁNER DE SECRETOS ==========
-# Gestión de secretos: el repositorio no debe contener credenciales ni claves.
-# --no-git analiza los ficheros versionados del commit; el historial (credenciales ya expuestas)
-# se revisará tras rotarlas.
 - stage: SecretScan
   displayName: 'Secret Scan'
   dependsOn: []
@@ -163,19 +179,125 @@ stages:
         docker run --rm -v "$(Build.SourcesDirectory):/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 detect --source /repo --no-git --redact --verbose
       displayName: 'Gitleaks (secretos en el repositorio)'
-  
-  # ========== STAGE 4: SONARQUBE ==========
+
+# ========== STAGE 4: SONARQUBE ==========
 - stage: Sonarqube
-  displayName: 'SonarQube Code Analysis'
+  displayName: 'SonarQube - Backend y Frontend'
   dependsOn: [BuildBackend, BuildFrontend, SecretScan]
+
+  # Analizar los pushes a main y develop. Los PR se validan mediante
+  # compilación, tests y escaneo de secretos, sin actualizar SonarQube.
+  condition: |
+    and(
+      succeeded(),
+      or(
+        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+      )
+    )
+
   jobs:
-  - job: SonarqubeJob
-    displayName: 'SonarQube Scanner'
+  # --- Proyecto SonarQube: Backend (Java + JaCoCo) ---
+  - job: SonarBackend
+    displayName: 'Analizar Backend'
     steps:
-    - script: sonar-scanner
-      displayName: 'Ejecutar análisis SonarQube'
+    - checkout: self
+      clean: true
+      fetchDepth: 0
+
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'sonar-backend'
+        targetPath: '$(Build.SourcesDirectory)/backend/target'
+      displayName: 'Descargar clases Java y JaCoCo'
+
+    - script: |
+        set -e
+        test -d backend/target/classes || { echo 'Faltan las clases Java compiladas'; exit 1; }
+        test -s backend/target/site/jacoco/jacoco.xml || { echo 'Falta jacoco.xml'; exit 1; }
+
+        if command -v sonar-scanner >/dev/null 2>&1; then
+          SCANNER="$(command -v sonar-scanner)"
+        elif [ -x /opt/sonar-scanner/bin/sonar-scanner ]; then
+          SCANNER=/opt/sonar-scanner/bin/sonar-scanner
+        else
+          echo '##vso[task.logissue type=error]SonarScanner no está instalado en el agente WSL.'
+          exit 1
+        fi
+
+        if [ -z "$SONAR_PROJECT_KEY" ] || [[ "$SONAR_PROJECT_KEY" == '$('* ]]; then
+          echo '##vso[task.logissue type=error]Configura SONAR_BACKEND_PROJECT_KEY con la clave real del proyecto Backend.'
+          exit 1
+        fi
+
+        "$SCANNER" \
+          -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+          -Dsonar.projectName='ESIBuy - Backend' \
+          -Dsonar.sources=backend/src/main \
+          -Dsonar.tests=backend/src/test \
+          -Dsonar.java.binaries=backend/target/classes \
+          -Dsonar.java.test.binaries=backend/target/test-classes \
+          -Dsonar.coverage.jacoco.xmlReportPaths=backend/target/site/jacoco/jacoco.xml \
+          -Dsonar.qualitygate.wait=true
+      displayName: 'Ejecutar análisis SonarQube Backend'
       env:
+        SONAR_PROJECT_KEY: $(SONAR_BACKEND_PROJECT_KEY)
         SONAR_TOKEN: $(SQ_TOKEN)
+        SONAR_HOST_URL: $(SONAR_HOST_URL)
+
+  # --- Proyecto SonarQube: Frontend (Angular + LCOV) ---
+  - job: SonarFrontend
+    displayName: 'Analizar Frontend'
+    steps:
+    - checkout: self
+      clean: true
+      fetchDepth: 0
+
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'sonar-frontend'
+        targetPath: '$(Build.SourcesDirectory)/frontend/coverage'
+      displayName: 'Descargar cobertura LCOV'
+
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(NODE_VERSION)
+      displayName: 'Preparar Node.js para análisis Angular'
+
+    - script: |
+        set -e
+        test -s frontend/coverage/lcov.info || { echo 'Falta lcov.info'; exit 1; }
+
+        if command -v sonar-scanner >/dev/null 2>&1; then
+          SCANNER="$(command -v sonar-scanner)"
+        elif [ -x /opt/sonar-scanner/bin/sonar-scanner ]; then
+          SCANNER=/opt/sonar-scanner/bin/sonar-scanner
+        else
+          echo '##vso[task.logissue type=error]SonarScanner no está instalado en el agente WSL.'
+          exit 1
+        fi
+
+        if [ -z "$SONAR_PROJECT_KEY" ] || [[ "$SONAR_PROJECT_KEY" == '$('* ]]; then
+          echo '##vso[task.logissue type=error]Configura SONAR_FRONTEND_PROJECT_KEY con la clave real del proyecto Frontend.'
+          exit 1
+        fi
+
+        "$SCANNER" \
+          -Dsonar.projectKey="$SONAR_PROJECT_KEY" \
+          -Dsonar.projectName='ESIBuy - Frontend' \
+          -Dsonar.sources=frontend/src \
+          -Dsonar.tests=frontend/src \
+          '-Dsonar.test.inclusions=frontend/src/**/*.spec.ts,frontend/src/**/*.test.ts' \
+          '-Dsonar.exclusions=frontend/src/**/*.spec.ts,frontend/src/**/*.test.ts' \
+          -Dsonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info \
+          -Dsonar.qualitygate.wait=true
+      displayName: 'Ejecutar análisis SonarQube Frontend'
+      env:
+        SONAR_PROJECT_KEY: $(SONAR_FRONTEND_PROJECT_KEY)
+        SONAR_TOKEN: $(SQ_TOKEN)
+        SONAR_HOST_URL: $(SONAR_HOST_URL)
 
 # ========== FINAL NOTIFICATION ==========
 - stage: Notification
@@ -185,13 +307,40 @@ stages:
   jobs:
   - job: NotifyOk
     displayName: 'Pipeline OK'
-    condition: and(eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'), eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'), eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'))
+    condition: |
+      and(
+        eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
+        eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
+        eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
+        or(
+          and(
+            eq(stageDependencies.Sonarqube.SonarBackend.result, 'Succeeded'),
+            eq(stageDependencies.Sonarqube.SonarFrontend.result, 'Succeeded')
+          ),
+          eq(variables['Build.Reason'], 'PullRequest')
+        )
+      )
     steps:
-    - script: echo "##[section]✅ PIPELINE PASSED - All checks green"
+    - script: echo '##[section]PIPELINE PASSED - All applicable checks green'
       displayName: 'Summary'
+
   - job: NotifyFail
     displayName: 'Pipeline FAILED'
-    condition: or(ne(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'), ne(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'), ne(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'))
+    condition: |
+      not(
+        and(
+          eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
+          eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
+          eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
+          or(
+            and(
+              eq(stageDependencies.Sonarqube.SonarBackend.result, 'Succeeded'),
+              eq(stageDependencies.Sonarqube.SonarFrontend.result, 'Succeeded')
+            ),
+            eq(variables['Build.Reason'], 'PullRequest')
+          )
+        )
+      )
     steps:
-    - script: echo "##[error]❌ PIPELINE FAILED - See logs above"
+    - script: echo '##[error]PIPELINE FAILED - See logs above'
       displayName: 'Summary'
