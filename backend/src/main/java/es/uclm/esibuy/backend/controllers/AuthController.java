@@ -309,7 +309,6 @@ public class AuthController {
     }
 
     private boolean requiereTotpObligatorio(Usuario usuario) {
-        return usuario instanceof Vendedor
-                || usuario instanceof Administrador;
+        return RolUsuario.requiereTotpObligatorio(usuario);
     }
 }

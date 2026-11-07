@@ -25,4 +25,10 @@ public final class RolUsuario {
         }
         throw new IllegalStateException("Tipo de usuario no soportado para el inicio de sesión.");
     }
+
+    // El segundo factor (TOTP) es obligatorio para vendedores y administradores.
+    public static boolean requiereTotpObligatorio(Usuario usuario) {
+        return usuario instanceof Vendedor
+                || usuario instanceof Administrador;
+    }
 }
