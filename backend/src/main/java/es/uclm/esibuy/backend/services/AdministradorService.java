@@ -1,6 +1,5 @@
 package es.uclm.esibuy.backend.services;
 
-import java.time.LocalDate;
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,7 @@ import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
-import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
-import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
 
 @Service
@@ -154,17 +151,7 @@ public class AdministradorService {
 		 * Campos específicos según
 		 * el tipo de usuario
 		 */
-		switch (usuario) {
-
-			case Cliente cliente -> modificarDatosCliente(cliente, request);
-
-			case Vendedor vendedor -> modificarDatosVendedor(vendedor, request);
-
-			case Administrador administrador -> administrador.setSede(request.sede());
-
-			default -> throw new IllegalStateException(
-					"Tipo de usuario no soportado.");
-		}
+		DatosRolUsuario.modificar(usuario, request, categoriaDAO);
 
 		/*
 		 * Persistimos los cambios
@@ -174,59 +161,6 @@ public class AdministradorService {
 
 		return UsuarioAdministracionResponse.desde(
 				usuarioGuardado);
-	}
-
-	private void modificarDatosVendedor(Vendedor vendedor, ModificarUsuarioRequest request) {
-		if (request.dniNif() != null) {
-			validarDniNif(request.dniNif());
-			vendedor.setDniNif(request.dniNif());
-		}
-
-		if (request.categoriaId() != null) {
-			String categoriaId = request.categoriaId().trim();
-			if (categoriaId.isBlank() || !categoriaDAO.existsById(categoriaId)) {
-				throw new IllegalArgumentException("La categoría seleccionada no existe.");
-			}
-			vendedor.setCategoriaId(categoriaId);
-		}
-	}
-
-	private void modificarDatosCliente(
-			Cliente cliente,
-			ModificarUsuarioRequest request) {
-
-		if (request.fechaNacimiento() == null) {
-			throw new IllegalArgumentException(
-					"La fecha de nacimiento es obligatoria.");
-		}
-
-		LocalDate fechaLimite =
-				LocalDate.now().minusYears(18);
-
-		if (request.fechaNacimiento()
-				.isAfter(fechaLimite)) {
-
-			throw new IllegalArgumentException(
-					"El cliente debe ser mayor de edad.");
-		}
-
-        if (request.dniNif() != null) {
-            validarDniNif(request.dniNif());
-            cliente.setDniNif(request.dniNif());
-        }
-
-		cliente.setFechaNacimiento(
-				request.fechaNacimiento());
-
-		if (request.esPremium() != null) {
-			cliente.setEsPremium(request.esPremium());
-		}
-	}
-
-	private void validarDniNif(String dniNif) {
-		if (!dniNif.matches("^\\d{8}[A-Za-z]$")) {
-			throw new IllegalArgumentException("El DNI/NIF debe tener 8 números y una letra.");
-		}
 	}
 
 	private void validarTelefono(String telefono) {
