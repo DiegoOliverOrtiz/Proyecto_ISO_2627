@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.dto.RegistroPublicoResponse;
 import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
+import es.uclm.esibuy.backend.exceptions.CorreoYaRegistradoException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
@@ -27,6 +29,10 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RegistrationExceptionHandler {
+	@ExceptionHandler(CorreoYaRegistradoException.class)
+	public ResponseEntity<RegistroPublicoResponse> handlePublicDuplicateEmail() {
+		return ResponseEntity.accepted().body(RegistroPublicoResponse.confirmacion());
+	}
 
 	@ExceptionHandler(DuplicateRegistrationException.class)
 	public ResponseEntity<ApiErrorResponse> handleDuplicateRegistration() {

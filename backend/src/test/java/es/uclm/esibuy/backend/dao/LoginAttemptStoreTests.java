@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.dao;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -78,6 +79,50 @@ class LoginAttemptStoreTests {
         assertEquals(240, store.registrarFallo("ana@example.com", now.plusSeconds(152)));
         assertEquals(300, store.registrarFallo("ana@example.com", now.plusSeconds(393)));
     }
+
+    @Test
+    void cuentaFallosDeCuentaDentroDeUnaVentanaExactaDeDiezMinutos() {
+        Instant now = Instant.parse("2026-11-04T12:00:00Z");
+        when(mongo.indexOps(COLLECTION)).thenReturn(mock(IndexOperations.class));
+        when(mongo.updateFirst(any(Query.class), any(Update.class), eq(COLLECTION)))
+                .thenReturn(UpdateResult.acknowledged(0, 0L, null),
+                        UpdateResult.acknowledged(1, 1L, null));
+        when(mongo.findOne(any(Query.class), eq(Document.class), eq(COLLECTION)))
+                .thenReturn(new Document("failures", 4).append("backoffStep", 0));
+
+        assertEquals(0, new LoginAttemptStore(mongo, PEPPER).registrarFallo("ana@example.com", now));
+
+        ArgumentCaptor<Query> queries = ArgumentCaptor.forClass(Query.class);
+        verify(mongo, org.mockito.Mockito.times(2)).updateFirst(queries.capture(), any(Update.class), eq(COLLECTION));
+        assertEquals(Date.from(now.minusSeconds(600)),
+                queries.getAllValues().get(0).getQueryObject()
+                        .get("windowStart", Document.class).get("$lte"));
+        assertEquals(Date.from(now.minusSeconds(600)),
+                queries.getAllValues().get(1).getQueryObject()
+                        .get("windowStart", Document.class).get("$gt"));
+    }
+
+        @Test
+        void loginCorrectoReseteaSoloLosContadoresDeLaCuenta() {
+                Instant now = Instant.parse("2026-11-04T12:00:00Z");
+                when(mongo.indexOps(COLLECTION)).thenReturn(mock(IndexOperations.class));
+                when(mongo.updateFirst(any(Query.class), any(Update.class), eq(COLLECTION)))
+                                .thenReturn(UpdateResult.acknowledged(1, 1L, null));
+
+                new LoginAttemptStore(mongo, PEPPER).registrarExito("ana@example.com", now);
+
+                ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+                ArgumentCaptor<Update> update = ArgumentCaptor.forClass(Update.class);
+                verify(mongo).updateFirst(query.capture(), update.capture(), eq(COLLECTION));
+
+                String accountId = query.getValue().getQueryObject().getString("_id");
+                assertTrue(accountId.startsWith("cuenta:"));
+                assertFalse(accountId.contains("ana@example.com"));
+                Document changes = update.getValue().getUpdateObject();
+                assertEquals(0, changes.get("$set", Document.class).get("failures"));
+                assertEquals(0, changes.get("$set", Document.class).get("backoffStep"));
+                assertTrue(changes.get("$unset", Document.class).containsKey("lockUntil"));
+        }
 
     @Test
     void umbralAdaptativoPorIpLimitaAUnTotalDeDosIntentosPorVentana() {

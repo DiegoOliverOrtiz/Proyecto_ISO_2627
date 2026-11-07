@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
+import es.uclm.esibuy.backend.exceptions.CorreoYaRegistradoException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -66,7 +67,7 @@ public class SoporteRegistro {
 
 	public void comprobarCorreoDisponible(String correo) {
 		if (usuarioDAO.existsByEmail(correo)) {
-			throw new InvalidRegistrationException(MENSAJE_DATOS_NO_VALIDOS);
+			throw new CorreoYaRegistradoException();
 		}
 	}
 
@@ -78,6 +79,17 @@ public class SoporteRegistro {
 		try {
 			return operacion.get();
 		} catch (DuplicateKeyException excepcion) {
+			throw new InvalidRegistrationException(MENSAJE_DATOS_NO_VALIDOS);
+		}
+	}
+
+	public <T> T guardarRegistroPublico(String correo, Supplier<T> operacion) {
+		try {
+			return operacion.get();
+		} catch (DuplicateKeyException excepcion) {
+			if (usuarioDAO.existsByEmail(correo)) {
+				throw new CorreoYaRegistradoException();
+			}
 			throw new InvalidRegistrationException(MENSAJE_DATOS_NO_VALIDOS);
 		}
 	}

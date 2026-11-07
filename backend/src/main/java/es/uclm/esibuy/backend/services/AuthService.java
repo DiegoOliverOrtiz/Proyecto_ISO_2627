@@ -58,7 +58,6 @@ public class AuthService {
             throw new BadCredentialsException(MENSAJE_ERROR_CREDENCIALES);
         }
 
-        loginAttemptService.registrarExito(correoNormalizado);
         if (passwordEncoder.upgradeEncoding(usuario.getContrasenaHash())) {
             usuario.actualizarContrasenaHash(passwordEncoder.encode(contrasena));
             usuarioDAO.save(usuario);
@@ -72,6 +71,7 @@ public class AuthService {
             throw new AccountPendingException();
         }
 
+        loginAttemptService.registrarExito(correoNormalizado);
         return usuario;
     }
 
