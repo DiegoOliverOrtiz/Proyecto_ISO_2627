@@ -22,6 +22,7 @@ import es.uclm.esibuy.backend.dto.ProductoAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
+import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
@@ -114,7 +115,7 @@ public class ProductoService {
     private boolean esClientePremiumActivo(String emailCliente) {
         return clienteDAO.findByEmail(emailCliente)
                 .filter(cuenta -> cuenta.isActivada() && !cuenta.isBloqueada())
-                .map(cuenta -> cuenta.isEsPremium())
+                .map(Cliente::isEsPremium)
                 .orElseThrow(() -> new AccessDeniedException(
                         "Solo un cliente activo puede consultar los productos."));
     }
