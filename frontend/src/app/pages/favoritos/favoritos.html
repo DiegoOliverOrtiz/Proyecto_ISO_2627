@@ -42,7 +42,7 @@
         <li class="favorite-card tarjeta" [class.unavailable]="!producto.disponible">
           <div class="marco-imagen">
             @if (producto.imagen) {
-              <img [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" />
+              <img [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="400" height="300" />
             } @else {
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <rect x="3" y="4" width="18" height="16" rx="2"></rect>

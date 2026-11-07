@@ -86,7 +86,7 @@
               <li class="checkout-product tarjeta" [class.product-blocked]="!linea.disponible">
                 <div class="marco-imagen checkout-product-image">
                   @if (linea.imagen) {
-                    <img [src]="urlImagen(linea.imagen)" [alt]="linea.nombre || 'Producto sin nombre'" />
+                    <img [src]="urlImagen(linea.imagen)" [alt]="linea.nombre || 'Producto sin nombre'" width="400" height="300" />
                   } @else {
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <rect x="3" y="4" width="18" height="16" rx="2"></rect>
