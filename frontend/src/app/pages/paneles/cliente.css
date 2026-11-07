@@ -22,26 +22,31 @@
   background: var(--color-accent);
 }
 
-.primary-button:hover:not(:disabled) {
-  border-color: var(--color-accent-hover);
-  background: var(--color-accent-hover);
-}
-
 .secondary-button {
   border: 1px solid var(--color-border-input);
   color: var(--color-brand);
   background: var(--color-surface);
 }
 
-.secondary-button:hover:not(:disabled) {
-  border-color: var(--color-brand);
-  background: var(--color-accent-subtle);
-}
-
 .primary-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: .55;
+}
+
+/* Antes de los :hover, que tienen más especificidad (S4664). */
+.product-actions .secondary-button {
+  flex: 1;
+}
+
+.primary-button:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.secondary-button:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  background: var(--color-accent-subtle);
 }
 
 .cart-icon {
@@ -99,6 +104,13 @@
   font-weight: 600;
 }
 
+.favorites-filter input {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  accent-color: var(--color-brand);
+}
+
 .catalog-filters input:not([type='checkbox']),
 .catalog-filters select {
   width: 100%;
@@ -130,13 +142,6 @@
   min-height: 44px;
   align-items: center;
   gap: .6rem;
-}
-
-.favorites-filter input {
-  width: 1.2rem;
-  height: 1.2rem;
-  margin: 0;
-  accent-color: var(--color-brand);
 }
 
 .filtro-busqueda {
@@ -239,10 +244,6 @@
   gap: .5rem;
   margin-top: auto;
   padding-top: .75rem;
-}
-
-.product-actions .secondary-button {
-  flex: 1;
 }
 
 .favorite-button {

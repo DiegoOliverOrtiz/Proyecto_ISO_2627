@@ -288,26 +288,26 @@
   background: var(--color-accent);
 }
 
-.boton-principal:hover:not(:disabled) {
-  border-color: var(--color-accent-hover);
-  background: var(--color-accent-hover);
-}
-
 .boton-secundario {
   border: 1px solid var(--color-border-input);
   color: var(--color-brand);
   background: var(--color-surface);
 }
 
-.boton-secundario:hover:not(:disabled) {
-  border-color: var(--color-brand);
-  background: var(--color-accent-subtle);
-}
-
 .boton-principal:disabled,
 .boton-secundario:disabled {
   cursor: wait;
   opacity: .7;
+}
+
+.boton-principal:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.boton-secundario:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  background: var(--color-accent-subtle);
 }
 
 /* --- Enlaces --- */

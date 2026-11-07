@@ -140,12 +140,12 @@
   border-radius: 8px;
 }
 
-.product.unavailable .product-thumb {
-  opacity: .6;
-}
-
 .product-thumb {
   aspect-ratio: 1;
+}
+
+.product.unavailable .product-thumb {
+  opacity: .6;
 }
 
 .product-info {

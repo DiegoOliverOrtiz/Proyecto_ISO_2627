@@ -87,17 +87,17 @@ table {
   scroll-margin-top: 5rem;
 }
 
+th,
+td {
+  padding: .8rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 th:nth-child(n + 2),
 td:nth-child(n + 2) {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-th,
-td {
-  padding: .8rem;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .importe {

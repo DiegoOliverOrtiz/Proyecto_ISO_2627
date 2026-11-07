@@ -91,15 +91,15 @@
   cursor: pointer;
 }
 
+.cerrar-sesion:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
 .cerrar-sesion:hover:not(:disabled),
 .boton-menu:hover {
   border-color: var(--color-brand);
   color: var(--color-brand);
-}
-
-.cerrar-sesion:disabled {
-  cursor: wait;
-  opacity: .7;
 }
 
 .error {
