@@ -158,20 +158,7 @@ public class AdministradorService {
 
 			case Cliente cliente -> modificarDatosCliente(cliente, request);
 
-            case Vendedor vendedor -> {
-                if (request.dniNif() != null) {
-                    validarDniNif(request.dniNif());
-                    vendedor.setDniNif(request.dniNif());
-                }
-
-				if (request.categoriaId() != null) {
-					String categoriaId = request.categoriaId().trim();
-					if (categoriaId.isBlank() || !categoriaDAO.existsById(categoriaId)) {
-						throw new IllegalArgumentException("La categoría seleccionada no existe.");
-					}
-					vendedor.setCategoriaId(categoriaId);
-				}
-            }
+			case Vendedor vendedor -> modificarDatosVendedor(vendedor, request);
 
 			case Administrador administrador -> administrador.setSede(request.sede());
 
@@ -187,6 +174,21 @@ public class AdministradorService {
 
 		return UsuarioAdministracionResponse.desde(
 				usuarioGuardado);
+	}
+
+	private void modificarDatosVendedor(Vendedor vendedor, ModificarUsuarioRequest request) {
+		if (request.dniNif() != null) {
+			validarDniNif(request.dniNif());
+			vendedor.setDniNif(request.dniNif());
+		}
+
+		if (request.categoriaId() != null) {
+			String categoriaId = request.categoriaId().trim();
+			if (categoriaId.isBlank() || !categoriaDAO.existsById(categoriaId)) {
+				throw new IllegalArgumentException("La categoría seleccionada no existe.");
+			}
+			vendedor.setCategoriaId(categoriaId);
+		}
 	}
 
 	private void modificarDatosCliente(
