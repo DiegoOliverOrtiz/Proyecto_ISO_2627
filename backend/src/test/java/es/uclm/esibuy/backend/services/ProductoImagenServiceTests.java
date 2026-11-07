@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -155,6 +160,34 @@ class ProductoImagenServiceTests {
         assertRechazada(imagen("pagina.html", "text/html", texto("<html></html>")));
         assertRechazada(imagen("programa.exe", "application/octet-stream", new byte[] { 'M', 'Z', 0, 0 }));
         assertRechazada(imagen("foto.webp", "image/webp", new byte[] { 'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P' }));
+    }
+
+    @Test
+    void verificaLaImagenAntesDeGuardarlaCuandoVirusTotalEstaActivo() {
+        VirusTotalService virusTotal = mock(VirusTotalService.class);
+        ProductoImagenService servicioConAnalisis = new ProductoImagenService(
+                directorioTemporal.toString(), "local", null, virusTotal);
+
+        String ruta = servicioConAnalisis.guardar(imagen("foto.png", "image/png", PNG));
+
+        assertNotNull(ruta);
+        verify(virusTotal).verificar(PNG, "image/png");
+    }
+
+    @Test
+    void noGuardaLaImagenSiVirusTotalLaRechaza() throws IOException {
+        VirusTotalService virusTotal = mock(VirusTotalService.class);
+        doThrow(new IllegalArgumentException("La imagen ha sido rechazada por el análisis de seguridad."))
+                .when(virusTotal).verificar(any(byte[].class), eq("image/png"));
+        ProductoImagenService servicioConAnalisis = new ProductoImagenService(
+                directorioTemporal.toString(), "local", null, virusTotal);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> servicioConAnalisis.guardar(imagen("maliciosa.png", "image/png", PNG)));
+
+        try (Stream<Path> archivos = Files.list(directorioTemporal)) {
+            assertEquals(0, archivos.count());
+        }
     }
 
     @Test
