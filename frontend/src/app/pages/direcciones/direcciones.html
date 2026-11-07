@@ -21,7 +21,7 @@
     </section>
   } @else {
     @if (mensajeExito() && !editando()) {
-      <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
+      <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
     }
 
     @if (editando()) {

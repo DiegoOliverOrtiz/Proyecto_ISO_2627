@@ -64,9 +64,11 @@ describe('CarritoService - HU-20', () => {
   });
 
   it('no descarta si falla el token CSRF', () => {
-    servicio.descartarCarrito().subscribe({ error: () => {} });
+    let codigoError: number | undefined;
+    servicio.descartarCarrito().subscribe({ error: error => codigoError = error.status });
     http.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({}, { status: 403, statusText: 'Forbidden' });
     http.expectNone(`${environment.apiUrl}/cliente/carrito`);
+    expect(codigoError).toBe(403);
   });
 
   it('envía solo producto y cantidad con sesión y token CSRF y devuelve el carrito', () => {

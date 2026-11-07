@@ -89,7 +89,7 @@ const passwordRules = [
   },
   {
     label: '1 número (0-9)',
-    test: (password: string) => /[0-9]/.test(password),
+    test: (password: string) => /\d/.test(password),
   },
   {
     label: '1 carácter especial (@, #, $, ...)',
@@ -165,7 +165,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 
@@ -207,7 +207,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 

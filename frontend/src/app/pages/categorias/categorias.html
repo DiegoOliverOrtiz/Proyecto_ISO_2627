@@ -128,14 +128,14 @@
   </section>
 
   @if (!cargando() && !error()) {
-    <p class="resumen" role="status">
+    <p class="resumen"><output>
       @if (hayFiltrosAplicados()) {
         Categorías encontradas:
       } @else {
         Total de categorías:
       }
       <strong>{{ categorias().length }}</strong>
-    </p>
+    </output></p>
   }
 
   <!-- Estados de carga, error y resultados -->

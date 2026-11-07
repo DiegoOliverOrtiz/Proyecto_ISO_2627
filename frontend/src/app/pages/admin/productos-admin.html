@@ -14,7 +14,7 @@
   </p>
 
       @if (cargando()) {
-        <p class="estado" role="status">Cargando productos...</p>
+        <p class="estado"><output>Cargando productos...</output></p>
       } @else if (mensajeError()) {
         <div class="estado" role="alert">
           <p class="estado-titulo">{{ mensajeError() }}</p>
@@ -63,9 +63,9 @@
           }
         </form>
 
-        <p class="resumen" role="status">
+        <p class="resumen"><output>
           {{ productosFiltrados().length }} de {{ productos().length }} productos
-        </p>
+        </output></p>
 
         @if (productosFiltrados().length === 0) {
           <div class="estado">

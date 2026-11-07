@@ -35,6 +35,10 @@
   font-weight: 700;
 }
 
+.selector-archivo label {
+  font-weight: 700;
+}
+
 .campo input,
 .campo select,
 .campo textarea {
@@ -68,7 +72,6 @@
   min-height: 44px;
 }
 
-.vista-previa-imagen,
 .vista-previa-imagen {
   width: min(100%, 320px);
   max-height: 240px;
@@ -103,10 +106,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: .75rem;
-}
-
-.selector-archivo label {
-  font-weight: 700;
 }
 
 .campo-imagen:has(input:focus-visible) .selector-archivo label {

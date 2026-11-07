@@ -165,10 +165,14 @@ describe('PedidosVendedorService - HU-35', () => {
     });
 
     it('codifica el identificador del pedido al aceptarlo', () => {
-      servicio.aceptarPedido('pedido/1').subscribe();
+      let resultado: unknown;
+      servicio.aceptarPedido('pedido/1').subscribe(respuesta => resultado = respuesta);
 
       http.expectOne(csrfUrl).flush({ token: 't' });
-      http.expectOne(`${baseUrl}/pedido%2F1/aceptar`).flush(pedido);
+      const peticion = http.expectOne(`${baseUrl}/pedido%2F1/aceptar`);
+      expect(peticion.request.method).toBe('PATCH');
+      peticion.flush(pedido);
+      expect(resultado).toEqual(pedido);
     });
 
     it('no envía el PATCH si falla la obtención del token CSRF', () => {

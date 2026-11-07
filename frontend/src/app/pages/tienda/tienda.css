@@ -79,20 +79,10 @@
   background: var(--color-accent);
 }
 
-.boton-principal:hover:not(:disabled) {
-  border-color: var(--color-accent-hover);
-  background: var(--color-accent-hover);
-}
-
 .boton-secundario {
   border: 1px solid var(--color-border-input);
   color: var(--color-brand);
   background: var(--color-surface);
-}
-
-.boton-secundario:hover:not(:disabled) {
-  border-color: var(--color-brand);
-  background: var(--color-accent-subtle);
 }
 
 .boton-peligro {
@@ -101,15 +91,25 @@
   background: var(--color-surface);
 }
 
-.boton-peligro:hover:not(:disabled) {
-  background: var(--color-danger-background);
-}
-
 .boton-principal:disabled,
 .boton-secundario:disabled,
 .boton-peligro:disabled {
   cursor: not-allowed;
   opacity: .6;
+}
+
+.boton-principal:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.boton-secundario:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  background: var(--color-accent-subtle);
+}
+
+.boton-peligro:hover:not(:disabled) {
+  background: var(--color-danger-background);
 }
 
 /* Explica por qué un botón está desactivado (M4). */

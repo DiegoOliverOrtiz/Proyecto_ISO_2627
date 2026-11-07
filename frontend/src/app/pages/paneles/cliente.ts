@@ -859,13 +859,13 @@ export class PanelCliente implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         this.modificandoLista.set(false);
-        this.errorListas.set(
-          error.status === 0
-            ? 'No se pudo conectar con el servidor.'
-            : error.status === 404
-              ? 'El producto o la lista ya no están disponibles.'
-              : 'No se pudo actualizar la lista.'
-        );
+        let mensaje = 'No se pudo actualizar la lista.';
+        if (error.status === 0) {
+          mensaje = 'No se pudo conectar con el servidor.';
+        } else if (error.status === 404) {
+          mensaje = 'El producto o la lista ya no están disponibles.';
+        }
+        this.errorListas.set(mensaje);
 
         if (error.status === 401) {
           this.irALogin();

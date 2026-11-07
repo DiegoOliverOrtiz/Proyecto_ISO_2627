@@ -62,11 +62,13 @@ describe('RecuperacionContrasenaService', () => {
   });
 
   it('no envía la solicitud de recuperación si falla la obtención de CSRF', () => {
-    servicio.solicitar('cliente@example.com').subscribe({ error: () => {} });
+    let codigoError: number | undefined;
+    servicio.solicitar('cliente@example.com').subscribe({ error: error => codigoError = error.status });
 
     http.expectOne(`${environment.apiUrl}/usuarios/csrf`)
       .flush({}, { status: 403, statusText: 'Forbidden' });
 
     http.expectNone(`${environment.apiUrl}/usuarios/recuperar-contrasena`);
+    expect(codigoError).toBe(403);
   });
 });

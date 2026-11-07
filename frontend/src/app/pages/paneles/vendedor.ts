@@ -344,7 +344,8 @@ export class PanelVendedor implements OnInit {
   /** Valores del formulario ya validado: precio y stock son obligatorios, así que no son nulos. */
   private valoresValidos() {
     const valores = this.formularioProducto.getRawValue();
-    return { ...valores, precio: valores.precio as number, stock: valores.stock as number };
+    // Solo se llama con el formulario válido, así que precio y stock no son nulos.
+    return { ...valores, precio: valores.precio ?? 0, stock: valores.stock ?? 0 };
   }
 
   private modificarProducto(id: string): void {

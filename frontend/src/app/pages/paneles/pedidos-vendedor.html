@@ -31,7 +31,7 @@
     </div>
 
     @if (mensajeExito()) {
-    <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
+    <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
     }
 
     @if (errorAccion()) {
@@ -40,7 +40,7 @@
 
     <div role="tabpanel" id="panel-pedidos" [attr.aria-labelledby]="'pestana-' + pestana()">
     @if (cargando()) {
-    <p class="estado" role="status">Cargando pedidos...</p>
+    <p class="estado"><output>Cargando pedidos...</output></p>
     } @else if (error()) {
     <section class="estado" role="alert">
         <p class="estado-titulo">{{ error() }}</p>
@@ -104,7 +104,7 @@
     </div>
 
     @if (cargandoDetalle()) {
-    <p class="estado" role="status">Cargando detalle del pedido...</p>
+    <p class="estado"><output>Cargando detalle del pedido...</output></p>
     }
 
     @if (errorDetalle()) {

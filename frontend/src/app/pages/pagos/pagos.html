@@ -21,7 +21,7 @@
     </section>
   } @else {
     @if (mensajeExito() && !editando()) {
-      <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
+      <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
     }
 
     @if (editando()) {
@@ -82,7 +82,7 @@
               @if (tipoSeleccionado() === 'BIZUM') {
                 <label class="ancho-completo">
                   Número de teléfono Bizum
-                  <input type="tel" formControlName="telefonoBizum" autocomplete="tel-national" maxlength="9" />
+                  <input type="tel" formControlName="telefonoBizum" autocomplete="tel" maxlength="9" />
                 </label>
               }
             }

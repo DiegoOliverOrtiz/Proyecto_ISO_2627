@@ -18,13 +18,13 @@
     <button class="boton-secundario" type="button" (click)="cargarPerfil()">Reintentar</button>
   } @else if (perfil(); as datos) {
     @if (mensajeExito()) {
-      <p class="aviso aviso-exito" role="status">{{ mensajeExito() }}</p>
+      <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
     }
 
     <section class="profile-card" aria-labelledby="datos-personales">
       <div class="profile-card-heading">
         @if (datos.imagenPerfil) {
-          <img class="profile-image" [src]="datos.imagenPerfil" alt="Imagen de perfil" />
+          <img class="profile-image" [src]="datos.imagenPerfil" alt="" width="72" height="72" />
         } @else {
           <div class="profile-placeholder" aria-hidden="true">{{ inicial(datos.nombre) }}</div>
         }
@@ -116,7 +116,7 @@
           } @else {
             <p>{{ mensajeTOTP() }}</p>
             @if (configuracionTOTP()?.qrDataUrl) {
-              <img class="totp-qr" [src]="configuracionTOTP()?.qrDataUrl" alt="Código QR para configurar TOTP" />
+              <img class="totp-qr" [src]="configuracionTOTP()?.qrDataUrl" alt="Código QR para configurar TOTP" width="210" height="210" />
             }
             <label class="totp-code-label" for="totp-confirmation-code">Código de la aplicación</label>
             <input id="totp-confirmation-code" class="totp-code-input" type="text" maxlength="6"
@@ -127,7 +127,7 @@
             </button>
           }
           @if (mensajeTOTP() && !configuracionTOTP()) {
-            <p class="two-factor-success" role="status">{{ mensajeTOTP() }}</p>
+            <p class="two-factor-success"><output>{{ mensajeTOTP() }}</output></p>
           }
           @if (errorTOTP()) {
             <p class="field-error" role="alert">{{ errorTOTP() }}</p>
@@ -313,8 +313,8 @@
     </section>
 
     @if (mostrandoConfirmacionTipo()) {
-      <div class="confirmation-backdrop" role="presentation" (click)="cancelarCambioTipoCliente()">
-        <section class="confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmacion-tipo-titulo" (click)="$event.stopPropagation()">
+      <div class="confirmation-backdrop" (click)="$event.target === $event.currentTarget && cancelarCambioTipoCliente()" (keydown.escape)="cancelarCambioTipoCliente()">
+        <dialog open class="confirmation-dialog" aria-modal="true" aria-labelledby="confirmacion-tipo-titulo">
           <div class="confirmation-icon" aria-hidden="true">★</div>
           <p class="account-type-kicker">Cambio de cuenta</p>
           <h2 id="confirmacion-tipo-titulo">
@@ -331,7 +331,7 @@
               {{ tipoPremiumPendiente() ? 'Sí, hacerme Premium' : 'Sí, volver a Normal' }}
             </button>
           </div>
-        </section>
+        </dialog>
       </div>
     }
 

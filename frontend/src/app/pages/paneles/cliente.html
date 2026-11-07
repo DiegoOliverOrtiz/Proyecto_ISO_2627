@@ -293,12 +293,12 @@
       !puedeConsultarDetalle(producto)
       ) {
 
-      <p class="premium-message" role="status">
+      <p class="premium-message"><output>
         Solo clientes Premium pueden consultar
         este producto. Hazte Premium para acceder
         a productos exclusivos y ver sus
         descuentos Premium.
-      </p>
+      </output></p>
 
       }
 
@@ -308,7 +308,7 @@
       <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
       }
       @if (exitoCarrito()) {
-      <output class="status-message" role="status">
+      <output class="status-message">
         {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
       </output>
       }
@@ -392,7 +392,7 @@
 
   @if (detalle(); as producto) {
 
-  <section class="product-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title"
+  <dialog open class="product-detail" aria-modal="true" aria-labelledby="detail-title"
     (keydown)="manejarTecladoDetalle($event)">
 
     <!-- ===================================================
@@ -565,7 +565,7 @@
       <section class="detail-reviews" aria-labelledby="reviews-title" aria-live="polite">
         <h3 id="reviews-title">Valoraciones</h3>
         @if (cargandoValoraciones()) {
-        <p role="status">Cargando valoraciones...</p>
+        <p><output>Cargando valoraciones...</output></p>
         } @else if (errorValoraciones()) {
         <p role="alert">{{ errorValoraciones() }}</p>
         <button type="button" class="secondary-button"
@@ -702,9 +702,9 @@
 
       } @else {
 
-      <p class="detail-out-of-stock" role="status">
+      <p class="detail-out-of-stock"><output>
         Producto agotado
-      </p>
+      </output></p>
 
       }
 
@@ -714,7 +714,7 @@
       <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
       }
       @if (exitoCarrito()) {
-      <output class="status-message" role="status">
+      <output class="status-message">
         {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
       </output>
       }
@@ -726,16 +726,16 @@
 
       @if (
       producto.stock > 0 &&
-      producto.stock < 5 ) { <p class="low-stock-notice" role="status">
+      producto.stock < 5 ) { <p class="low-stock-notice"><output>
         Aviso: quedan pocas unidades
         ({{ producto.stock }}).
-        </p>
+        </output></p>
 
         }
 
     </div>
 
-  </section>
+  </dialog>
 
   }
 
