@@ -294,7 +294,7 @@ describe('Register', () => {
 
     expect(
       fixture.nativeElement.querySelector('output').textContent
-    ).toContain('revisará tus datos');
+    ).toContain('revisará los datos');
   });
 
   it('shows the same generic accepted message for an existing email (A21)', () => {
