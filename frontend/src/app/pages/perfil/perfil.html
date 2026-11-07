@@ -79,14 +79,35 @@
           <h3 id="segundo-factor-titulo">Segundo factor de autenticación</h3>
           @if (datos.totpActivado) {
             <p>El acceso con contraseña está protegido con un código adicional.</p>
-            <label class="totp-code-label" for="totp-disable-code">Código actual o de respaldo</label>
-            <input id="totp-disable-code" class="totp-code-input" type="text" maxlength="32"
-                   autocomplete="one-time-code" [disabled]="cargandoTOTP()"
-                   [ngModel]="codigoTOTP()" (ngModelChange)="codigoTOTP.set($event)" />
-            <small>Usa un código distinto del que utilizaste para iniciar sesión.</small>
-            <button class="boton-secundario" type="button" (click)="desactivarTOTP()" [disabled]="cargandoTOTP()">
-              Desactivar TOTP
-            </button>
+
+            @if (datos.tipoUsuario === 'CLIENTE') {
+              <label class="totp-code-label" for="totp-disable-code">
+                Código actual o de respaldo
+              </label>
+
+              <input
+                id="totp-disable-code"
+                class="totp-code-input"
+                type="text"
+                maxlength="32"
+                autocomplete="one-time-code"
+                [disabled]="cargandoTOTP()"
+                [ngModel]="codigoTOTP()"
+                (ngModelChange)="codigoTOTP.set($event)"
+              />
+
+              <small>Usa un código distinto del que utilizaste para iniciar sesión.</small>
+
+              <button
+                class="boton-secundario"
+                type="button"
+                (click)="desactivarTOTP()"
+                [disabled]="cargandoTOTP()">
+                Desactivar TOTP
+              </button>
+            } @else {
+              <p>La verificación en dos pasos es obligatoria para tu rol y no puede desactivarse.</p>
+            }
           } @else if (!configuracionTOTP()) {
             <p>Protege tu cuenta con Google Authenticator, Authy u otra aplicación compatible.</p>
             <button class="boton-principal" type="button" (click)="configurarTOTP()" [disabled]="cargandoTOTP()">

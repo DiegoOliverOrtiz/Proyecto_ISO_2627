@@ -10,9 +10,43 @@
     </section>
 
     <section class="acceso-tarjeta" aria-labelledby="titulo-login">
-      <h1 id="titulo-login" class="acceso-titulo">Iniciar sesión</h1>
+      <h1 id="titulo-login" class="acceso-titulo">
+        @if (codigosRespaldo().length) {
+          Guardar códigos de respaldo
+        } @else if (requiereAltaTotp()) {
+          Configurar verificación en dos pasos
+        } @else if (requiereSegundoFactor()) {
+          Verificar segundo factor
+        } @else {
+          Iniciar sesión
+        }
+      </h1>
 
-      @if (!requiereSegundoFactor()) {
+      @if (codigosRespaldo().length) {
+        <section class="acceso-formulario">
+          <p class="aviso aviso-exito">
+            Has activado la verificación en dos pasos.
+          </p>
+
+          <p>
+            Guarda estos códigos de respaldo en un lugar seguro.
+            No se volverán a mostrar y no debes compartirlos.
+          </p>
+
+          <ul>
+            @for (codigo of codigosRespaldo(); track codigo) {
+              <li><code>{{ codigo }}</code></li>
+            }
+          </ul>
+
+          <button
+            type="button"
+            class="boton-principal"
+            (click)="continuarTrasAlta()">
+            Ya he guardado los códigos. Continuar
+          </button>
+        </section>
+      } @else if (!requiereSegundoFactor() && !requiereAltaTotp()) {
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="acceso-formulario" novalidate>
           @if (mensajeError()) {
             <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
@@ -91,6 +125,29 @@
           </p>
         </form>
       } @else {
+        @if (requiereAltaTotp()) {
+          <section class="acceso-formulario">
+            <p>
+              Para continuar, debes activar la verificación
+              en dos pasos con una aplicación de autenticación.
+            </p>
+
+            @if (qrTotp()) {
+              <img
+                [src]="qrTotp()"
+                alt="Código QR para configurar la aplicación de autenticación"
+                width="220"
+                height="220">
+
+              <p>
+                Escanea este QR con Google Authenticator,
+                Microsoft Authenticator u otra aplicación compatible.
+              </p>
+            }
+
+          </section>
+        }
+
         <form (ngSubmit)="onSubmit()" class="acceso-formulario" novalidate>
           @if (mensajeError()) {
             <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
@@ -111,12 +168,25 @@
               aria-describedby="two-factor-ayuda"
               [(ngModel)]="codigoSegundoFactor">
             <p id="two-factor-ayuda" class="campo-ayuda">
-              También puedes usar uno de tus códigos de respaldo.
+              @if (requiereAltaTotp()) {
+                Introduce el código de seis cifras
+                que aparece en tu aplicación.
+              } @else {
+                También puedes usar uno de tus códigos de respaldo.
+              }
             </p>
           </div>
 
-          <button type="submit" class="boton-principal" [disabled]="isLoading()">
-            {{ isLoading() ? 'Verificando…' : 'Verificar código' }}
+          <button
+            type="submit"
+            class="boton-principal"
+            [disabled]="isLoading()">
+
+            {{
+              isLoading()
+                ? 'Verificando…'
+                : (requiereAltaTotp() ? 'Activar 2FA' : 'Verificar código')
+            }}
           </button>
           <button type="button" class="boton-secundario" [disabled]="isLoading()" (click)="volverAlInicioSesion()">
             Volver al inicio de sesión

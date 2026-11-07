@@ -95,15 +95,37 @@ class AdministradorEliminacionSeguridadTests {
 	void sesionDelAdministradorEliminado_dejaDeSerValidaTrasCerrarSusSesiones() throws Exception {
 		Administrador administrador = new Administrador();
 		administrador.setEmail(EMAIL);
+		administrador.setActivada(true);
+		administrador.setTotpActivado(true);
+		administrador.setSecretoTotpCifrado("secreto-cifrado-prueba");
 		when(authService.autenticar(org.mockito.ArgumentMatchers.eq(EMAIL),
 				org.mockito.ArgumentMatchers.eq(PASSWORD), org.mockito.ArgumentMatchers.anyString())).thenReturn(administrador);
 
-		MockHttpSession sesion = (MockHttpSession) mockMvc.perform(post("/usuarios/login")
-						.with(csrf())
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{\"email\":\"" + EMAIL + "\",\"password\":\"" + PASSWORD + "\"}"))
-				.andExpect(status().isOk())
-				.andReturn().getRequest().getSession(false);
+		MockHttpSession sesionPendiente =
+		        (MockHttpSession) mockMvc.perform(post("/usuarios/login")
+		                .with(csrf())
+		                .contentType(MediaType.APPLICATION_JSON)
+		                .content("{\"email\":\"" + EMAIL
+		                        + "\",\"password\":\"" + PASSWORD + "\"}"))
+		                .andExpect(status().isAccepted())
+		                .andReturn()
+		                .getRequest()
+		                .getSession(false);
+
+		when(authService.buscarPorCorreo(EMAIL)).thenReturn(administrador);
+		when(totpService.verificarSegundoFactor(administrador, "123456"))
+		        .thenReturn(true);
+
+		MockHttpSession sesion =
+		        (MockHttpSession) mockMvc.perform(post("/usuarios/login/2fa")
+		                .session(sesionPendiente)
+		                .with(csrf())
+		                .contentType(MediaType.APPLICATION_JSON)
+		                .content("{\"code\":\"123456\"}"))
+		                .andExpect(status().isOk())
+		                .andReturn()
+		                .getRequest()
+		                .getSession(false);
 
 		mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
 				.andExpect(status().isOk());
