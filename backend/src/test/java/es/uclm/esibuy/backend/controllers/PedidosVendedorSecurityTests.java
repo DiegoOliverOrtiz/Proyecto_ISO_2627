@@ -68,17 +68,17 @@ class PedidosVendedorSecurityTests {
 
     private Pedido pedidoDe(String vendedorId, EstadoPedido estado) {
         Instant fecha = Instant.parse("2026-11-03T10:00:00Z");
-        return new Pedido(
-                "pedido-1",
-                "cliente-1",
-                List.of(new LineaPedido("producto-1", "Producto", new BigDecimal("10.00"), 1,
-                        vendedorId, "Tienda")),
-                estado,
-                new BigDecimal("10.00"),
-                fecha,
-                estado == EstadoPedido.EN_PROCESO ? null : fecha,
-                null,
-                "metodo-pago");
+        return Pedido.builder()
+                .id("pedido-1")
+                .clienteId("cliente-1")
+                .lineas(List.of(new LineaPedido("producto-1", "Producto", new BigDecimal("10.00"), 1,
+                        vendedorId, "Tienda")))
+                .estado(estado)
+                .importe(new BigDecimal("10.00"))
+                .fechaCreacion(fecha)
+                .fechaPago(estado == EstadoPedido.EN_PROCESO ? null : fecha)
+                .metodoPagoId("metodo-pago")
+                .build();
     }
 
     @Test

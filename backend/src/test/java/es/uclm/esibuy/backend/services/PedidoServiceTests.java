@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.mongodb.MongoException;
@@ -72,7 +71,7 @@ class PedidoServiceTests {
         producto.setVendedor("Tienda original");
         producto.setEsVisible(true);
         carrito = new Carrito("cliente-a").conCantidad("producto-1", 2);
-        operacion = UUID.randomUUID().toString();
+        operacion = "6f1c2a3e-8b4d-4c7a-9e2f-1a2b3c4d5e6f";
         autenticar("ROLE_CLIENTE");
     }
 
@@ -110,11 +109,11 @@ class PedidoServiceTests {
 
     private Pedido pedidoConEstado(String id, EstadoPedido estadoFinal) {
         Instant fechaInicial = Instant.parse("2026-11-01T10:00:00Z");
-        Pedido pedido = new Pedido(id, "cliente-a",
-                List.of(new LineaPedido("producto-1", "Teclado", new BigDecimal("20.00"),
-                        1, "vendedor-1", "Tienda")),
-                EstadoPedido.EN_PROCESO, new BigDecimal("20.00"),
-                fechaInicial, null, null, null);
+        Pedido pedido = Pedido.builder().id(id).clienteId("cliente-a")
+                .lineas(List.of(new LineaPedido("producto-1", "Teclado", new BigDecimal("20.00"),
+                        1, "vendedor-1", "Tienda")))
+                .estado(EstadoPedido.EN_PROCESO).importe(new BigDecimal("20.00"))
+                .fechaCreacion(fechaInicial).build();
         EstadoPedido[] camino = {
                 EstadoPedido.EN_PROCESO,
                 EstadoPedido.PAGADO_COMPLETADO,

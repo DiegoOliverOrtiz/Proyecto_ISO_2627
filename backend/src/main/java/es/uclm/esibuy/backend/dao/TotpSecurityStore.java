@@ -21,6 +21,9 @@ public class TotpSecurityStore {
     private static final String COLLECTION = "seguridad_totp";
     public static final int MAX_ATTEMPTS = 5;
     public static final int WINDOW_SECONDS = 300;
+    private static final String CAMPO_INICIO = "inicio";
+    private static final String CAMPO_INTENTOS = "intentos";
+    private static final String CAMPO_ULTIMO_INTERVALO = "ultimoIntervalo";
     private final MongoTemplate mongoTemplate;
 
     public TotpSecurityStore(MongoTemplate mongoTemplate) {
@@ -32,29 +35,29 @@ public class TotpSecurityStore {
         Query identity = Query.query(Criteria.where("_id").is(id));
         try {
             mongoTemplate.upsert(identity, new Update()
-                    .setOnInsert("inicio", Date.from(now)).setOnInsert("intentos", 0), COLLECTION);
+                    .setOnInsert(CAMPO_INICIO, Date.from(now)).setOnInsert(CAMPO_INTENTOS, 0), COLLECTION);
         } catch (DuplicateKeyException ignored) {
             // Otra instancia ha creado el contador al mismo tiempo.
         }
         mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(id)
-                        .and("inicio").lte(Date.from(now.minusSeconds(WINDOW_SECONDS)))),
-                new Update().set("inicio", Date.from(now)).set("intentos", 0), COLLECTION);
+                        .and(CAMPO_INICIO).lte(Date.from(now.minusSeconds(WINDOW_SECONDS)))),
+                new Update().set(CAMPO_INICIO, Date.from(now)).set(CAMPO_INTENTOS, 0), COLLECTION);
         return mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(id)
-                        .and("intentos").lt(MAX_ATTEMPTS)),
-                new Update().inc("intentos", 1), COLLECTION).getModifiedCount() == 1;
+                        .and(CAMPO_INTENTOS).lt(MAX_ATTEMPTS)),
+                new Update().inc(CAMPO_INTENTOS, 1), COLLECTION).getModifiedCount() == 1;
     }
 
     public boolean consumirIntervalo(String userId, String secret, long step) {
         String id = "totp:" + userId + ":" + fingerprint(secret);
         try {
             mongoTemplate.upsert(Query.query(Criteria.where("_id").is(id)),
-                    new Update().setOnInsert("ultimoIntervalo", -1L), COLLECTION);
+                    new Update().setOnInsert(CAMPO_ULTIMO_INTERVALO, -1L), COLLECTION);
         } catch (DuplicateKeyException ignored) {
             // La condición de la actualización decide cuál de las peticiones gana.
         }
         return mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(id)
-                        .and("ultimoIntervalo").lt(step)),
-                new Update().set("ultimoIntervalo", step), COLLECTION).getModifiedCount() == 1;
+                        .and(CAMPO_ULTIMO_INTERVALO).lt(step)),
+                new Update().set(CAMPO_ULTIMO_INTERVALO, step), COLLECTION).getModifiedCount() == 1;
     }
 
     public boolean consumirRespaldo(String userId, String hash) {

@@ -13,6 +13,7 @@ import es.uclm.esibuy.backend.services.DatosPersonalesCryptoService;
 
 @Configuration
 public class DatosPersonalesMongoConfiguration {
+    private static final String CAMPO_TELEFONO = "telefono";
 
     @Bean
     public MongoCustomConversions mongoCustomConversions(DatosPersonalesCryptoService cifrado) {
@@ -30,9 +31,9 @@ public class DatosPersonalesMongoConfiguration {
                                     return cifrado.cifrar(valor, contexto.getProperty().getName());
                                 }
                             };
-                    registro.registerConverter(Cliente.class, "telefono", converter);
-                    registro.registerConverter(Vendedor.class, "telefono", converter);
-                    registro.registerConverter(Administrador.class, "telefono", converter);
+                    registro.registerConverter(Cliente.class, CAMPO_TELEFONO, converter);
+                    registro.registerConverter(Vendedor.class, CAMPO_TELEFONO, converter);
+                    registro.registerConverter(Administrador.class, CAMPO_TELEFONO, converter);
                     registro.registerConverter(Cliente.class, "dniNif", converter);
                     registro.registerConverter(Vendedor.class, "dniNif", converter);
                 }));

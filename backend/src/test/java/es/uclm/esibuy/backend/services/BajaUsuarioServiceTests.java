@@ -166,10 +166,11 @@ class BajaUsuarioServiceTests {
         Direccion direccion = new Direccion();
         direccion.setId("direccion-1");
         direccion.setCalle("Calle Privada");
-        return new Pedido("pedido-1", "cliente-1",
-                List.of(new LineaPedido("producto-1", "Producto histórico", new BigDecimal("4.25"),
-                        1, "vendedor-1", "Tienda Uno")),
-                estado, new BigDecimal("4.25"), Instant.parse("2026-10-01T10:00:00Z"), null,
-                direccion, "metodo-1");
+        return Pedido.builder().id("pedido-1").clienteId("cliente-1")
+                .lineas(List.of(new LineaPedido("producto-1", "Producto histórico", new BigDecimal("4.25"),
+                        1, "vendedor-1", "Tienda Uno")))
+                .estado(estado).importe(new BigDecimal("4.25"))
+                .fechaCreacion(Instant.parse("2026-10-01T10:00:00Z"))
+                .direccionEnvio(direccion).metodoPagoId("metodo-1").build();
     }
 }

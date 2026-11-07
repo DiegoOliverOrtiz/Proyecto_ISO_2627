@@ -19,6 +19,7 @@ import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 
 @Component
 public class PasswordPolicy {
+	private static final String CAMPO_CONTRASENA = "contrasena";
 
 	private final Set<String> commonPasswords;
 
@@ -46,18 +47,18 @@ public class PasswordPolicy {
 				|| !contains(password, Character::isDigit)
 				|| !containsSpecial(password)) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña debe tener al menos 8 caracteres e incluir mayúsculas, minúsculas, números y símbolos.");
 		}
 
 		String normalizedPassword = normalize(password);
 		String alphanumericPassword = normalizedPassword.replaceAll("[^\\p{L}\\p{N}]+", "");
-		String passwordWithoutTrailingDigits = alphanumericPassword.replaceFirst("\\p{N}+$", "");
+		String passwordWithoutTrailingDigits = quitarNumerosFinales(alphanumericPassword);
 		if (commonPasswords.contains(normalizedPassword)
 				|| commonPasswords.contains(alphanumericPassword)
 				|| commonPasswords.contains(passwordWithoutTrailingDigits)) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener términos de la lista de contraseñas comunes.");
 		}
 
@@ -73,7 +74,7 @@ public class PasswordPolicy {
 				.anyMatch(normalizedPasswordIdentifiers::contains);
 		if (containsPersonalData) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener datos personales ni el nombre de la aplicación.");
 		}
 
@@ -84,7 +85,7 @@ public class PasswordPolicy {
 				.anyMatch(normalizedPasswordDigits::contains);
 		if (containsPersonalNumber) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener la fecha de nacimiento, el teléfono ni el DNI.");
 		}
 	}
@@ -112,6 +113,27 @@ public class PasswordPolicy {
 
 	private static String normalize(String value) {
 		return Normalizer.normalize(value, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
+	}
+
+	// Equivale a replaceFirst("\\p{N}+$", "") sin expresión regular, para que el coste sea lineal
+	// aunque la contraseña tenga muchos dígitos que no estén al final (S5852).
+	private static String quitarNumerosFinales(String value) {
+		int fin = value.length();
+		while (fin > 0) {
+			int codePoint = value.codePointBefore(fin);
+			if (!esNumero(codePoint)) {
+				break;
+			}
+			fin -= Character.charCount(codePoint);
+		}
+		return value.substring(0, fin);
+	}
+
+	private static boolean esNumero(int codePoint) {
+		int tipo = Character.getType(codePoint);
+		return tipo == Character.DECIMAL_DIGIT_NUMBER
+				|| tipo == Character.LETTER_NUMBER
+				|| tipo == Character.OTHER_NUMBER;
 	}
 
 	private static Set<String> identifierTokens(String value) {

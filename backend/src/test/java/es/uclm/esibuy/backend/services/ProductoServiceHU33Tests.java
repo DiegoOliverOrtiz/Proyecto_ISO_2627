@@ -264,10 +264,11 @@ class ProductoServiceHU33Tests {
     @Test
     void losPedidosDeOtrosProductosNoImpidenEliminar() {
         Producto producto = crearProducto(NOMBRE_COMERCIAL);
-        Pedido pedidoDeOtroProducto = new Pedido("pedido-2", "cliente-1",
-                List.of(new LineaPedido("otro-producto", "Ratón", new BigDecimal("9.99"), 1,
-                        "vendedor-1", NOMBRE_COMERCIAL)),
-                EstadoPedido.PAGADO_COMPLETADO, new BigDecimal("9.99"), FECHA, FECHA, null, "metodo-1");
+        Pedido pedidoDeOtroProducto = Pedido.builder().id("pedido-2").clienteId("cliente-1")
+                .lineas(List.of(new LineaPedido("otro-producto", "Ratón", new BigDecimal("9.99"), 1,
+                        "vendedor-1", NOMBRE_COMERCIAL)))
+                .estado(EstadoPedido.PAGADO_COMPLETADO).importe(new BigDecimal("9.99"))
+                .fechaCreacion(FECHA).fechaPago(FECHA).metodoPagoId("metodo-1").build();
         prepararEliminacion(producto, List.of(pedidoDeOtroProducto));
 
         productoService.eliminarProducto(EMAIL_VENDEDOR, ID_PRODUCTO);
@@ -328,11 +329,11 @@ class ProductoServiceHU33Tests {
     }
 
     private static Pedido pedidoCon(EstadoPedido estado) {
-        return new Pedido("pedido-1", "cliente-1",
-                List.of(new LineaPedido(ID_PRODUCTO, "Teclado", new BigDecimal("49.99"), 1,
-                        "vendedor-1", NOMBRE_COMERCIAL)),
-                estado, new BigDecimal("49.99"), FECHA,
-                estado == EstadoPedido.EN_PROCESO ? null : FECHA, null, "metodo-1");
+        return Pedido.builder().id("pedido-1").clienteId("cliente-1")
+                .lineas(List.of(new LineaPedido(ID_PRODUCTO, "Teclado", new BigDecimal("49.99"), 1,
+                        "vendedor-1", NOMBRE_COMERCIAL)))
+                .estado(estado).importe(new BigDecimal("49.99")).fechaCreacion(FECHA)
+                .fechaPago(estado == EstadoPedido.EN_PROCESO ? null : FECHA).metodoPagoId("metodo-1").build();
     }
 
     private Vendedor crearVendedor(boolean activado, boolean bloqueado) {

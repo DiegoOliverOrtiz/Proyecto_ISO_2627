@@ -60,25 +60,30 @@ public class DatosPersonalesKeyRotation implements ApplicationRunner {
                 COLECCION_USUARIOS)) {
             var iterador = documentos.iterator();
             while (iterador.hasNext()) {
-                Document documento = iterador.next();
-                Object id = documento.get("_id");
-                for (String campo : CAMPOS) {
-                    Object valorAlmacenado = documento.get(campo);
-                    if (valorAlmacenado instanceof String valor && cifrado.estaCifrado(valor)) {
-                        String valorRotado = cifrado.rotar(valor, campo);
-                        if (!valor.equals(valorRotado)) {
-                            var resultado = mongoTemplate.updateFirst(
-                                    Query.query(Criteria.where("_id").is(id).and(campo).is(valor)),
-                                    new Update().set(campo, valorRotado),
-                                    COLECCION_USUARIOS);
-                            camposRotados += (int) resultado.getModifiedCount();
-                        }
-                    }
-                }
+                camposRotados += rotarDocumento(iterador.next());
             }
         }
 
         LOGGER.info("Rotación de clave de datos personales completada: {} campos actualizados.",
                 camposRotados);
+    }
+
+    private int rotarDocumento(Document documento) {
+        int camposRotados = 0;
+        Object id = documento.get("_id");
+        for (String campo : CAMPOS) {
+            Object valorAlmacenado = documento.get(campo);
+            if (valorAlmacenado instanceof String valor && cifrado.estaCifrado(valor)) {
+                String valorRotado = cifrado.rotar(valor, campo);
+                if (!valor.equals(valorRotado)) {
+                    var resultado = mongoTemplate.updateFirst(
+                            Query.query(Criteria.where("_id").is(id).and(campo).is(valor)),
+                            new Update().set(campo, valorRotado),
+                            COLECCION_USUARIOS);
+                    camposRotados += (int) resultado.getModifiedCount();
+                }
+            }
+        }
+        return camposRotados;
     }
 }
