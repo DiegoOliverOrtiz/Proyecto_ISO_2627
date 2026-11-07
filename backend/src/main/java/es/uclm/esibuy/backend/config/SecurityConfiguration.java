@@ -116,6 +116,8 @@ public class SecurityConfiguration {
                                                                 "/usuarios/login/2fa",
                                                                 "/usuarios/login/2fa/configurar",
                                                                 "/usuarios/login/2fa/confirmar-alta",
+                                                                "/usuarios/login/3fa/verificar",
+                                                                "/usuarios/login/3fa/reenviar",
                                                                 "/usuarios/recuperar-contrasena",
                                                                 "/usuarios/recuperar-contrasena/confirmar",
                                                                 "/cliente/register",

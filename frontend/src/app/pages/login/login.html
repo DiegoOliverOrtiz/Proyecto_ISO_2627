@@ -15,6 +15,8 @@
           Guardar códigos de respaldo
         } @else if (requiereAltaTotp()) {
           Configurar verificación en dos pasos
+        } @else if (requiereVerificacionEmail()) {
+          Verificar correo electrónico
         } @else if (requiereSegundoFactor()) {
           Verificar segundo factor
         } @else {
@@ -32,6 +34,15 @@
             Guarda estos códigos de respaldo en un lugar seguro.
             No se volverán a mostrar y no debes compartirlos.
           </p>
+          @if (mensajeExito()) {
+            <output class="aviso aviso-exito">{{ mensajeExito() }}</output>
+          }
+          @if (!emailOtpEnviado()) {
+            <p class="aviso aviso-info">
+              El correo no se ha podido enviar todavía. Tras guardar los códigos,
+              podrás solicitarlo de nuevo.
+            </p>
+          }
 
           <ul>
             @for (codigo of codigosRespaldo(); track codigo) {
@@ -46,7 +57,7 @@
             Ya he guardado los códigos. Continuar
           </button>
         </section>
-      } @else if (!requiereSegundoFactor() && !requiereAltaTotp()) {
+      } @else if (!requiereSegundoFactor() && !requiereAltaTotp() && !requiereVerificacionEmail()) {
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="acceso-formulario" novalidate>
           @if (mensajeError()) {
             <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
@@ -123,6 +134,50 @@
             ¿No tienes cuenta?
             <a class="enlace" routerLink="/registro">Regístrate</a>
           </p>
+        </form>
+      } @else if (requiereVerificacionEmail()) {
+        <form (ngSubmit)="onSubmit()" class="acceso-formulario" novalidate>
+          @if (mensajeError()) {
+            <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
+          }
+          @if (mensajeExito()) {
+            <output class="aviso aviso-exito">{{ mensajeExito() }}</output>
+          }
+
+          <p>
+            Para terminar el inicio de sesión, introduce el código de seis cifras
+            enviado a la dirección de correo asociada a tu cuenta.
+          </p>
+
+          <div class="campo">
+            <label for="email-otp-code">Código enviado por correo</label>
+            <input
+              id="email-otp-code"
+              name="email-otp-code"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              [(ngModel)]="codigoSegundoFactor">
+          </div>
+
+          <button type="submit" class="boton-principal" [disabled]="isLoading()">
+            {{ isLoading() ? 'Verificando…' : 'Verificar código' }}
+          </button>
+          <button
+            type="button"
+            class="boton-secundario"
+            [disabled]="isLoading()"
+            (click)="reenviarCodigoEmail()">
+            {{ emailOtpEnviado() ? 'Reenviar código' : 'Enviar código' }}
+          </button>
+          <button
+            type="button"
+            class="boton-secundario"
+            [disabled]="isLoading()"
+            (click)="volverAlInicioSesion()">
+            Volver al inicio de sesión
+          </button>
         </form>
       } @else {
         @if (requiereAltaTotp()) {

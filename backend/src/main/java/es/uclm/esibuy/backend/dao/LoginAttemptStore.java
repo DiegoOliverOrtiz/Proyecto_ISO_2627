@@ -26,6 +26,8 @@ import org.springframework.stereotype.Repository;
 public class LoginAttemptStore {
     private static final String COLLECTION = "seguridad_login";
     private static final int WINDOW_SECONDS = 300;
+    private static final int EMAIL_OTP_WINDOW_SECONDS = 600;
+    private static final int MAX_EMAIL_OTP_SENDS = 5;
     private static final int ACCOUNT_FAILURE_WINDOW_SECONDS = 600;
     private static final int MAX_PAIR_ATTEMPTS = 5;
     private static final int ADAPTIVE_USER_THRESHOLD = 20;
@@ -52,7 +54,7 @@ public class LoginAttemptStore {
 
         String emailKey = fingerprint(email);
         String pairId = "par:" + fingerprint(ip + "\u0000" + email);
-        int pairWait = reservarVentana(pairId, now, MAX_PAIR_ATTEMPTS);
+        int pairWait = reservarVentana(pairId, now, WINDOW_SECONDS, MAX_PAIR_ATTEMPTS);
         if (pairWait > 0) {
             return pairWait;
         }
@@ -67,6 +69,15 @@ public class LoginAttemptStore {
             return reservarRetrasoAdaptativo(ipId, now);
         }
         return 0;
+    }
+
+    public int reservarEnvioOtp(String email, Instant now) {
+        ensureTtlIndex();
+        return reservarVentana(
+                id("otp-email", email.trim().toLowerCase(java.util.Locale.ROOT)),
+                now,
+                EMAIL_OTP_WINDOW_SECONDS,
+                MAX_EMAIL_OTP_SENDS);
     }
 
     public int registrarFallo(String email, Instant now) {
@@ -112,10 +123,10 @@ public class LoginAttemptStore {
                 COLLECTION);
     }
 
-    private int reservarVentana(String documentId, Instant now, int limit) {
-        prepararVentana(documentId, now, WINDOW_SECONDS, false);
+    private int reservarVentana(String documentId, Instant now, int windowSeconds, int limit) {
+        prepararVentana(documentId, now, windowSeconds, false);
         Query withinWindow = Query.query(Criteria.where("_id").is(documentId)
-                .and("windowStart").gt(Date.from(now.minusSeconds(WINDOW_SECONDS)))
+                .and("windowStart").gt(Date.from(now.minusSeconds(windowSeconds)))
                 .and("attempts").lt(limit));
         if (mongoTemplate.updateFirst(withinWindow, new Update().inc("attempts", 1), COLLECTION)
                 .getModifiedCount() == 1) {
@@ -123,8 +134,8 @@ public class LoginAttemptStore {
         }
         Document window = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(documentId)),
                 Document.class, COLLECTION);
-        return window == null ? WINDOW_SECONDS
-                : segundosRestantes(window.getDate("windowStart").toInstant().plusSeconds(WINDOW_SECONDS), now);
+        return window == null ? windowSeconds
+                : segundosRestantes(window.getDate("windowStart").toInstant().plusSeconds(windowSeconds), now);
     }
 
     private int registrarUsuarioIp(String ipId, String emailKey, Instant now) {

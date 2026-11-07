@@ -19,6 +19,7 @@ import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.SesionService;
 import es.uclm.esibuy.backend.services.TotpService;
 
@@ -27,7 +28,8 @@ class AuthControllerTwoFactorTests {
     private final TotpService totp = mock(TotpService.class);
     private final SesionService sessions = mock(SesionService.class);
     private final SecurityContextRepository contexts = mock(SecurityContextRepository.class);
-    private final AuthController controller = new AuthController(auth, contexts, sessions, totp);
+    private final EmailOtpService emailOtp = mock(EmailOtpService.class);
+    private final AuthController controller = new AuthController(auth, contexts, sessions, totp, emailOtp);
     private final MockHttpServletResponse response = new MockHttpServletResponse();
     private Cliente user;
 
@@ -57,7 +59,8 @@ class AuthControllerTwoFactorTests {
 
     @Test
     void noSePuedeConstruirElLoginSinElServicioDeSegundoFactor() {
-        assertThrows(NullPointerException.class, () -> new AuthController(auth, contexts, sessions, null));
+        assertThrows(NullPointerException.class,
+                () -> new AuthController(auth, contexts, sessions, null, emailOtp));
     }
 
     @Test

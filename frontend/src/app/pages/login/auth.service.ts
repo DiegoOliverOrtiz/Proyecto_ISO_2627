@@ -10,6 +10,8 @@ export interface RespuestaInicioSesion {
   requiresTwoFactor?: boolean;
   twoFactorToken?: string | null;
   requiresTwoFactorSetup?: boolean;
+  requiresEmailVerification?: boolean;
+  emailVerificationEmailSent?: boolean;
 }
 
 export interface RespuestaConfiguracionTotp {
@@ -102,6 +104,48 @@ export class AuthService {
           this.http.post<RespuestaAltaTotp>(
             `${environment.apiUrl}/usuarios/login/2fa/confirmar-alta`,
             { code: codigo },
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': token
+              })
+            }
+          )
+        )
+      );
+  }
+
+  verificarTercerFactor(codigo: string): Observable<RespuestaInicioSesion> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap(({ token }) =>
+          this.http.post<RespuestaInicioSesion>(
+            `${environment.apiUrl}/usuarios/login/3fa/verificar`,
+            { code: codigo },
+            {
+              withCredentials: true,
+              headers: new HttpHeaders({
+                'X-XSRF-TOKEN': token
+              })
+            }
+          )
+        )
+      );
+  }
+
+  reenviarTercerFactor(): Observable<void> {
+    return this.http
+      .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, {
+        withCredentials: true
+      })
+      .pipe(
+        switchMap(({ token }) =>
+          this.http.post<void>(
+            `${environment.apiUrl}/usuarios/login/3fa/reenviar`,
+            {},
             {
               withCredentials: true,
               headers: new HttpHeaders({

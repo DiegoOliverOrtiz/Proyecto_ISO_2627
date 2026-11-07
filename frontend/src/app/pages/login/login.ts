@@ -29,6 +29,8 @@ export class Login {
   mensajeInfo = signal('');
   requiereSegundoFactor = signal(false);
   requiereAltaTotp = signal(false);
+  requiereVerificacionEmail = signal(false);
+  emailOtpEnviado = signal(false);
   qrTotp = signal('');
   codigosRespaldo = signal<string[]>([]);
   rolTrasAlta: 'ADMIN' | 'VENDEDOR' | null = null;
@@ -78,6 +80,11 @@ export class Login {
       return;
     }
 
+    if (this.requiereVerificacionEmail()) {
+      this.verificarTercerFactor();
+      return;
+    }
+
     if (this.requiereSegundoFactor()) {
       this.verificarSegundoFactor();
       return;
@@ -107,6 +114,16 @@ export class Login {
           if (respuesta.requiresTwoFactor) {
             this.requiereSegundoFactor.set(true);
             this.mensajeExito.set('Introduce el código de tu aplicación de autenticación.');
+            return;
+          }
+          if (respuesta.requiresEmailVerification) {
+            this.requiereVerificacionEmail.set(true);
+            this.emailOtpEnviado.set(!!respuesta.emailVerificationEmailSent);
+            this.mensajeExito.set(
+              this.emailOtpEnviado()
+                ? 'Introduce el código enviado a tu correo electrónico.'
+                : 'No se pudo enviar el código. Usa el botón para solicitarlo de nuevo.'
+            );
             return;
           }
           marcarSesionIniciada();
@@ -173,11 +190,17 @@ export class Login {
           this.isLoading.set(false);
           this.requiereAltaTotp.set(false);
           this.codigosRespaldo.set(backupCodes);
+          this.requiereVerificacionEmail.set(!!login.requiresEmailVerification);
+          this.emailOtpEnviado.set(!!login.emailVerificationEmailSent);
 
           this.rolTrasAlta =
             login.role === 'ADMIN' ? 'ADMIN' : 'VENDEDOR';
 
-          marcarSesionIniciada();
+          this.mensajeExito.set(
+            this.emailOtpEnviado()
+              ? 'Verificación TOTP activada. Guarda los códigos y después verifica tu correo.'
+              : 'Verificación TOTP activada. Guarda los códigos y solicita el código por correo para continuar.'
+          );
           this.codigoSegundoFactor = '';
         },
         error: (error: HttpErrorResponse) => {
@@ -206,6 +229,16 @@ export class Login {
     }
 
     this.codigosRespaldo.set([]);
+    if (this.requiereVerificacionEmail()) {
+      this.mensajeExito.set(
+        this.emailOtpEnviado()
+          ? 'Introduce el código enviado a tu correo electrónico.'
+          : 'No se pudo enviar el código. Solicítalo de nuevo para continuar.'
+      );
+      return;
+    }
+
+    marcarSesionIniciada();
     this.router.navigateByUrl(rutaParaRol(rol));
   }
 
@@ -220,6 +253,18 @@ export class Login {
     this.authService.verificarSegundoFactor(codigo).subscribe({
       next: (respuesta) => {
         this.isLoading.set(false);
+        if (respuesta.requiresEmailVerification) {
+          this.requiereSegundoFactor.set(false);
+          this.requiereVerificacionEmail.set(true);
+          this.emailOtpEnviado.set(!!respuesta.emailVerificationEmailSent);
+          this.mensajeExito.set(
+            this.emailOtpEnviado()
+              ? 'Introduce el código enviado a tu correo electrónico.'
+              : 'No se pudo enviar el código. Usa el botón para solicitarlo de nuevo.'
+          );
+          this.codigoSegundoFactor = '';
+          return;
+        }
         marcarSesionIniciada();
         this.router.navigateByUrl(rutaParaRol(respuesta.role));
       },
@@ -237,9 +282,62 @@ export class Login {
     });
   }
 
+  verificarTercerFactor(): void {
+    const codigo = this.codigoSegundoFactor.trim();
+    if (!/^\d{6}$/.test(codigo)) {
+      this.mensajeError.set('Introduce el código de seis cifras enviado a tu correo.');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.mensajeError.set('');
+    this.authService.verificarTercerFactor(codigo).subscribe({
+      next: (respuesta) => {
+        this.isLoading.set(false);
+        marcarSesionIniciada();
+        this.router.navigateByUrl(rutaParaRol(respuesta.role));
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        if (error.status === 410) {
+          this.volverAlInicioSesion();
+          this.mensajeError.set('La comprobación ha caducado. Vuelve a iniciar sesión.');
+          return;
+        }
+        const mensaje = typeof error.error?.error === 'string'
+          ? error.error.error
+          : 'El código de correo no es válido. Compruébalo y vuelve a intentarlo.';
+        if (error.status === 429 && mensaje.includes('Inicia sesión de nuevo')) {
+          this.volverAlInicioSesion();
+        }
+        this.mensajeError.set(mensaje);
+      }
+    });
+  }
+
+  reenviarCodigoEmail(): void {
+    this.isLoading.set(true);
+    this.mensajeError.set('');
+    this.authService.reenviarTercerFactor().subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.emailOtpEnviado.set(true);
+        this.mensajeExito.set('Hemos enviado un nuevo código a tu correo electrónico.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        this.mensajeError.set(typeof error.error?.error === 'string'
+          ? error.error.error
+          : 'No se pudo enviar el código. Inténtalo de nuevo más tarde.');
+      }
+    });
+  }
+
   volverAlInicioSesion(): void {
     this.requiereSegundoFactor.set(false);
     this.requiereAltaTotp.set(false);
+    this.requiereVerificacionEmail.set(false);
+    this.emailOtpEnviado.set(false);
     this.qrTotp.set('');
     this.codigosRespaldo.set([]);
     this.rolTrasAlta = null;
