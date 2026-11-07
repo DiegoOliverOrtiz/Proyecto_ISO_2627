@@ -1,15 +1,10 @@
 package es.uclm.esibuy.backend.services;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.Set;
 
 
@@ -64,14 +59,10 @@ public class PedidoService {
     public Pedido realizarPedido(String direccionId, String metodoPagoId, String operacionId) {
         validarIdentificador(direccionId, "La dirección es obligatoria.");
         validarIdentificador(metodoPagoId, "El método de pago es obligatorio.");
-        if (operacionId == null || !operacionId.matches(
-                "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")) {
-            throw new IllegalArgumentException("La clave de operación debe ser un UUID.");
-        }
+        String operacion = IdempotenciaPedido.normalizarOperacion(operacionId);
         for (int intento = 0; ; intento++) {
             try {
-                return transaccion.execute(status -> comprar(direccionId, metodoPagoId,
-                        UUID.fromString(operacionId).toString()));
+                return transaccion.execute(status -> comprar(direccionId, metodoPagoId, operacion));
             } catch (RuntimeException exception) {
                 // Nunca repetir el cuerpo si se desconoce el resultado del commit.
                 if (intento >= 2 || !esTransitoria(exception)) throw exception;
@@ -194,7 +185,7 @@ public class PedidoService {
 
     private Pedido comprar(String direccionId, String metodoPagoId, String operacionId) {
         Cliente cliente = carritoService.obtenerClienteAutenticado();
-        String pedidoId = identificadorPedido(cliente.getId(), operacionId);
+        String pedidoId = IdempotenciaPedido.identificadorPedido(cliente.getId(), operacionId);
         Pedido anterior = pedidoDAO.findById(pedidoId).orElse(null);
         if (anterior != null) {
             if (!cliente.getId().equals(anterior.getClienteId())
@@ -251,15 +242,6 @@ public class PedidoService {
 
     private void validarIdentificador(String id, String mensaje) {
         if (id == null || id.isBlank() || id.length() > 128) throw new IllegalArgumentException(mensaje);
-    }
-
-    private String identificadorPedido(String clienteId, String operacionId) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest((clienteId + ":" + operacionId).getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException(exception);
-        }
     }
 
     private boolean esTransitoria(Throwable exception) {
