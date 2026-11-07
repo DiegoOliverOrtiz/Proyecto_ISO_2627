@@ -1,7 +1,7 @@
 # Informe de vulnerabilidades — Sprint 2
 
 **Proyecto:** ESIBuy (grupo 2026-g01). **Tarea:** T-G.19. **Fecha del informe:** 7 de noviembre de 2026.
-**Código analizado:** rama `develop` (commit `16ab6b8a`) más la corrección de dependencias de este informe (rama `feature/T-G19-informe-vulnerabilidades`).
+**Código analizado:** rama `develop` (commit `d3d9ab3b`, con el análisis antivirus de imágenes de la PR \#57) más la corrección de dependencias de este informe (rama `feature/T-G19-informe-vulnerabilidades`).
 
 ## 1. Objetivo y requisito
 
@@ -68,6 +68,7 @@ Que CodeQL no encuentre nada es coherente con las medidas del proyecto (consulta
 | IA-12 | 07/11/2026 | La recuperación de contraseña llama a `PasswordPolicy.validate` sin los datos personales del usuario. | Media | Pasarle nombre, apellidos, correo, teléfono y, si existen, DNI y fecha de nacimiento. | *[pendiente de decisión del equipo]* | ⛔ Abierta |
 | IA-13 | 07/11/2026 | La duración máxima absoluta de la sesión (8 h) es la misma para el administrador, y el requisito pide que sea más estricta. | Baja | Un límite menor para `ROLE_ADMIN` en `SesionAbsolutaFilter`. | *[pendiente de decisión del equipo]* | ⛔ Abierta |
 | IA-14 | 07/11/2026 | `docs/CI-CD-Render.md` no documenta `APP_SECURITY_PASSWORD_PEPPER` ni `APP_SECURITY_EMAIL_OTP_KEY`: sin el primero Render no arranca y sin el segundo vendedores y administradores no pueden entrar. | Media (disponibilidad) | Documentar las variables y darlas de alta en Render. | *[pendiente de decisión del equipo]* | ⛔ Abierta |
+| IA-15 | 07/11/2026 | Con `VIRUSTOTAL_FAIL_CLOSED=false`, `VirusTotalService.verificar` captura cualquier `RuntimeException`, incluida la que lanza cuando VirusTotal marca la imagen como maliciosa o sospechosa: la imagen se acepta igualmente. Las demás validaciones (tipo real, políglotas, tamaño) siguen aplicándose. | Media | Capturar solo los fallos de comunicación con VirusTotal (`IllegalStateException`, `RestClientException`) y dejar pasar el rechazo; añadir un test con una respuesta `malicious > 0` y `fail-closed=false`. | *[pendiente de decisión del equipo]* | ⛔ Abierta |
 
 ### 4.3 Revisiones con asistentes de IA (ChatGPT)
 
@@ -118,7 +119,7 @@ Dependabot sigue mostrando 19 alertas porque analiza la rama por defecto (`main`
 | Crítica | **0** | Ninguna herramienta ha detectado vulnerabilidades críticas en el sprint. |
 | Bloqueante | **0** | SonarQube: 0 *issues* y Quality Gate en verde en backend y frontend (PR \#53 y \#54). |
 | Alta | **0** | Todas las altas (IA-01, IA-02, IA-03, IA-09, H-01 y H-05) están corregidas. |
-| Media | 3 | IA-11, IA-12 e IA-14, pendientes de decisión del equipo. |
+| Media | 4 | IA-11, IA-12, IA-14 e IA-15, pendientes de decisión del equipo. |
 | Baja | 2 | IA-08 (en parte) e IA-13, pendientes de decisión del equipo. |
 
 **Cumple el objetivo del sprint: cero vulnerabilidades críticas o bloqueantes abiertas.**
@@ -129,4 +130,4 @@ Dependabot sigue mostrando 19 alertas porque analiza la rama por defecto (`main`
 - **Dependencias del frontend:** desde `frontend/`, `npm audit` y `npm audit --omit=dev`.
 - **Dependencias del backend:** la etapa *OWASP Dependency-Check* de Azure Pipelines (necesita `NVD_API_KEY`).
 - **Secretos:** la etapa *Secret Scan* de Azure Pipelines.
-- **Tests de seguridad del backend:** desde `backend/`, `./mvnw test -Dtest='!BackendApplicationTests'` (1191 tests, 0 fallos, 14 omitidos el 07/11/2026).
+- **Tests de seguridad del backend:** desde `backend/`, `./mvnw test -Dtest='!BackendApplicationTests'` (1197 tests, 0 fallos, 14 omitidos el 07/11/2026, tras integrar la PR \#57).
