@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import es.uclm.esibuy.backend.exceptions.AutoBloqueoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.services.AdministradorService;
+import es.uclm.esibuy.backend.services.ProductoService;
 
 @WebMvcTest(controllers = AdministradorController.class)
 @Import(AdministradorControllerHU06Tests.MethodSecurityTestConfig.class)
@@ -31,6 +32,9 @@ class AdministradorControllerHU06Tests {
 
         @MockitoBean
         private AdministradorService administradorService;
+
+        @MockitoBean
+        private ProductoService productoService;
 
         @TestConfiguration
         @EnableMethodSecurity

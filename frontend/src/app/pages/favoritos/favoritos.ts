@@ -16,7 +16,7 @@ import {
   standalone: true,
   imports: [DecimalPipe, RouterLink],
   templateUrl: './favoritos.html',
-  styleUrl: './favoritos.css'
+  styleUrls: ['../tienda/tienda.css', './favoritos.css']
 })
 export class Favoritos implements OnInit {
 

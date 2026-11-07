@@ -1,6 +1,8 @@
 package es.uclm.esibuy.backend.services;
 
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -15,6 +17,7 @@ import es.uclm.esibuy.backend.model.Categoria;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.util.EnmascaradorDatosPersonales;
 
 @Service
 public class PerfilService {
@@ -51,6 +54,20 @@ public class PerfilService {
         return consultarPerfil(emailAutenticado);
     }
 
+    public void modificarPreferenciaTercerFactor(String email, boolean activado) {
+        Usuario usuario = buscarUsuarioAutenticado(email);
+        if (!(usuario instanceof Cliente)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "La verificación por correo es obligatoria para este rol.");
+        }
+        if (activado && !usuario.isTotpActivado()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Activa primero el segundo factor TOTP.");
+        }
+        usuario.setEmailOtpActivado(activado);
+        usuarioDAO.save(usuario);
+    }
+
     private Usuario buscarUsuarioAutenticado(String emailAutenticado) {
         if (emailAutenticado == null || emailAutenticado.isBlank()) {
             throw new UsuarioNoEncontradoException();
@@ -74,12 +91,12 @@ public class PerfilService {
 
         if (usuario instanceof Cliente cliente) {
             tipoUsuario = "CLIENTE";
-            dniNif = enmascararDniNif(cliente.getDniNif());
+            dniNif = cliente.getDniNif();
             fechaNacimiento = cliente.getFechaNacimiento();
             esPremium = cliente.isEsPremium();
         } else if (usuario instanceof Vendedor vendedor) {
             tipoUsuario = "VENDEDOR";
-            dniNif = enmascararDniNif(vendedor.getDniNif());
+            dniNif = vendedor.getDniNif();
             nombreComercial = vendedor.getNombreComercial();
             categoria = buscarNombreCategoria(vendedor.getCategoriaId());
             categoriaId = vendedor.getCategoriaId();
@@ -97,9 +114,9 @@ public class PerfilService {
                 usuario.getNombre(),
                 usuario.getApellidos(),
                 usuario.getEmail(),
-                usuario.getTelefono(),
+                EnmascaradorDatosPersonales.telefono(usuario.getTelefono()),
                 usuario.getImagenPerfil(),
-                dniNif,
+                EnmascaradorDatosPersonales.dniNif(dniNif),
                 fechaNacimiento,
                 esPremium,
                 nombreComercial,
@@ -108,17 +125,7 @@ public class PerfilService {
                 sede,
                 fechaIncorporacion,
                 rol,
-                usuario.isTotpActivado());
-    }
-
-    private String enmascararDniNif(String dniNif) {
-        if (dniNif == null || dniNif.isBlank()) {
-            return dniNif;
-        }
-
-        int caracteresVisibles = Math.min(2, dniNif.length());
-        return dniNif.substring(0, caracteresVisibles)
-                + "*".repeat(Math.max(0, dniNif.length() - caracteresVisibles));
+                usuario.isTotpActivado(), usuario.isEmailOtpActivado());
     }
 
     private String buscarNombreCategoria(String categoriaId) {

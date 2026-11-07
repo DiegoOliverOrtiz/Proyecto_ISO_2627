@@ -15,11 +15,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.exceptions.CancelacionPedidoException;
 import es.uclm.esibuy.backend.exceptions.OperacionPedidoConflictivaException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = PedidoController.class)
 public class PedidoExceptionHandler {
+    @ExceptionHandler(CancelacionPedidoException.class)
+    public ResponseEntity<ApiErrorResponse> cancelacionNoPermitida(
+            CancelacionPedidoException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiErrorResponse(exception.getMessage()));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> accesoDenegado() {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

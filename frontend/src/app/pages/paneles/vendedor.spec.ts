@@ -1,7 +1,10 @@
+import { registerLocaleData } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import localeEs from '@angular/common/locales/es';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthService } from '../login/auth.service';
@@ -9,6 +12,12 @@ import { CategoriasService } from '../categorias/categorias.service';
 import { ProductoPropio, ProductoService } from './producto.service';
 import { PanelVendedor } from './vendedor';
 import { VendedorService } from './vendedor.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
 
 describe('PanelVendedor - activar/desactivar producto', () => {
   let component: PanelVendedor;
@@ -39,6 +48,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     consultarProductosPropios: vi.fn(),
     activarProducto: vi.fn(),
     desactivarProducto: vi.fn(),
+    eliminarProducto: vi.fn(),
     crearProducto: vi.fn(),
     modificarProducto: vi.fn(),
     urlImagen: vi.fn()
@@ -50,6 +60,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     );
     productoServiceMock.activarProducto.mockReturnValue(of(void 0));
     productoServiceMock.desactivarProducto.mockReturnValue(of(void 0));
+    productoServiceMock.eliminarProducto.mockReturnValue(of(void 0));
 
     await TestBed.configureTestingModule({
       imports: [PanelVendedor],
@@ -305,7 +316,11 @@ describe('PanelVendedor - activar/desactivar producto', () => {
       const acciones = Array.from(
         fixture.nativeElement.querySelectorAll('ul[aria-label="Mis productos"] .acciones-producto button')
       ).map((boton) => (boton as HTMLButtonElement).getAttribute('aria-label'));
-      expect(acciones).toEqual(['Modificar Ratón inalámbrico', 'Activar Ratón inalámbrico']);
+      expect(acciones).toEqual([
+        'Modificar Ratón inalámbrico',
+        'Activar Ratón inalámbrico',
+        'Eliminar Ratón inalámbrico'
+      ]);
     });
 
     it('activar un producto desde un listado filtrado actúa sobre ese producto y conserva el filtro', () => {
@@ -324,7 +339,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
 
       (
         fixture.nativeElement.querySelector(
-          '.acciones-producto button.boton-secundario'
+          '.acciones-producto button.boton-modificar'
         ) as HTMLButtonElement
       ).click();
       fixture.detectChanges();
@@ -343,7 +358,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
     };
 
     function botonesModificar(): HTMLButtonElement[] {
-      return Array.from(fixture.nativeElement.querySelectorAll('.acciones-producto button.boton-secundario'));
+      return Array.from(fixture.nativeElement.querySelectorAll('.acciones-producto button.boton-modificar'));
     }
 
     beforeEach(() => {
@@ -456,7 +471,7 @@ describe('PanelVendedor - activar/desactivar producto', () => {
 
     it('oculta el botón superior mientras el formulario está abierto (solo queda Cancelar junto a Guardar)', () => {
       const botonSuperior = () => fixture.nativeElement.querySelector('button.añadirProductos');
-      expect(botonSuperior()?.textContent?.trim()).toBe('Añadir Producto');
+      expect(botonSuperior()?.textContent?.trim()).toBe('Añadir producto');
 
       component.editarProducto(productoConDatos);
       fixture.detectChanges();
@@ -747,5 +762,465 @@ describe('PanelVendedor - activar/desactivar producto', () => {
 
       expect(component.formularioProducto.controls.stock.valid).toBe(false);
     });
+  });
+
+  describe('eliminar producto (HU-33)', () => {
+    function botonesEliminar(): HTMLButtonElement[] {
+      return Array.from(fixture.nativeElement.querySelectorAll('button.boton-eliminar'));
+    }
+
+    it('muestra la acción Eliminar en cada producto', () => {
+      expect(botonesEliminar().map((boton) => boton.getAttribute('aria-label'))).toEqual([
+        'Eliminar Teclado',
+        'Eliminar Ratón'
+      ]);
+    });
+
+    it('pide confirmación nombrando el producto antes de eliminarlo', async () => {
+      const confirmar = simularConfirmacion(true);
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+
+      expect(confirmar).toHaveBeenCalledWith(
+        expect.objectContaining({ mensaje: expect.stringContaining('«Teclado»'), peligro: true })
+      );
+    });
+
+    it('elimina el producto confirmado, informa del resultado y recarga el catálogo', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.consultarProductosPropios.mockReturnValue(of([productoDesactivado]));
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.eliminarProducto).toHaveBeenCalledWith('producto-1');
+      expect(component.mensajeExito()).toBe('Producto eliminado correctamente.');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
+      expect(fixture.nativeElement.textContent).not.toContain('Teclado');
+      expect(component.productoEliminando()).toBeNull();
+    });
+
+    it('no elimina nada si se cancela la confirmación', async () => {
+      simularConfirmacion(false);
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+      fixture.detectChanges();
+
+      expect(productoServiceMock.eliminarProducto).not.toHaveBeenCalled();
+      expect(component.mensajeExito()).toBe('');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(1);
+    });
+
+    it('muestra el motivo del backend si el producto tiene pedidos en curso', async () => {
+      simularConfirmacion(true);
+      const motivo =
+        'No se puede eliminar el producto porque figura en pedidos en curso (pagados o enviados).';
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { error: motivo } }))
+      );
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+      fixture.detectChanges();
+
+      expect(component.mensajeError()).toBe(motivo);
+      expect(component.mensajeExito()).toBe('');
+      expect(fixture.nativeElement.textContent).toContain(motivo);
+    });
+
+    it('muestra el mensaje del backend si el producto ya no existe y recarga el catálogo', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 404,
+              error: { error: 'No se ha encontrado el producto solicitado.' }
+            })
+        )
+      );
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+
+      expect(component.mensajeError()).toBe('No se ha encontrado el producto solicitado.');
+      expect(productoServiceMock.consultarProductosPropios).toHaveBeenCalledTimes(2);
+    });
+
+    it('usa un mensaje genérico si el backend no indica el motivo', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 500 }))
+      );
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+
+      expect(component.mensajeError()).toBe('No se pudo eliminar el producto.');
+    });
+
+    it('muestra un mensaje de conexión si el servicio no responde', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 0 }))
+      );
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+
+      expect(component.mensajeError()).toBe('No se pudo conectar con el servicio. Inténtalo de nuevo.');
+    });
+
+    it('si no puede eliminarse, el producto sigue en el catálogo con sus acciones', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 409, error: { error: 'Pedidos en curso' } }))
+      );
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Teclado');
+      expect(botonesEliminar()[0].disabled).toBe(false);
+    });
+
+    it('desactiva el botón mientras se procesa la eliminación', async () => {
+      simularConfirmacion(true);
+      productoServiceMock.eliminarProducto.mockReturnValue(new Subject<void>());
+
+      botonesEliminar()[0].click();
+      await esperarConfirmacion();
+      fixture.detectChanges();
+
+      expect(botonesEliminar()[0].disabled).toBe(true);
+      expect(botonesEliminar()[0].textContent?.trim()).toBe('Eliminando...');
+      expect(botonesEliminar()[1].disabled).toBe(false);
+    });
+
+    it('cierra el formulario si se elimina el producto que se estaba modificando', async () => {
+      simularConfirmacion(true);
+      component.editarProducto(productoActivo);
+      fixture.detectChanges();
+
+      await component.eliminarProducto(productoActivo);
+
+      expect(component.productoEnEdicion()).toBeNull();
+      expect(component.mostrandoFormulario()).toBe(false);
+    });
+  });
+});
+
+registerLocaleData(localeEs, 'es-ES');
+
+describe('PanelVendedor - tarjetas de producto (A15, A16, M7, B7)', () => {
+  let fixture: ComponentFixture<PanelVendedor>;
+
+  const producto = (extra: Partial<ProductoPropio> = {}): ProductoPropio => ({
+    id: 'p1',
+    nombre: 'Teclado',
+    categoria: 'Informática',
+    stock: 4,
+    descripcion: null,
+    precio: 1099,
+    descuento: 0,
+    descuentoPremium: 0,
+    esVisible: true,
+    imagen: null,
+    soloPremium: false,
+    ...extra
+  });
+
+  const servicioProductos = {
+    consultarProductosPropios: vi.fn(),
+    activarProducto: vi.fn(),
+    desactivarProducto: vi.fn(),
+    eliminarProducto: vi.fn(),
+    crearProducto: vi.fn(),
+    modificarProducto: vi.fn(),
+    urlImagen: vi.fn((imagen: string) => `http://api${imagen}`)
+  };
+
+  function crear(productos: ProductoPropio[]): HTMLElement {
+    servicioProductos.consultarProductosPropios.mockReturnValue(of(productos));
+    fixture = TestBed.createComponent(PanelVendedor);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PanelVendedor],
+      providers: [
+        provideRouter([]),
+        { provide: LOCALE_ID, useValue: 'es-ES' },
+        { provide: ProductoService, useValue: servicioProductos },
+        { provide: CategoriasService, useValue: { obtenerCategorias: () => of([]) } },
+        { provide: VendedorService, useValue: { obtenerPerfil: () => of({ nombreComercial: 'Tienda' }) } },
+        { provide: AuthService, useValue: { cerrarSesion: () => of(void 0) } }
+      ]
+    }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  it('muestra el precio con formato español (A15)', () => {
+    const vista = crear([producto({ precio: 1099 }), producto({ id: 'p2', precio: 89.9 })]);
+
+    const precios = Array.from(vista.querySelectorAll('li .precio')).map((p) => p.textContent?.trim());
+    expect(precios).toEqual(['1.099,00 €', '89,90 €']);
+  });
+
+  it('oculta los descuentos a cero y muestra los que tienen valor (B7)', () => {
+    const vista = crear([producto({ descuento: 0, descuentoPremium: 15 })]);
+
+    const texto = vista.querySelector('li')?.textContent ?? '';
+    expect(texto).not.toContain('Descuento: 0');
+    expect(texto).toContain('Descuento Premium: 15 %');
+  });
+
+  it('indica el estado con un chip que conserva el texto «Estado: …»', () => {
+    const vista = crear([producto(), producto({ id: 'p2', esVisible: false })]);
+
+    const chips = vista.querySelectorAll('li .cabecera-producto .chip');
+    expect(chips[0].classList).toContain('chip-exito');
+    expect(chips[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Activo');
+    expect(chips[1].classList).toContain('chip-neutro');
+    expect(chips[1].textContent?.replace(/\s+/g, ' ').trim()).toBe('Estado: Desactivado');
+  });
+
+  it('reserva el marco con un icono si el producto no tiene imagen (M7)', () => {
+    const vista = crear([producto({ imagen: null })]);
+
+    const marco = vista.querySelector('li .marco-imagen');
+    expect(marco?.querySelector('img')).toBeNull();
+    expect(marco?.querySelector('svg')).not.toBeNull();
+    expect(marco?.textContent).toContain('Producto sin imagen');
+  });
+
+  it('sustituye por el icono una imagen que no carga (M7)', () => {
+    const vista = crear([producto({ imagen: '/product-images/roto.png' })]);
+
+    const imagen = vista.querySelector('li .marco-imagen img') as HTMLImageElement;
+    expect(imagen.getAttribute('src')).toBe('http://api/product-images/roto.png');
+    imagen.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(vista.querySelector('li .marco-imagen img')).toBeNull();
+    expect(vista.querySelector('li .marco-imagen svg')).not.toBeNull();
+  });
+
+  it('«Modificar» es la acción principal y «Eliminar» es de contorno (A16)', () => {
+    const vista = crear([producto()]);
+
+    expect(vista.querySelector('.boton-modificar')?.classList).toContain('boton-principal');
+    expect(vista.querySelector('.boton-estado')?.classList).toContain('boton-secundario');
+    expect(vista.querySelector('.boton-eliminar')?.classList).toContain('boton-peligro');
+  });
+  it('la búsqueda por nombre no distingue tildes ni mayúsculas (M22)', () => {
+    const vista = crear([producto({ id: 'a', nombre: 'Ratón inalámbrico' }), producto({ id: 'b', nombre: 'Teclado' })]);
+
+    fixture.componentInstance.terminoBusqueda.set('RATON');
+    fixture.detectChanges();
+
+    const titulos = Array.from(vista.querySelectorAll('li h2')).map((h) => h.textContent?.trim());
+    expect(titulos).toEqual(['Ratón inalámbrico']);
+  });
+
+  it('busca con tilde en el texto y sin tilde en el nombre (M22)', () => {
+    const vista = crear([producto({ id: 'a', nombre: 'Cafe molido' })]);
+
+    fixture.componentInstance.terminoBusqueda.set('café');
+    fixture.detectChanges();
+
+    expect(vista.querySelectorAll('li').length).toBe(1);
+  });
+  describe('formulario de producto (M14, B11)', () => {
+    function abrirFormulario(): HTMLElement {
+      const vista = crear([producto()]);
+      (vista.querySelector('button.añadirProductos') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return vista;
+    }
+
+    it('precio y stock empiezan vacíos y con placeholder, no con un 0', () => {
+      const vista = abrirFormulario();
+
+      const precio = vista.querySelector('#precio-producto') as HTMLInputElement;
+      const stock = vista.querySelector('#stock-producto') as HTMLInputElement;
+      expect(precio.value).toBe('');
+      expect(precio.placeholder).toBe('0,00');
+      expect(stock.value).toBe('');
+      expect(stock.placeholder).toBe('Unidades');
+    });
+
+    it('no deja crear el producto con precio y stock vacíos', () => {
+      abrirFormulario();
+
+      fixture.componentInstance.guardarProducto();
+
+      expect(servicioProductos.crearProducto).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.formularioProducto.controls.precio.hasError('required')).toBe(true);
+      expect(fixture.componentInstance.formularioProducto.controls.stock.hasError('required')).toBe(true);
+    });
+
+    it('la ayuda del formato de imagen va en texto secundario y el error en rojo', () => {
+      const vista = abrirFormulario();
+
+      const ayuda = vista.querySelector('#ayuda-imagen') as HTMLElement;
+      expect(ayuda.classList).toContain('ayuda-campo');
+      expect(ayuda.classList).not.toContain('error-campo');
+
+      fixture.componentInstance.errorImagen.set('La imagen debe ser PNG, JPG o GIF.');
+      fixture.detectChanges();
+      const error = vista.querySelector('.campo-imagen .error-campo') as HTMLElement;
+      expect(error.getAttribute('role')).toBe('alert');
+    });
+
+    it('muestra el nombre del fichero elegido junto al botón «Elegir imagen»', () => {
+      const vista = abrirFormulario();
+      expect(vista.querySelector('.nombre-archivo')?.textContent).toContain('Ningún archivo seleccionado');
+      expect(vista.querySelector('.selector-archivo label')?.textContent).toContain('Elegir imagen');
+
+      fixture.componentInstance.imagenSeleccionada.set(new File([new Uint8Array([1])], 'teclado.png', { type: 'image/png' }));
+      fixture.detectChanges();
+
+      expect(vista.querySelector('.nombre-archivo')?.textContent).toContain('teclado.png');
+    });
+
+    it('los errores de campo usan la clase de error (0,875 rem)', () => {
+      const vista = abrirFormulario();
+
+      fixture.componentInstance.guardarProducto();
+      fixture.detectChanges();
+
+      const errores = vista.querySelectorAll('.campo .error-campo');
+      expect(errores.length).toBeGreaterThan(0);
+    });
+  });
+  describe('foco y desplazamiento del formulario (A20)', () => {
+    function montar(): HTMLElement {
+      const vista = crear([producto({ id: 'a', nombre: 'Teclado' }), producto({ id: 'b', nombre: 'Ratón' })]);
+      document.body.appendChild(vista);
+      return vista;
+    }
+
+    const modificar = (vista: HTMLElement, id: string) =>
+      vista.querySelector(`.boton-modificar[data-producto="${id}"]`) as HTMLButtonElement;
+
+    afterEach(() => {
+      fixture?.nativeElement.remove();
+    });
+
+    it('al pulsar «Modificar» el foco entra en el título del formulario', async () => {
+      const vista = montar();
+      const boton = modificar(vista, 'b');
+      boton.focus();
+
+      boton.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement?.id).toBe('titulo-formulario');
+      expect(document.activeElement?.textContent).toContain('Modificar producto');
+    });
+
+    it('lleva el formulario a la vista con scrollIntoView', async () => {
+      const vista = montar();
+      const desplazar = vi.fn();
+      (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView = desplazar;
+
+      modificar(vista, 'a').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(desplazar).toHaveBeenCalledWith(expect.objectContaining({ block: 'start' }));
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    });
+
+    it('al cancelar devuelve el foco al «Modificar» del mismo producto', async () => {
+      const vista = montar();
+      modificar(vista, 'b').click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.alternarFormulario();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(modificar(vista, 'b'));
+    });
+
+    it('al cancelar «Añadir producto» el foco vuelve a ese botón', async () => {
+      const vista = montar();
+      const anadir = vista.querySelector('button.añadirProductos') as HTMLButtonElement;
+      anadir.focus();
+      anadir.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(document.activeElement?.id).toBe('titulo-formulario');
+
+      fixture.componentInstance.alternarFormulario();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(vista.querySelector('button.añadirProductos'));
+    });
+  });
+  describe('errores y vacíos con salida (M5, B4)', () => {
+    it('si falla la carga ofrece «Reintentar» y vuelve a pedir los productos', () => {
+      servicioProductos.consultarProductosPropios.mockReturnValueOnce(
+        throwError(() => new HttpErrorResponse({ status: 500 }))
+      );
+      fixture = TestBed.createComponent(PanelVendedor);
+      fixture.detectChanges();
+      const vista = fixture.nativeElement as HTMLElement;
+
+      const reintentar = vista.querySelector('.estado[role="alert"] button') as HTMLButtonElement;
+      expect(reintentar.textContent?.trim()).toBe('Reintentar');
+
+      servicioProductos.consultarProductosPropios.mockReturnValue(of([producto()]));
+      reintentar.click();
+      fixture.detectChanges();
+
+      expect(servicioProductos.consultarProductosPropios).toHaveBeenCalledTimes(2);
+      expect(vista.querySelector('li h2')?.textContent).toContain('Teclado');
+    });
+
+    it('sin productos explica cómo crear el primero', () => {
+      const vista = crear([]);
+
+      expect(vista.querySelector('.estado')?.textContent).toContain('Aún no tienes productos registrados.');
+      expect(vista.querySelector('.estado')?.textContent).toContain('Añadir producto');
+    });
+
+    it('sin resultados ofrece «Limpiar filtros» junto al mensaje', () => {
+      const vista = crear([producto({ nombre: 'Teclado' })]);
+      fixture.componentInstance.terminoBusqueda.set('zzz');
+      fixture.detectChanges();
+
+      const limpiar = vista.querySelector('.estado button') as HTMLButtonElement;
+      expect(limpiar.textContent?.trim()).toBe('Limpiar filtros');
+      limpiar.click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.terminoBusqueda()).toBe('');
+      expect(vista.querySelectorAll('li').length).toBe(1);
+    });
+  });
+  it('la casilla «Solo premium» va dentro de su etiqueta, para que no se estire como un campo de texto', () => {
+    const vista = crear([producto()]);
+    (vista.querySelector('button.añadirProductos') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const casilla = vista.querySelector('#solo-premium-producto') as HTMLInputElement;
+    expect(casilla.type).toBe('checkbox');
+    expect(casilla.closest('label')?.textContent).toContain('Solo para clientes premium');
   });
 });

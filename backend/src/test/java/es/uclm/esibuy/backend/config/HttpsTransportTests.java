@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.time.Duration;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
@@ -35,6 +34,7 @@ import es.uclm.esibuy.backend.services.AuthService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "PERSONAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         "TOTP_MIGRATE_KEY=false",
         "FRONTEND_ORIGIN=https://localhost:4200",
         "spring.mongodb.auto-index-creation=false",
@@ -44,7 +44,9 @@ import es.uclm.esibuy.backend.services.AuthService;
 })
 class HttpsTransportTests {
     private static Path keyStorePath;
-    private static final String PASSWORD = UUID.randomUUID().toString();
+    // Clave del keystore autofirmado que el propio test genera en un directorio temporal y borra al
+    // terminar. No protege nada real.
+    private static final String PASSWORD = "esibuy-tls-keystore-de-prueba"; // gitleaks:allow
 
     @MockitoBean
     private MongoClient mongoClient;
@@ -124,7 +126,8 @@ class HttpsTransportTests {
         Cliente user = new Cliente();
         user.setEmail("tls@example.com");
         user.setActivada(true);
-        when(authService.autenticar("tls@example.com", "test-password")).thenReturn(user);
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("tls@example.com"),
+            org.mockito.ArgumentMatchers.eq("test-password"), org.mockito.ArgumentMatchers.anyString())).thenReturn(user);
         var client = trustedClient();
         var csrf = client.send(HttpRequest.newBuilder(URI.create("https://localhost:" + port + "/usuarios/csrf"))
                 .GET().build(), HttpResponse.BodyHandlers.ofString());

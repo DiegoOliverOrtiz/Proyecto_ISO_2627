@@ -8,6 +8,7 @@ import es.uclm.esibuy.backend.dao.TipoMetodoPagoDAO;
 
 @SpringBootTest(properties = {
 		"TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+		"PERSONAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
 		"server.ssl.enabled=false",
 		"TOTP_MIGRATE_KEY=false"
 })

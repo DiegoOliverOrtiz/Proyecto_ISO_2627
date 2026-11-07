@@ -6,6 +6,7 @@ import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
 import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.util.EnmascaradorDatosPersonales;
 
 public record UsuarioAdministracionResponse(
         String id,
@@ -37,7 +38,7 @@ public record UsuarioAdministracionResponse(
                 usuario.getNombre(),
                 usuario.getApellidos(),
                 usuario.getEmail(),
-                usuario.getTelefono(),
+                EnmascaradorDatosPersonales.telefono(usuario.getTelefono()),
                 calcularEstado(usuario),
                 datos.rol(),
                 usuario.getImagenPerfil(),
@@ -45,7 +46,7 @@ public record UsuarioAdministracionResponse(
                 datos.fechaIncorporacion(),
                 datos.esPremium(),
                 datos.nombreComercial(),
-                datos.dniNif(),
+                EnmascaradorDatosPersonales.dniNif(datos.dniNif()),
                 datos.fechaNacimiento(),
                 datos.categoriaId());
     }

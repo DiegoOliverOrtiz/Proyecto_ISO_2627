@@ -3,6 +3,7 @@ package es.uclm.esibuy.backend.services;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,8 @@ import es.uclm.esibuy.backend.model.Direccion;
 
 @Service
 public class ClienteService {
+	private static final DateTimeFormatter FORMATO_FECHA_IDENTIFICATIVA =
+			DateTimeFormatter.ofPattern("ddMMyyyy");
 
 	private final ClienteDAO clienteDAO;
 	private final SoporteRegistro soporteRegistro;
@@ -65,7 +68,17 @@ public class ClienteService {
 		if (request == null) {
 			throw new InvalidRegistrationException();
 		}
-		soporteRegistro.validarSolicitud(request, request.contrasena());
+		soporteRegistro.validarSolicitud(
+				request,
+				request.contrasena(),
+				request.nombre(),
+				request.apellidos(),
+				request.email(),
+				request.fechaNacimiento() == null
+						? null
+						: request.fechaNacimiento().format(FORMATO_FECHA_IDENTIFICATIVA),
+				request.telefono(),
+				request.dniNif());
 		String email = soporteRegistro.normalizarCorreo(request.email());
 		soporteRegistro.comprobarCorreoDisponible(email);
 
@@ -82,7 +95,9 @@ public class ClienteService {
 		cliente.setActivada(false);
 		cliente.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
-		Cliente guardado = soporteRegistro.guardarRegistro(() -> clienteDAO.save(cliente));
+		Cliente guardado = soporteRegistro.guardarRegistroPublico(
+				email,
+				() -> clienteDAO.save(cliente));
 
 		if (favoritosRegistroService != null) {
 			favoritosRegistroService.crearListaPredeterminada(

@@ -1,19 +1,8 @@
-<header class="cabecera">
-    <a routerLink="/vendedor" class="marca">ESIBuy</a>
-
-    <h1>Mis pedidos</h1>
-
-    <nav aria-label="Navegación del vendedor">
-        <a routerLink="/vendedor">Mis productos</a>
-        <a routerLink="/perfil">Mi perfil</a>
-    </nav>
-</header>
-
-<main class="contenedor">
-    <div class="encabezado">
+<main class="pagina">
+    <div class="pagina-cabecera">
         <div>
-            <h2>Pedidos de mis productos</h2>
-            <p>
+            <h1 class="pagina-titulo">Pedidos de mis productos</h1>
+            <p class="pagina-descripcion">
                 Consulta los pedidos recibidos y su estado.
                 Solo se muestran los productos de tu tienda.
             </p>
@@ -24,47 +13,56 @@
         </button>
     </div>
 
-    <div class="pestañas" role="group" aria-label="Tipo de pedidos">
-        <button type="button" [class.seleccionada]="pestana() === 'activos'"
-            [attr.aria-pressed]="pestana() === 'activos'" (click)="cambiarPestana('activos')">
+    <!-- M15: patrón ARIA de pestañas, con flechas, Inicio y Fin. -->
+    <div class="pestañas" role="tablist" aria-label="Tipo de pedidos">
+        <button type="button" role="tab" id="pestana-activos" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'activos'" [attr.aria-selected]="pestana() === 'activos'"
+            [attr.tabindex]="pestana() === 'activos' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('activos')">
             Pedidos activos
         </button>
 
-        <button type="button" [class.seleccionada]="pestana() === 'historico'"
-            [attr.aria-pressed]="pestana() === 'historico'" (click)="cambiarPestana('historico')">
+        <button type="button" role="tab" id="pestana-historico" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'historico'" [attr.aria-selected]="pestana() === 'historico'"
+            [attr.tabindex]="pestana() === 'historico' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('historico')">
             Histórico
         </button>
     </div>
 
     @if (mensajeExito()) {
-    <p class="mensaje-exito" role="status">{{ mensajeExito() }}</p>
+    <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
     }
 
     @if (errorAccion()) {
-    <p class="mensaje-error" role="alert">{{ errorAccion() }}</p>
+    <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
     }
 
+    <div role="tabpanel" id="panel-pedidos" [attr.aria-labelledby]="'pestana-' + pestana()">
     @if (cargando()) {
-    <p role="status">Cargando pedidos...</p>
+    <p class="estado"><output>Cargando pedidos...</output></p>
     } @else if (error()) {
-    <p class="mensaje-error" role="alert">{{ error() }}</p>
+    <section class="estado" role="alert">
+        <p class="estado-titulo">{{ error() }}</p>
+        <button type="button" class="boton-secundario" (click)="cargarPedidos()">Reintentar</button>
+    </section>
     } @else if (pedidos().length === 0) {
-    <div class="estado-vacio">
+    <div class="estado">
         @if (pestana() === 'activos') {
-        <h3>No tienes pedidos activos</h3>
+        <p class="estado-titulo">No tienes pedidos activos</p>
         <p>Los pedidos aparecerán aquí cuando los clientes completen el pago.</p>
         } @else {
-        <h3>Tu histórico está vacío</h3>
+        <p class="estado-titulo">Tu histórico está vacío</p>
         <p>Los pedidos finalizados aparecerán aquí.</p>
         }
     </div>
     } @else {
     <div class="lista-pedidos">
         @for (pedido of pedidos(); track pedido.id) {
-        <article class="tarjeta-pedido">
+        <article class="tarjeta tarjeta-pedido">
             <div class="cabecera-pedido">
                 <div>
-                    <h3>Pedido {{ pedido.id }}</h3>
+                    <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
                     <p>
                         Fecha:
                         {{ (pedido.fechaPago || pedido.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}
@@ -72,7 +70,7 @@
                     <p>Cliente: {{ pedido.clienteNombre }}</p>
                 </div>
 
-                <span class="estado">{{ textoEstado(pedido.estado) }}</span>
+                <span class="chip" [class]="'chip ' + claseChip(pedido.estado)">{{ textoEstado(pedido.estado) }}</span>
             </div>
 
             <div class="resumen">
@@ -83,17 +81,17 @@
 
                 <p>
                     <strong>Importe de tu tienda:</strong>
-                    {{ pedido.importeProductosPropios.toFixed(2) }} €
+                    {{ pedido.importeProductosPropios | number:'1.2-2' }} €
                 </p>
             </div>
 
             <div class="acciones">
-                <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido)">
+                <button type="button" class="boton-secundario boton-detalle" [attr.data-pedido]="pedido.id" (click)="abrirDetalle(pedido)">
                     Ver detalle
                 </button>
 
                 @if (puedeAceptar(pedido)) {
-                <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+                <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
                     (click)="aceptarPedido(pedido)">
                     {{ pedidoEnProceso() === pedido.id ? 'Aceptando...' : 'Aceptar y enviar' }}
                 </button>
@@ -103,20 +101,21 @@
         }
     </div>
     }
+    </div>
 
     @if (cargandoDetalle()) {
-    <p role="status">Cargando detalle del pedido...</p>
+    <p class="estado"><output>Cargando detalle del pedido...</output></p>
     }
 
     @if (errorDetalle()) {
-    <p class="mensaje-error" role="alert">{{ errorDetalle() }}</p>
+    <p class="aviso aviso-error" role="alert">{{ errorDetalle() }}</p>
     }
 
     @if (pedidoSeleccionado(); as detalle) {
-    <section class="detalle" aria-label="Detalle del pedido">
+    <section class="tarjeta detalle" aria-label="Detalle del pedido">
         <div class="cabecera-detalle">
             <div>
-                <h2>Detalle del pedido</h2>
+                <h2 id="titulo-detalle" class="titulo-detalle" tabindex="-1">Detalle del pedido</h2>
                 <p>Referencia: {{ detalle.id }}</p>
             </div>
 
@@ -127,7 +126,7 @@
 
         <p>
             <strong>Estado:</strong>
-            {{ textoEstado(detalle.estado) }}
+            <span class="chip" [class]="'chip ' + claseChip(detalle.estado)">{{ textoEstado(detalle.estado) }}</span>
         </p>
         <p>Cliente: {{ detalle.clienteNombre }}</p>
 
@@ -149,9 +148,9 @@
                     <tr>
                         <td>{{ producto.nombreProducto }}</td>
                         <td>{{ producto.cantidad }}</td>
-                        <td>{{ producto.precioCompra.toFixed(2) }} €</td>
+                        <td>{{ producto.precioCompra | number:'1.2-2' }} €</td>
                         <td>
-                            {{ (producto.precioCompra * producto.cantidad).toFixed(2) }} €
+                            {{ producto.precioCompra * producto.cantidad | number:'1.2-2' }} €
                         </td>
                     </tr>
                     }
@@ -161,7 +160,7 @@
 
         <p class="total">
             Importe de tus productos:
-            {{ detalle.importeProductosPropios.toFixed(2) }} €
+            <span class="importe">{{ detalle.importeProductosPropios | number:'1.2-2' }} €</span>
         </p>
 
         @if (detalle.direccionEnvio; as direccion) {
@@ -187,7 +186,7 @@
 
         @if (puedeAceptar(detalle)) {
         <div class="acciones">
-            <button type="button" class="boton-primario" [disabled]="pedidoEnProceso() !== null"
+            <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
                 (click)="aceptarPedido(detalle)">
                 {{ pedidoEnProceso() === detalle.id ? 'Aceptando...' : 'Aceptar y enviar' }}
             </button>

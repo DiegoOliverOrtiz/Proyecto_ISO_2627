@@ -16,7 +16,7 @@ class PedidoDAOTests {
 
     private Method actualizarEstado() throws NoSuchMethodException {
         return PedidoDAO.class.getMethod(
-                "actualizarEstado", String.class, String.class, String.class, String.class);
+                "actualizarEstado", String.class, String.class, String.class, String.class, java.util.List.class);
     }
 
     @Test
@@ -29,15 +29,34 @@ class PedidoDAOTests {
     }
 
     @Test
-    void elCambioDeEstadoSoloModificaElEstado() throws Exception {
-        String actualizacion = actualizarEstado().getAnnotation(Update.class).value().replace(" ", "");
+    void elCambioDeEstadoActualizaEstadoEHistorialSinModificarOtrosDatos()
+            throws Exception {
 
-        // El resto del documento (líneas, importe, fechas, cliente) queda igual que lo ve el cliente.
-        assertEquals("{'$set':{'estado':?3}}", actualizacion);
+        String actualizacion = actualizarEstado()
+                .getAnnotation(Update.class)
+                .value()
+                .replace(" ", "");
+
+        assertEquals(
+                "{'$set':{'estado':?3,'historialEstados':?4}}",
+                actualizacion);
     }
 
     @Test
     void elCambioDeEstadoDevuelveElNumeroDeDocumentosModificados() throws Exception {
         assertEquals(long.class, actualizarEstado().getReturnType());
+    }
+
+    // HU-33: comprobación de pedidos en curso antes de eliminar un producto.
+    @Test
+    void laComprobacionDePedidosFiltraPorProductoYEstados() throws Exception {
+        Query query = PedidoDAO.class
+                .getMethod("existsByProductoIdAndEstadoIn", String.class, java.util.List.class)
+                .getAnnotation(Query.class);
+        String filtro = query.value().replace(" ", "");
+
+        assertTrue(query.exists());
+        assertTrue(filtro.contains("'lineas.productoId':?0"));
+        assertTrue(filtro.contains("'estado':{'$in':?1}"));
     }
 }

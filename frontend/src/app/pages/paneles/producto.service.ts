@@ -44,6 +44,17 @@ export interface ProductoCatalogo {
   puedeConsultarDetalle?: boolean;
 }
 
+export interface ValoracionPublica {
+  puntuacion: number;
+  comentario: string | null;
+}
+
+export interface ValoracionesProducto {
+  media: number;
+  total: number;
+  valoraciones: ValoracionPublica[];
+}
+
 export interface CrearProductoRequest {
   nombre: string;
   categoria: string;
@@ -95,6 +106,13 @@ export class ProductoService {
   consultarDetalleProducto(id: string): Observable<ProductoCatalogo> {
     return this.http.get<ProductoCatalogo>(
       `${environment.apiUrl}/cliente/productos/${encodeURIComponent(id)}`,
+      { withCredentials: true }
+    );
+  }
+
+  consultarValoraciones(id: string): Observable<ValoracionesProducto> {
+    return this.http.get<ValoracionesProducto>(
+      `${environment.apiUrl}/cliente/productos/${encodeURIComponent(id)}/valoraciones`,
       { withCredentials: true }
     );
   }
@@ -163,6 +181,16 @@ export class ProductoService {
     return this.cambiarEstado(id, 'desactivar');
   }
 
+  // HU-33: eliminación definitiva; el backend la rechaza si el producto tiene pedidos en curso.
+  eliminarProducto(id: string): Observable<void> {
+    return this.conTokenCsrf((cabeceras) =>
+      this.http.delete<void>(`${environment.apiUrl}/vendedor/productos/${encodeURIComponent(id)}`, {
+        withCredentials: true,
+        headers: cabeceras,
+      })
+    );
+  }
+
   private cambiarEstado(id: string, accion: 'activar' | 'desactivar'): Observable<void> {
     return this.http
       .get<RespuestaTokenCsrf>(`${environment.apiUrl}/usuarios/csrf`, { withCredentials: true })
@@ -183,6 +211,7 @@ export class ProductoService {
   urlImagen(imagen: string): string {
     const ruta = imagen.trim();
     if (/^https?:\/\//i.test(ruta)) return ruta;
-    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
+    const destino = ruta.startsWith('/') ? ruta : `/product-images/${ruta}`;
+    return `${environment.apiUrl}${destino}`;
   }
 }

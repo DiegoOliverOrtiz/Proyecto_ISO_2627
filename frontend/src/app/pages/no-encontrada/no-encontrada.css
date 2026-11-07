@@ -1,0 +1,61 @@
+.no-encontrada {
+  display: grid;
+  min-height: 100vh;
+  align-content: start;
+  gap: 3rem;
+  padding: 1.5rem clamp(1rem, 5vw, 4.5rem);
+  color: var(--color-text);
+  background: var(--color-background);
+}
+
+.marca {
+  justify-self: start;
+  color: var(--color-brand);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.marca span {
+  color: var(--color-accent);
+}
+
+.contenido {
+  max-width: 34rem;
+}
+
+.codigo {
+  margin: 0 0 .5rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 500;
+}
+
+.contenido p:not(.codigo) {
+  margin: 0 0 2rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.accion-principal {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 1.25rem;
+  border-radius: 8px;
+  color: var(--color-accent-on);
+  background: var(--color-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.accion-principal:hover {
+  background: var(--color-accent-hover);
+}

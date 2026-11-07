@@ -24,6 +24,7 @@ import es.uclm.esibuy.backend.dto.EstadisticasUsuariosResponse;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.dto.UsuarioAdministracionResponse;
 import es.uclm.esibuy.backend.services.AdministradorService;
+import es.uclm.esibuy.backend.services.ProductoService;
 
 @WebMvcTest(controllers = AdministradorController.class)
 @Import(SecurityConfiguration.class)
@@ -34,6 +35,9 @@ class AdministradorControllerHU04Tests {
 
     @MockitoBean
     private AdministradorService administradorService;
+
+    @MockitoBean
+    private ProductoService productoService;
 
     @Test
     void administradorPuedeConsultarElListadoConFiltros() throws Exception {

@@ -25,7 +25,7 @@ import es.uclm.esibuy.backend.dto.PerfilResponse;
 import es.uclm.esibuy.backend.dto.FiltroProductosRequest;
 import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
-import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
+import es.uclm.esibuy.backend.dto.RegistroPublicoResponse;
 import es.uclm.esibuy.backend.exceptions.DireccionDuplicadaException;
 import es.uclm.esibuy.backend.exceptions.DireccionNoEncontradaException;
 import es.uclm.esibuy.backend.services.ClienteService;
@@ -56,8 +56,9 @@ public class ClienteController {
         }
 
         @PostMapping("/register")
-        public ResponseEntity<RegistroUsuarioResponse> register(@Valid @RequestBody RegistroClienteRequest request) {
-                return ResponseEntity.status(HttpStatus.CREATED).body(clienteService.registrar(request));
+        public ResponseEntity<RegistroPublicoResponse> register(@Valid @RequestBody RegistroClienteRequest request) {
+                clienteService.registrar(request);
+                return ResponseEntity.accepted().body(RegistroPublicoResponse.confirmacion());
         }
 
         @GetMapping("/productos")

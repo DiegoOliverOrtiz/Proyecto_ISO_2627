@@ -1,0 +1,341 @@
+<main class="contenedor pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mis pedidos</h1>
+      <p class="pagina-descripcion">Consulta tus pedidos, su estado y la información del envío.</p>
+    </div>
+    <button
+      type="button"
+      class="boton-secundario"
+      [disabled]="cargandoActivos() || cargandoHistorico()"
+      (click)="cargarPedidos()">
+      Actualizar
+    </button>
+  </div>
+  @if (resultadoCancelacion()) {
+    <p class="mensaje-exito"><output>{{ resultadoCancelacion() }}</output></p>
+  }
+  @if (errorCancelacion()) {
+    <p class="mensaje-error" role="alert">{{ errorCancelacion() }}</p>
+  }
+
+  @if (resultadoRecepcion()) {
+    <p class="mensaje-exito"><output>
+      {{ resultadoRecepcion() }}
+    </output></p>
+  }
+
+  @if (errorRecepcion()) {
+    <p class="mensaje-error" role="alert">
+      {{ errorRecepcion() }}
+    </p>
+  }
+  <section class="seccion-pedidos" aria-labelledby="titulo-activos">
+    <h2 id="titulo-activos">Pedidos activos</h2>
+
+    @if (cargandoActivos()) {
+      <p><output>Cargando pedidos activos...</output></p>
+    } @else if (errorActivos()) {
+      <p class="mensaje-error" role="alert">{{ errorActivos() }}</p>
+    } @else if (pedidosActivos().length === 0) {
+      <div class="estado-vacio">
+        <h3>No tienes pedidos activos</h3>
+        <p>Cuando completes una compra, aparecerá aquí.</p>
+      </div>
+    } @else {
+      <div class="lista-pedidos">
+        @for (pedido of pedidosActivos(); track pedido.id) {
+          <article class="tarjeta-pedido">
+            <div class="cabecera-pedido">
+              <div>
+                <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
+                <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <span class="chip-estado">{{ textoEstado(pedido.estado) }}</span>
+            </div>
+
+            <div class="resumen">
+              <p><strong>Productos:</strong> {{ pedido.lineas.length }}</p>
+              <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
+            </div>
+
+            <div class="acciones-pedido">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
+                Ver detalle y seguimiento
+              </button>
+              @if (puedeCancelar(pedido.estado)) {
+                <button
+                  type="button"
+                  class="boton-cancelar"
+                  [disabled]="pedidoCancelandoId() !== null"
+                  (click)="cancelarPedido(pedido)">
+                  {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+                </button>
+              }
+              @if (puedeConfirmarRecepcion(pedido.estado)) {
+                <button
+                  type="button"
+                  class="boton-primario"
+                  [disabled]="pedidoConfirmandoId() !== null"
+                  (click)="confirmarRecepcion(pedido)">
+                  {{ pedidoConfirmandoId() === pedido.id
+                      ? 'Confirmar recepción (procesando...)'
+                      : 'Confirmar recepción' }}
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <section class="seccion-pedidos" aria-labelledby="titulo-historico">
+    <h2 id="titulo-historico">Histórico de pedidos</h2>
+
+    @if (cargandoHistorico()) {
+      <p><output>Cargando histórico...</output></p>
+    } @else if (errorHistorico()) {
+      <p class="mensaje-error" role="alert">{{ errorHistorico() }}</p>
+    } @else if (pedidosHistoricos().length === 0) {
+      <div class="estado-vacio">
+        <h3>Tu histórico está vacío</h3>
+        <p>Los pedidos finalizados aparecerán aquí.</p>
+      </div>
+    } @else {
+      <div class="lista-pedidos">
+        @for (pedido of pedidosHistoricos(); track pedido.id) {
+          <article class="tarjeta-pedido">
+            <div class="cabecera-pedido">
+              <div>
+                <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
+                <p>Fecha: {{ pedido.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+              <span class="chip-estado" [class.estado-cancelado]="pedido.estado === 'CANCELADO'">
+                {{ textoEstado(pedido.estado) }}
+              </span>
+            </div>
+
+            <div class="resumen">
+              <p><strong>Productos:</strong> {{ pedido.lineas.length }}</p>
+              <p><strong>Total:</strong> {{ pedido.importe | number:'1.2-2' }} €</p>
+            </div>
+
+            <div class="acciones-pedido">
+              <button type="button" class="boton-secundario" (click)="abrirDetalle(pedido.id)">
+                Ver detalle y seguimiento
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  @if (cargandoDetalle()) {
+    <p><output>Cargando detalle del pedido...</output></p>
+  }
+
+  @if (errorDetalle()) {
+    <p class="mensaje-error" role="alert">{{ errorDetalle() }}</p>
+  }
+
+  @if (pedidoSeleccionado(); as pedido) {
+    <section #detallePedido class="detalle" aria-labelledby="titulo-detalle">
+      <div class="cabecera-detalle">
+        <div>
+          <h2 id="titulo-detalle">Detalle del pedido</h2>
+          <p>Referencia: #{{ referenciaPedido(pedido.id) }}</p>
+        </div>
+        <button type="button" class="boton-secundario" (click)="cerrarDetalle()">
+          Cerrar
+        </button>
+      </div>
+
+      <p><strong>Estado actual:</strong> {{ textoEstado(pedido.estado) }}</p>
+      <div class="acciones-pedido">
+        @if (puedeCancelar(pedido.estado)) {
+          <button
+            type="button"
+            class="boton-cancelar"
+            [disabled]="pedidoCancelandoId() !== null"
+            (click)="cancelarPedido(pedido)">
+            {{ pedidoCancelandoId() === pedido.id ? 'Cancelando...' : 'Cancelar pedido' }}
+          </button>
+        }
+
+        @if (puedeConfirmarRecepcion(pedido.estado)) {
+          <button
+            type="button"
+            class="boton-primario"
+            [disabled]="pedidoConfirmandoId() !== null"
+            (click)="confirmarRecepcion(pedido)">
+            {{ pedidoConfirmandoId() === pedido.id
+                ? 'Confirmar recepción (procesando...)'
+                : 'Confirmar recepción' }}
+          </button>
+        }
+      </div>
+
+      <h3>Productos</h3>
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Cantidad</th>
+              <th scope="col">Precio unitario</th>
+              <th scope="col">Subtotal</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (linea of pedido.lineas; track linea.productoId) {
+              <tr>
+                <td>{{ linea.nombreProducto }}</td>
+                <td>{{ linea.cantidad }}</td>
+                <td>{{ linea.precioCompra | number:'1.2-2' }} €</td>
+                <td>{{ linea.precioCompra * linea.cantidad | number:'1.2-2' }} €</td>
+                <td>
+                  @if (pedido.estado === 'FINALIZADO') {
+                    @if (estadoValoracion(linea.productoId); as estado) {
+                      @if (estado.estado === 'cargando') {
+                        <output>Comprobando...</output>
+                      } @else if (estado.estado === 'valorada') {
+                        <span class="valoracion-completada">Ya valorado</span>
+                      } @else if (estado.estado === 'error') {
+                        <button
+                          type="button"
+                          class="boton-secundario"
+                          (click)="reintentarConsultaValoracion(pedido, linea.productoId)">
+                          Reintentar consulta
+                        </button>
+                      } @else {
+                        <button
+                          [id]="'boton-valorar-' + linea.productoId"
+                          type="button"
+                          class="boton-valorar"
+                          [attr.aria-expanded]="productoValoracionAbierta() === linea.productoId"
+                          [attr.aria-controls]="productoValoracionAbierta() === linea.productoId
+                            ? 'formulario-valoracion-' + linea.productoId
+                            : null"
+                          (click)="alternarFormularioValoracion(linea.productoId)">
+                          {{ productoValoracionAbierta() === linea.productoId ? 'Cerrar' : 'Valorar' }}
+                        </button>
+                      }
+                    }
+                  }
+                </td>
+              </tr>
+              @if (
+                pedido.estado === 'FINALIZADO'
+                && estadoValoracion(linea.productoId)?.estado === 'pendiente'
+                && productoValoracionAbierta() === linea.productoId
+              ) {
+                @let estado = estadoValoracion(linea.productoId)!;
+                @let formulario = formularioValoracion(linea.productoId);
+                @if (formulario) {
+                  <tr class="fila-valoracion">
+                    <td colspan="5">
+                      <form
+                        [id]="'formulario-valoracion-' + linea.productoId"
+                        [formGroup]="formulario"
+                        (ngSubmit)="enviarValoracion(pedido, linea.productoId)">
+                        <p>Valorar {{ linea.nombreProducto }}</p>
+                        <span class="etiqueta-estrellas" [id]="'etiqueta-puntuacion-' + linea.productoId">
+                          Puntuación
+                        </span>
+                        <fieldset
+                          class="puntuacion-estrellas"
+                          [attr.aria-labelledby]="'etiqueta-puntuacion-' + linea.productoId">
+                          @for (estrella of estrellas; track estrella) {
+                            <button
+                              [id]="'estrella-' + linea.productoId + '-' + estrella"
+                              type="button"
+                              class="estrella-puntuacion"
+                              [class.seleccionada]="formulario.controls.puntuacion.value >= estrella"
+                              [attr.aria-label]="estrella + ' de 5 estrellas'"
+                              [attr.aria-pressed]="formulario.controls.puntuacion.value === estrella"
+                              [disabled]="estado.enviando"
+                              (click)="seleccionarPuntuacion(linea.productoId, estrella)">
+                              {{ formulario.controls.puntuacion.value >= estrella ? '★' : '☆' }}
+                            </button>
+                          }
+                        </fieldset>
+
+                        <label [for]="'comentario-' + linea.productoId">
+                          Comentario (opcional)
+                        </label>
+                        <textarea
+                          [id]="'comentario-' + linea.productoId"
+                          aria-label="Comentario (opcional)"
+                          formControlName="comentario"
+                          maxlength="500"
+                          rows="3"
+                          [attr.aria-describedby]="'comentario-ayuda-' + linea.productoId">
+                        </textarea>
+                        <small [id]="'comentario-ayuda-' + linea.productoId">
+                          Máximo 500 caracteres.
+                        </small>
+
+                        @if (estado.mensaje) {
+                          <p class="mensaje-error" role="alert">{{ estado.mensaje }}</p>
+                        }
+
+                        <button
+                          type="submit"
+                          class="boton-primario"
+                          [disabled]="formulario.invalid || estado.enviando">
+                          {{ estado.enviando ? 'Enviando valoración...' : 'Enviar valoración' }}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="total">Importe total: {{ pedido.importe | number:'1.2-2' }} €</p>
+
+      @if (pedido.direccionEnvio; as direccion) {
+        <div class="direccion">
+          <h3>Dirección de envío</h3>
+          <p>{{ direccion.calle }} {{ direccion.numero }}
+            @if (direccion.portal) {, portal {{ direccion.portal }}}
+            @if (direccion.piso) {, piso {{ direccion.piso }}}
+          </p>
+          <p>{{ direccion.codigoPostal }} {{ direccion.ciudad }} ({{ direccion.provincia }})</p>
+        </div>
+      }
+
+      <h3>Seguimiento e historial de estados</h3>
+      <ol class="historial">
+        @for (estado of estadosSeguimiento; track estado; let indice = $index; let ultimo = $last) {
+          @let cambio = cambioEstado(pedido.historialEstados, estado);
+          <li
+            [class.completado]="cambio"
+            [class.conector-completado]="!ultimo && conectorCompletado(
+              pedido.historialEstados,
+              estado,
+              estadosSeguimiento[indice + 1]
+            )">
+            <span class="punto" aria-hidden="true"></span>
+            <div>
+              <strong>{{ textoEstado(estado) }}</strong>
+              @if (cambio) {
+                <time [attr.datetime]="cambio.fecha">
+                  {{ cambio.fecha | date:'dd/MM/yyyy HH:mm' }}
+                </time>
+              } @else {
+                <span class="fecha-pendiente">Pendiente</span>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+  }
+</main>

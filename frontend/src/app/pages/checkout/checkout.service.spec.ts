@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { environment } from '../../../environments/environment';
-import { CheckoutService, CrearPedidoRequest } from './checkout.service';
+import { CheckoutService, CrearPedidoRequest, ErrorPreparacionPago } from './checkout.service';
 
 describe('CheckoutService - HU-26', () => {
   let servicio: CheckoutService;
@@ -39,9 +39,11 @@ describe('CheckoutService - HU-26', () => {
   });
 
   it('no envía el pedido si falla la obtención de CSRF', () => {
-    servicio.pagar(request).subscribe({ error: () => {} });
+    let errorRecibido: unknown;
+    servicio.pagar(request).subscribe({ error: error => errorRecibido = error });
     http.expectOne(`${environment.apiUrl}/usuarios/csrf`).flush({}, { status: 403, statusText: 'Forbidden' });
     http.expectNone(`${environment.apiUrl}/cliente/pedidos`);
+    expect(errorRecibido).toBeInstanceOf(ErrorPreparacionPago);
   });
 
   it('descarta campos adicionales aunque el objeto se manipule en ejecución', () => {

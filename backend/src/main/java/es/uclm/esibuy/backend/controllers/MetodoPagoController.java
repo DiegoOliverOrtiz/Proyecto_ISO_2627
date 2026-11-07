@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.MetodoPagoRequest;
@@ -20,6 +23,7 @@ import es.uclm.esibuy.backend.dto.TipoMetodoPagoResponse;
 import es.uclm.esibuy.backend.exceptions.MetodoPagoDuplicadoException;
 import es.uclm.esibuy.backend.exceptions.MetodoPagoInvalidoException;
 import es.uclm.esibuy.backend.services.PagoSimuladoService;
+import es.uclm.esibuy.backend.exceptions.MetodoPagoNoEncontradoException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -58,6 +62,20 @@ public class MetodoPagoController {
 			@Valid @RequestBody MetodoPagoRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(pagoSimuladoService.registrarMetodoPago(authentication.getName(), request));
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> eliminarMetodoPago(
+			Authentication authentication,
+			@PathVariable String id) {
+		pagoSimuladoService.eliminarMetodoPago(authentication.getName(), id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@ExceptionHandler(MetodoPagoNoEncontradoException.class)
+	public ResponseEntity<ApiErrorResponse> manejarMetodoPagoNoEncontrado(MetodoPagoNoEncontradoException excepcion) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ApiErrorResponse(excepcion.getMessage()));
 	}
 
 	@ExceptionHandler(MetodoPagoInvalidoException.class)

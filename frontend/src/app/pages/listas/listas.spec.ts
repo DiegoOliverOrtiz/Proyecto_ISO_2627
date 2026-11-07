@@ -7,6 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { environment } from '../../../environments/environment';
 import { Listas } from './listas';
 import type { ListaProductos, ResumenLista } from './listas.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+const esperarConfirmacion = () => new Promise<void>((resolver) => setTimeout(resolver));
+
 
 describe('Listas - HU-39', () => {
   const url = `${environment.apiUrl}/usuarios/listas`;
@@ -163,15 +169,17 @@ describe('Listas - HU-39', () => {
     expect(texto()).toContain('Lista renombrada a «Alimentación».');
   });
 
-  it('elimina una lista con productos tras confirmar y vuelve a favoritos', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('elimina una lista con productos tras confirmar y vuelve a favoritos', async () => {
+    const confirmar = simularConfirmacion(true);
     cargarInicio();
     seleccionarComida();
     pulsar('Eliminar lista');
+    await esperarConfirmacion();
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      '¿Eliminar la lista «Comida»? Sus productos seguirán en el catálogo.'
-    );
+    expect(confirmar).toHaveBeenCalledWith(expect.objectContaining({
+      mensaje: '¿Eliminar la lista «Comida»? Sus productos seguirán en el catálogo.',
+      peligro: true
+    }));
     http.expectOne(csrfUrl).flush({ token: 'csrf' });
     const peticion = http.expectOne(`${url}/l1`);
     expect(peticion.request.method).toBe('DELETE');
@@ -183,13 +191,16 @@ describe('Listas - HU-39', () => {
     expect(fixture.nativeElement.querySelectorAll('.lists-menu button').length).toBe(1);
   });
 
-  it('no elimina si el usuario cancela la confirmación', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('no elimina si el usuario cancela la confirmación', async () => {
+    simularConfirmacion(false);
     cargarInicio();
     seleccionarComida();
     pulsar('Eliminar lista');
+    await esperarConfirmacion();
 
     http.expectNone(csrfUrl);
+    expect(texto()).not.toContain('eliminada');
+    expect(fixture.nativeElement.querySelectorAll('.lists-menu button').length).toBe(2);
   });
 
   it('quita un producto de la lista y actualiza el contador', () => {

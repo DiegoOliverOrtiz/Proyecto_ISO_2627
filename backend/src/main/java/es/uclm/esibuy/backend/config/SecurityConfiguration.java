@@ -1,5 +1,6 @@
 package es.uclm.esibuy.backend.config;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -9,11 +10,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -21,6 +23,9 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import es.uclm.esibuy.backend.security.PepperedBCryptPasswordEncoder;
+import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 
 @Configuration
 @EnableMethodSecurity
@@ -30,8 +35,9 @@ public class SecurityConfiguration {
         private static final String RUTA_CATEGORIAS = "/categorias/**";
 
         @Bean
-        PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
+        PasswordEncoder passwordEncoder(
+                        @Value("${app.security.password.pepper:}") String pepper) {
+                return new PepperedBCryptPasswordEncoder(pepper, 12);
         }
 
         @Bean
@@ -66,7 +72,9 @@ public class SecurityConfiguration {
                         CorsConfigurationSource corsConfigurationSource,
                         SecurityContextRepository securityContextRepository,
                         CookieCsrfTokenRepository csrfTokenRepository,
-                        SessionRegistry sessionRegistry) throws Exception {
+                        SessionRegistry sessionRegistry,
+                        @Value("${app.security.session.absolute-timeout:8h}") Duration timeoutAbsolutoSesion)
+                        throws Exception {
 
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -82,6 +90,9 @@ public class SecurityConfiguration {
                                                 .expiredSessionStrategy(event -> event.getResponse()
                                                                 .setStatus(HttpStatus.UNAUTHORIZED.value())))
 
+                                .addFilterBefore(new SesionAbsolutaFilter(timeoutAbsolutoSesion),
+                                                AuthorizationFilter.class)
+
                                 .csrf(csrf -> csrf
                                                 .csrfTokenRepository(csrfTokenRepository)
                                                 .ignoringRequestMatchers(
@@ -94,7 +105,18 @@ public class SecurityConfiguration {
                                                                 (request, response, authentication) -> response
                                                                                 .setStatus(204)))
 
-                                .authorizeHttpRequests(authorize -> authorize
+                                // El orden importa: primero las rutas públicas y después las de cada rol.
+                                .authorizeHttpRequests(authorize -> {
+                                        permitirRutasPublicas(authorize);
+                                        restringirPorRol(authorize);
+                                });
+
+                return http.build();
+        }
+
+        private static void permitirRutasPublicas(
+                        AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authorize) {
+                authorize
                                                 .requestMatchers(
                                                                 HttpMethod.OPTIONS,
                                                                 "/**")
@@ -104,6 +126,12 @@ public class SecurityConfiguration {
                                                                 HttpMethod.POST,
                                                                 "/usuarios/login",
                                                                 "/usuarios/login/2fa",
+                                                                "/usuarios/login/2fa/configurar",
+                                                                "/usuarios/login/2fa/confirmar-alta",
+                                                                "/usuarios/login/3fa/verificar",
+                                                                "/usuarios/login/3fa/reenviar",
+                                                                "/usuarios/recuperar-contrasena",
+                                                                "/usuarios/recuperar-contrasena/confirmar",
                                                                 "/cliente/register",
                                                                 "/vendedor/register")
                                                 .permitAll()
@@ -146,8 +174,10 @@ public class SecurityConfiguration {
                                                                 "/admin/categorias",
                                                                 "/admin/administradores",
                                                                 "/admin/administradores/nuevo",
+                                                                "/admin/productos",
                                                                 "/cliente",
                                                                 "/cliente/favoritos",
+                                                                "/cliente/pedidos",
                                                                 "/carrito",
                                                                 "/cliente/checkout",
                                                                 "/vendedor",
@@ -158,8 +188,12 @@ public class SecurityConfiguration {
                                                 .requestMatchers(
                                                                 HttpMethod.GET,
                                                                 "/categorias/registro")
-                                                .permitAll()
+                                                .permitAll();
+        }
 
+        private static void restringirPorRol(
+                        AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry authorize) {
+                authorize
                                                 // HU11 + HU17: los vendedores necesitan consultar categorías para
                                                 // asociar productos
                                                 .requestMatchers(
@@ -195,9 +229,7 @@ public class SecurityConfiguration {
                                                                 "/administrador/**")
                                                 .hasRole(ROL_ADMIN)
 
-                                                .anyRequest().authenticated());
-
-                return http.build();
+                                                .anyRequest().authenticated();
         }
 
         @Bean

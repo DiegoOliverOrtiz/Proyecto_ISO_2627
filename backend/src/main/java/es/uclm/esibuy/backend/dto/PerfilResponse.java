@@ -18,7 +18,29 @@ public record PerfilResponse(
         String sede,
         LocalDate fechaIncorporacion,
         String rol,
-        boolean totpActivado) {
+        boolean totpActivado,
+        boolean emailOtpActivado) {
+
+    public PerfilResponse(
+            String tipoUsuario,
+            String nombre,
+            String apellidos,
+            String email,
+            String telefono,
+            String imagenPerfil,
+            String dniNif,
+            LocalDate fechaNacimiento,
+            Boolean esPremium,
+            String nombreComercial,
+            String categoria,
+            String categoriaId,
+            String sede,
+            LocalDate fechaIncorporacion,
+            String rol,
+            boolean totpActivado) {
+        this(tipoUsuario, nombre, apellidos, email, telefono, imagenPerfil, dniNif, fechaNacimiento,
+                esPremium, nombreComercial, categoria, categoriaId, sede, fechaIncorporacion, rol, totpActivado, false);
+    }
 
     public PerfilResponse(
             String tipoUsuario,

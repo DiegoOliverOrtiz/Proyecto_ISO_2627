@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 
@@ -79,15 +79,15 @@ class TotpServiceTests {
         assertFalse(service.verificar(secret, "invalido"));
     }
 
+    // 64 secretos Base32 fijos y distintos entre sí, calculados sin aleatoriedad para que el test sea reproducible.
     private static Stream<String> secretosQr() {
-        var datosPrueba = new Random(0);
-        return Stream.concat(Stream.of(SECRET), Stream.generate(() -> {
+        return Stream.concat(Stream.of(SECRET), IntStream.range(0, 64).mapToObj(n -> {
             var secreto = new StringBuilder(32);
             for (int i = 0; i < 32; i++) {
-                secreto.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".charAt(datosPrueba.nextInt(32)));
+                secreto.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".charAt((n * 7 + i * 11 + n * i) % 32));
             }
             return secreto.toString();
-        }).limit(64));
+        }));
     }
 
     @ParameterizedTest(name = "QR {index}")

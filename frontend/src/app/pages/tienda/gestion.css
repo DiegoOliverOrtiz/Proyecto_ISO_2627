@@ -1,0 +1,140 @@
+/*
+ * Pantallas de gestión de la cuenta del cliente (direcciones y métodos de pago): rejilla de
+ * tarjetas y formulario. Se cargan después de ./tienda.css. Solo usan tokens de styles.css.
+ */
+
+.gestion-pagina {
+  width: min(920px, calc(100% - 2 * clamp(1rem, 4vw, 2rem)));
+}
+
+.gestion-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+/* --- Tarjetas --- */
+
+.gestion-rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1rem;
+}
+
+.gestion-tarjeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.gestion-tarjeta h2 {
+  margin: 0 0 .75rem;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.gestion-tarjeta p {
+  margin: 0 0 .35rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.gestion-tarjeta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.gestion-tarjeta-acciones > button {
+  flex: 1 1 8rem;
+}
+
+/* --- Formulario --- */
+
+.gestion-formulario h2 {
+  margin: 0 0 1.25rem;
+  color: var(--color-text);
+  font-size: 1.35rem;
+}
+
+.gestion-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem 1.25rem;
+}
+
+.gestion-campos label {
+  display: grid;
+  gap: .4rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.gestion-campos .ancho-completo {
+  grid-column: 1 / -1;
+}
+
+.gestion-campos input,
+.gestion-campos select {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: .55rem .75rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+}
+
+.gestion-campos input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.ayuda-campo {
+  color: var(--color-text-secondary);
+  font-size: .875rem;
+  font-weight: 400;
+}
+
+.error-campo,
+.mensaje-formulario {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: .875rem;
+  font-weight: 600;
+}
+
+.mensaje-formulario {
+  margin-top: 1rem;
+}
+
+.gestion-formulario-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .gestion-campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gestion-acciones,
+  .gestion-formulario-acciones {
+    width: 100%;
+  }
+
+  .gestion-acciones > *,
+  .gestion-formulario-acciones > button {
+    flex: 1 1 auto;
+  }
+}

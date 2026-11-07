@@ -24,6 +24,12 @@ describe('PanelCliente - catálogo HU-19', () => {
   });
 
   afterEach(() => {
+    for (const peticion of httpMock.match((request) =>
+      request.url.endsWith('/valoraciones')
+    )) {
+      peticion.flush({ media: 0, total: 0, valoraciones: [] });
+    }
+
     const peticionesFavoritos = httpMock.match(
       `${environment.apiUrl}/usuarios/favoritos`
     );
@@ -193,6 +199,45 @@ describe('PanelCliente - catálogo HU-19', () => {
       .toContain('quedan pocas unidades (4)');
   });
 
+  it('muestra media y comentarios anónimos en el detalle del producto', () => {
+    const producto = crearProducto('valoraciones-1', false, true, 4);
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush([producto]);
+    fixture.detectChanges();
+
+    fixture.nativeElement
+      .querySelector('.product-card .product-actions .secondary-button')
+      .click();
+    httpMock.expectOne(`${environment.apiUrl}/usuarios/listas`).flush([]);
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos/valoraciones-1`)
+      .flush({
+        ...producto,
+        precioOriginal: 25,
+        descuentoAplicado: 0,
+        descripcion: 'Descripción',
+        vendedor: 'Tienda',
+        esVisible: true
+      });
+    httpMock.expectOne(`${environment.apiUrl}/cliente/productos/valoraciones-1/valoraciones`)
+      .flush({
+        media: 4.5,
+        total: 2,
+        valoraciones: [
+          { puntuacion: 5, comentario: 'Excelente' },
+          { puntuacion: 4, comentario: '<img src=x onerror=alert(1)>' }
+        ]
+      });
+    fixture.detectChanges();
+
+    const opiniones = fixture.nativeElement.querySelector('.detail-reviews');
+    expect(opiniones.textContent).toContain('4.5 / 5');
+    expect(opiniones.textContent).toContain('2 valoraciones');
+    expect(opiniones.textContent).toContain('Excelente');
+    expect(opiniones.textContent).toContain('<img src=x onerror=alert(1)>');
+    expect(opiniones.querySelector('img')).toBeNull();
+    expect(opiniones.textContent).toContain('Cliente verificado');
+    expect(opiniones.textContent).not.toContain('clienteId');
+  });
+
   it('no muestra el aviso de stock bajo cuando quedan cinco unidades', () => {
     httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush([
       crearProducto('stock-limite', false, true, 5)
@@ -283,7 +328,7 @@ describe('PanelCliente - catálogo HU-19', () => {
     fixture.detectChanges();
     expect(boton.disabled).toBe(false);
     expect(boton.getAttribute('aria-busy')).toBe('false');
-    expect(fixture.nativeElement.querySelector('.product-card [role="status"]').textContent)
+    expect(fixture.nativeElement.querySelector('.product-card output.status-message').textContent)
       .toContain('Producto añadido al carrito. Importe del carrito: 25.00 €');
   });
 
@@ -299,7 +344,7 @@ describe('PanelCliente - catálogo HU-19', () => {
     expect(peticion.request.body.cantidad).toBe(2);
     peticion.flush({ productos: [], importe: 50 });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.product-detail [role="status"]').textContent)
+    expect(fixture.nativeElement.querySelector('.product-detail .detail-purchase + .status-message, .product-detail output.status-message').textContent)
       .toContain('Producto añadido al carrito.');
     expect(fixture.componentInstance.detalle()?.stock).toBe(10);
     expect(fixture.componentInstance.cantidadDetalle()).toBe(2);
@@ -385,6 +430,151 @@ describe('PanelCliente - catálogo HU-19', () => {
     for (const boton of fixture.nativeElement.querySelectorAll('.catalog-cart-button')) {
       expect(boton.disabled).toBe(true);
     }
+  });
+
+  describe('detalle de producto con teclado (C2)', () => {
+    async function abrirDetalle(): Promise<HTMLButtonElement> {
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos`)
+        .flush([crearProducto('teclado-1', false, true, 6)]);
+      fixture.detectChanges();
+
+      const verDetalle: HTMLButtonElement = fixture.nativeElement
+        .querySelector('.product-actions .secondary-button');
+      verDetalle.focus();
+      verDetalle.click();
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos/teclado-1`)
+        .flush({ ...crearProducto('teclado-1', false, true, 6), esVisible: true });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      return verDetalle;
+    }
+
+    const pulsar = (key: string, shiftKey = false): KeyboardEvent => {
+      const evento = new KeyboardEvent('keydown', { key, shiftKey, bubbles: true, cancelable: true });
+      (document.activeElement ?? document.body).dispatchEvent(evento);
+      fixture.detectChanges();
+      return evento;
+    };
+
+    it('al abrirse lleva el foco al botón «Cerrar» del diálogo', async () => {
+      await abrirDetalle();
+
+      expect(document.activeElement?.classList).toContain('detail-close');
+    });
+
+    it('Escape cierra el detalle y devuelve el foco a «Ver detalle»', async () => {
+      const verDetalle = await abrirDetalle();
+
+      pulsar('Escape');
+
+      expect(fixture.nativeElement.querySelector('.product-detail')).toBeNull();
+      expect(document.activeElement).toBe(verDetalle);
+    });
+
+    it('cerrar con el botón también devuelve el foco a «Ver detalle»', async () => {
+      const verDetalle = await abrirDetalle();
+
+      fixture.nativeElement.querySelector('.detail-close').click();
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(verDetalle);
+    });
+
+    it('Tab no sale del diálogo: del último vuelve al primero y Mayús+Tab al revés', async () => {
+      await abrirDetalle();
+      const dialogo: HTMLElement = fixture.nativeElement.querySelector('.product-detail');
+      const enfocables = Array.from(dialogo.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      const primero = enfocables[0];
+      const ultimo = enfocables[enfocables.length - 1];
+
+      ultimo.focus();
+      expect(pulsar('Tab').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(primero);
+
+      expect(pulsar('Tab', true).defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(ultimo);
+    });
+  });
+
+  describe('rediseño del catálogo (UI-cliente)', () => {
+    const cargarCatalogo = (productos: ProductoCatalogo[]) => {
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos`).flush(productos);
+      fixture.detectChanges();
+    };
+
+    it('busca al escribir, con 300 ms de espera y una sola petición (M22)', () => {
+      vi.useFakeTimers();
+      try {
+        cargarCatalogo([crearProducto('a', false, true, 5)]);
+        const busqueda: HTMLInputElement = fixture.nativeElement.querySelector('input[type="search"]');
+
+        for (const texto of ['r', 'ra', 'raton']) {
+          busqueda.value = texto;
+          busqueda.dispatchEvent(new Event('input'));
+        }
+        vi.advanceTimersByTime(299);
+        httpMock.expectNone((r) => r.url === `${environment.apiUrl}/cliente/productos`);
+
+        vi.advanceTimersByTime(1);
+        const peticion = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/cliente/productos`);
+        expect(peticion.request.params.get('nombre')).toBe('raton');
+        peticion.flush([]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('el botón «Filtros» indica cuántos hay activos y si están desplegados (A14)', () => {
+      cargarCatalogo([crearProducto('a', false, true, 5)]);
+      const boton: HTMLButtonElement = fixture.nativeElement.querySelector('.boton-filtros');
+      expect(boton.textContent?.trim()).toBe('Filtros');
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+
+      const categoria: HTMLSelectElement = fixture.nativeElement.querySelector('#filtros-avanzados select');
+      categoria.value = 'Informática';
+      categoria.dispatchEvent(new Event('change'));
+      boton.click();
+      fixture.detectChanges();
+
+      expect(boton.textContent?.trim()).toBe('Filtros (1)');
+      expect(boton.getAttribute('aria-expanded')).toBe('true');
+      expect(fixture.nativeElement.querySelector('#filtros-avanzados').classList).toContain('abiertos');
+    });
+
+    it('sin imagen o si falla, la tarjeta muestra un marcador en un marco fijo (M7)', () => {
+      const conImagen = { ...crearProducto('img', false, true, 5), imagen: 'rota.png' };
+      cargarCatalogo([crearProducto('sin', false, true, 5), conImagen]);
+      const tarjetas = fixture.nativeElement.querySelectorAll('.product-card');
+
+      expect(tarjetas[0].querySelector('.marco-imagen svg')).not.toBeNull();
+      tarjetas[1].querySelector('img').dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+      expect(tarjetas[1].querySelector('img')).toBeNull();
+      expect(tarjetas[1].querySelector('.marco-imagen').textContent).toContain('Producto sin imagen');
+    });
+
+    it('sin resultados ofrece «Limpiar filtros» junto al mensaje (B4)', () => {
+      cargarCatalogo([crearProducto('a', false, true, 5)]);
+      fixture.componentInstance.soloFavoritos.set(true);
+      fixture.detectChanges();
+
+      const estado: HTMLElement = fixture.nativeElement.querySelector('.estado');
+      expect(estado.textContent).toContain('No tienes productos favoritos');
+      expect(estado.querySelector('button')?.textContent).toContain('Limpiar filtros');
+    });
+
+    it('el detalle no muestra descuentos del 0 % (B7)', () => {
+      cargarCatalogo([crearProducto('cero', false, true, 5)]);
+      fixture.nativeElement.querySelector('.product-actions .secondary-button').click();
+      httpMock.expectOne(`${environment.apiUrl}/cliente/productos/cero`)
+        .flush({ ...crearProducto('cero', false, true, 5), descuento: 0, descuentoPremium: 0 });
+      fixture.detectChanges();
+
+      const detalle: HTMLElement = fixture.nativeElement.querySelector('.product-detail');
+      expect(detalle.textContent).not.toContain('Descuento');
+    });
   });
 
   describe('listas de productos HU-39', () => {

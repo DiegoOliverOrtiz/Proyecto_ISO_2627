@@ -1,7 +1,174 @@
-<header class="header">
-  <a class="logo" routerLink="/" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
-</header>
+<main class="acceso">
+  <a class="acceso-marca" routerLink="/" aria-label="ESIBuy, inicio">ESI<span>Buy</span></a>
 
-<main>
-  <h1>Recuperación de contraseña</h1>
+  <div class="acceso-cuerpo">
+    <section class="acceso-intro">
+      @if (modoRestablecimiento()) {
+        <p class="acceso-lema">Elige una contraseña nueva.</p>
+        <p class="acceso-texto">Usa una contraseña segura que no hayas usado antes en ESIBuy.</p>
+      } @else {
+        <p class="acceso-lema">Recupera el acceso a tu cuenta.</p>
+        <p class="acceso-texto">Te enviaremos un enlace para que puedas elegir una contraseña nueva.</p>
+      }
+    </section>
+
+    <section class="acceso-tarjeta" aria-labelledby="titulo-recuperacion">
+      <h1 id="titulo-recuperacion" class="acceso-titulo">
+        {{ modoRestablecimiento() ? 'Nueva contraseña' : 'Recuperar contraseña' }}
+      </h1>
+
+      <div class="acceso-formulario">
+        @if (mensajeError()) {
+          <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
+        }
+
+        @if (!modoRestablecimiento()) {
+          @if (solicitudEnviada()) {
+            <output class="aviso aviso-exito">
+              Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña.
+            </output>
+          }
+
+          <form [formGroup]="solicitudForm" (ngSubmit)="solicitarRecuperacion()" class="acceso-formulario" novalidate>
+            <div class="campo">
+              <label for="recovery-email">Correo electrónico</label>
+              <input
+                id="recovery-email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                [attr.aria-invalid]="solicitudForm.controls.email.invalid && solicitudForm.controls.email.touched"
+                [attr.aria-describedby]="solicitudForm.controls.email.invalid && solicitudForm.controls.email.touched ? 'email-error' : null" />
+              @if (solicitudForm.controls.email.touched && solicitudForm.controls.email.hasError('required')) {
+                <p id="email-error" class="campo-error">El correo es obligatorio.</p>
+              } @else if (solicitudForm.controls.email.touched && solicitudForm.controls.email.hasError('email')) {
+                <p id="email-error" class="campo-error">Introduce un correo con un formato válido.</p>
+              }
+            </div>
+
+            <button class="boton-principal" type="submit" [disabled]="isLoading()">
+              {{ isLoading() ? 'Enviando solicitud…' : 'Enviar enlace de recuperación' }}
+            </button>
+          </form>
+        } @else if (restablecimientoCompletado()) {
+          <output class="aviso aviso-exito">
+            Tu contraseña se ha cambiado correctamente. Ya puedes iniciar sesión.
+          </output>
+          <a class="boton-principal" routerLink="/login">Iniciar sesión</a>
+        } @else {
+          <form
+            [formGroup]="restablecimientoForm"
+            (ngSubmit)="restablecerContrasena()"
+            class="acceso-formulario"
+            novalidate>
+            <div class="campo">
+              <label for="new-password">Nueva contraseña</label>
+              <div class="contrasena"
+                [class.invalida]="restablecimientoForm.controls.nuevaContrasena.touched && restablecimientoForm.controls.nuevaContrasena.invalid">
+                <input
+                  id="new-password"
+                  type="password"
+                  [type]="nuevaContrasenaOculta ? 'password' : 'text'"
+                  formControlName="nuevaContrasena"
+                  autocomplete="new-password"
+                  [attr.aria-invalid]="restablecimientoForm.controls.nuevaContrasena.touched && restablecimientoForm.controls.nuevaContrasena.invalid"
+                  [attr.aria-describedby]="restablecimientoForm.controls.nuevaContrasena.touched && restablecimientoForm.controls.nuevaContrasena.invalid ? 'password-requirements new-password-error' : 'password-requirements'" />
+                <button
+                  class="boton-ojo"
+                  type="button"
+                  [attr.aria-label]="nuevaContrasenaOculta ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+                  [attr.aria-pressed]="!nuevaContrasenaOculta"
+                  (click)="nuevaContrasenaOculta = !nuevaContrasenaOculta">
+                  @if (nuevaContrasenaOculta) {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M3 3l18 18"></path>
+                      <path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path>
+                      <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path>
+                      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+                    </svg>
+                  }
+                </button>
+              </div>
+
+              <div id="password-requirements" class="requisitos" aria-live="polite">
+                <strong>La contraseña debe incluir:</strong>
+                <ul>
+                  @for (requisito of requisitos(); track requisito.label) {
+                    <li [class.cumplido]="requisito.cumplido">
+                      <span class="requisito-marca" aria-hidden="true">{{ requisito.cumplido ? '✓' : '×' }}</span>
+                      <span>{{ requisito.label }}</span>
+                      <span class="visually-hidden">{{ requisito.cumplido ? '(cumplido)' : '(pendiente)' }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+
+              @if (restablecimientoForm.controls.nuevaContrasena.touched && restablecimientoForm.controls.nuevaContrasena.invalid) {
+                <p id="new-password-error" class="campo-error">
+                  La contraseña debe cumplir todos los requisitos indicados.
+                </p>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="confirm-password">Repite la contraseña</label>
+              <div class="contrasena"
+                [class.invalida]="restablecimientoForm.controls.confirmarContrasena.touched && (restablecimientoForm.controls.confirmarContrasena.hasError('required') || restablecimientoForm.hasError('passwordMismatch'))">
+                <input
+                  id="confirm-password"
+                  [type]="confirmacionOculta ? 'password' : 'text'"
+                  formControlName="confirmarContrasena"
+                  autocomplete="off"
+                  (paste)="$event.preventDefault()"
+                  (copy)="$event.preventDefault()"
+                  (cut)="$event.preventDefault()"
+                  (drop)="$event.preventDefault()"
+                  [attr.aria-invalid]="restablecimientoForm.controls.confirmarContrasena.touched && (restablecimientoForm.controls.confirmarContrasena.hasError('required') || restablecimientoForm.hasError('passwordMismatch'))"
+                  [attr.aria-describedby]="restablecimientoForm.controls.confirmarContrasena.touched ? 'confirm-password-error' : null" />
+                <button
+                  class="boton-ojo"
+                  type="button"
+                  [attr.aria-label]="confirmacionOculta ? 'Mostrar confirmación' : 'Ocultar confirmación'"
+                  [attr.aria-pressed]="!confirmacionOculta"
+                  (click)="confirmacionOculta = !confirmacionOculta">
+                  @if (confirmacionOculta) {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M3 3l18 18"></path>
+                      <path d="M10.6 5.1A9.7 9.7 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1"></path>
+                      <path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"></path>
+                      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>
+                    </svg>
+                  }
+                </button>
+              </div>
+              @if (restablecimientoForm.controls.confirmarContrasena.touched && restablecimientoForm.controls.confirmarContrasena.hasError('required')) {
+                <p id="confirm-password-error" class="campo-error">Repite la contraseña.</p>
+              } @else if (restablecimientoForm.hasError('passwordMismatch') && restablecimientoForm.controls.confirmarContrasena.touched) {
+                <p id="confirm-password-error" class="campo-error">Las contraseñas no coinciden.</p>
+              }
+            </div>
+
+            <button class="boton-principal" type="submit" [disabled]="isLoading()">
+              {{ isLoading() ? 'Cambiando contraseña…' : 'Guardar nueva contraseña' }}
+            </button>
+          </form>
+        }
+
+        <p class="acceso-pie">
+          ¿Ya tienes acceso?
+          <a class="enlace" routerLink="/login">Volver al inicio de sesión</a>
+        </p>
+      </div>
+    </section>
+  </div>
 </main>

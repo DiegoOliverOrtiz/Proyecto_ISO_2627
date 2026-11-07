@@ -2,6 +2,7 @@ package es.uclm.esibuy.backend.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -30,18 +32,24 @@ import org.springframework.test.web.servlet.MvcResult;
 import es.uclm.esibuy.backend.config.SecurityConfiguration;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
 import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
+import es.uclm.esibuy.backend.dto.TwoFactorConfirmationResponse;
 import es.uclm.esibuy.backend.exceptions.AccountPendingException;
+import es.uclm.esibuy.backend.exceptions.LoginRateLimitException;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
 import es.uclm.esibuy.backend.services.AdministradorService;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.ProductoService;
+import es.uclm.esibuy.backend.services.RecuperacionContrasenaService;
 import es.uclm.esibuy.backend.services.VendedorService;
+import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 import es.uclm.esibuy.backend.services.SesionService;
 
 @WebMvcTest(controllers = {
         AuthController.class,
+        RecuperacionContrasenaController.class,
         AdministradorController.class,
         VendedorController.class
 })
@@ -51,11 +59,17 @@ class AuthControllerSecurityTests {
     @MockitoBean
     private es.uclm.esibuy.backend.services.TotpService totpService;
 
+    @MockitoBean
+    private EmailOtpService emailOtpService;
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private RecuperacionContrasenaService recuperacionContrasenaService;
 
     @MockitoBean
     private AdministradorService administradorService;
@@ -72,7 +86,8 @@ class AuthControllerSecurityTests {
     @Test
     void loginGuardaLaSesionYPermiteRecuperarla() throws Exception {
         Cliente cliente = crearCliente(true);
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(cliente);
 
         MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
@@ -89,6 +104,7 @@ class AuthControllerSecurityTests {
         MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
         assertNotNull(sesion);
         assertEquals(30 * 60, sesion.getMaxInactiveInterval());
+        assertTrue(sesion.getAttribute(SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN) instanceof Instant);
 
         mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
                 .andExpect(status().isOk())
@@ -97,10 +113,37 @@ class AuthControllerSecurityTests {
     }
 
     @Test
+    void sesionActivaSeInvalidaAlCumplirElTimeoutAbsoluto() throws Exception {
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(crearCliente(true));
+
+        MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
+        assertNotNull(sesion);
+        sesion.setAttribute(
+                SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN,
+                Instant.now().minusSeconds(8 * 60 * 60));
+
+        mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
+                .andExpect(status().isUnauthorized());
+
+        assertTrue(sesion.isInvalid());
+    }
+
+    @Test
     void loginDevuelveElRolAdminParaAdministradores() throws Exception {
         Administrador administrador = new Administrador();
         administrador.setEmail("admin@example.com");
-        when(authService.autenticar("admin@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("admin@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(administrador);
 
         mockMvc.perform(post("/usuarios/login")
@@ -109,15 +152,18 @@ class AuthControllerSecurityTests {
                         .content("""
                                 {"email":"admin@example.com","password":"ClaveSegura9!"}
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andExpect(jsonPath("$.requiresTwoFactor").value(true))
+                .andExpect(jsonPath("$.requiresTwoFactorSetup").value(true));
     }
 
     @Test
     void loginDevuelveElRolVendedorParaVendedores() throws Exception {
         Vendedor vendedor = new Vendedor();
         vendedor.setEmail("vendedor@example.com");
-        when(authService.autenticar("vendedor@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("vendedor@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(vendedor);
 
         mockMvc.perform(post("/usuarios/login")
@@ -126,13 +172,211 @@ class AuthControllerSecurityTests {
                         .content("""
                                 {"email":"vendedor@example.com","password":"ClaveSegura9!"}
                                 """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.role").value("VENDEDOR"))
+                .andExpect(jsonPath("$.requiresTwoFactor").value(true))
+                .andExpect(jsonPath("$.requiresTwoFactorSetup").value(true));
+    }
+
+    @Test
+    void vendedorNoObtieneSesionNiAccesoHastaVerificarElCodigoDeCorreo() throws Exception {
+        Vendedor vendedor = new Vendedor();
+        vendedor.setEmail("vendedor@example.com");
+        vendedor.setActivada(true);
+        vendedor.setTotpActivado(true);
+        vendedor.setSecretoTotpCifrado("secreto-cifrado");
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("vendedor@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(vendedor);
+        when(authService.buscarPorCorreo("vendedor@example.com")).thenReturn(vendedor);
+        when(totpService.verificarSegundoFactor(vendedor, "123456")).thenReturn(true);
+        when(emailOtpService.verificar(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq("vendedor@example.com"),
+                org.mockito.ArgumentMatchers.eq("654321")))
+                .thenReturn(EmailOtpService.ResultadoVerificacion.VALIDO);
+
+        MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"vendedor@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
+        assertNotNull(sesion);
+
+        MvcResult resultadoTotp = mockMvc.perform(post("/usuarios/login/2fa")
+                        .with(csrf())
+                        .session(sesion)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"123456\"}"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.requiresEmailVerification").value(true))
+                .andExpect(jsonPath("$.emailVerificationEmailSent").value(true))
+                .andReturn();
+        sesion = (MockHttpSession) resultadoTotp.getRequest().getSession(false);
+
+        mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/vendedor/perfil").session(sesion))
+                .andExpect(status().isForbidden());
+
+        MvcResult resultadoVerificacion = mockMvc.perform(post("/usuarios/login/3fa/verificar")
+                        .with(csrf())
+                        .session(sesion)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"654321\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession sesionAutenticada =
+                (MockHttpSession) resultadoVerificacion.getRequest().getSession(false);
+
+        mockMvc.perform(get("/usuarios/sesion-actual").session(sesionAutenticada))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("VENDEDOR"));
+        verify(sesionService).registrarSesion(
+                sesionAutenticada.getId(),
+                "vendedor@example.com");
+    }
+
+    @Test
+    void altaObligatoriaTotpDevuelveRespaldoPeroMantieneLaSesionPendienteDeCorreo() throws Exception {
+        Administrador administrador = new Administrador();
+        administrador.setEmail("admin@example.com");
+        administrador.setActivada(true);
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("admin@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(administrador);
+        when(authService.buscarPorCorreo("admin@example.com")).thenReturn(administrador);
+        when(totpService.generarSecreto()).thenReturn("SECRETO");
+        when(totpService.crearUriAlta("admin@example.com", "SECRETO"))
+                .thenReturn("otpauth://totp/ESIBuy");
+        when(totpService.generarQrDataUrl("otpauth://totp/ESIBuy"))
+                .thenReturn("data:image/png;base64,qr");
+        when(totpService.confirmarConfiguracion(administrador, "123456"))
+                .thenAnswer(invocation -> {
+                    administrador.setTotpActivado(true);
+                    administrador.setSecretoTotpCifrado("secreto-cifrado");
+                    return new TwoFactorConfirmationResponse(true, List.of("BACKUP1"));
+                });
+
+        MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"admin@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.requiresTwoFactorSetup").value(true))
+                .andReturn();
+        MockHttpSession sesion = (MockHttpSession) resultadoLogin.getRequest().getSession(false);
+
+        mockMvc.perform(post("/usuarios/login/2fa/configurar")
+                        .with(csrf())
+                        .session(sesion)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.qrDataUrl").value("data:image/png;base64,qr"));
+
+        mockMvc.perform(post("/usuarios/login/2fa/confirmar-alta")
+                        .with(csrf())
+                        .session(sesion)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"123456\"}"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.login.requiresEmailVerification").value(true))
+                .andExpect(jsonPath("$.login.emailVerificationEmailSent").value(true))
+                .andExpect(jsonPath("$.backupCodes[0]").value("BACKUP1"));
+
+        mockMvc.perform(get("/usuarios/sesion-actual").session(sesion))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(sesionService);
+    }
+
+    @Test
+    void losEndpointsDeCorreoExigenCsrf() throws Exception {
+        mockMvc.perform(post("/usuarios/login/3fa/reenviar"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/usuarios/login/3fa/verificar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"123456\"}"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(emailOtpService);
+    }
+
+    @Test
+    void solicitudRecuperacionEsPublicaYDevuelveRespuestaGenerica() throws Exception {
+        String respuestaExistente = mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").value(
+                        "Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña."))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String respuestaInexistente = mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"desconocido@example.com"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").value(
+                        "Si el correo está asociado a una cuenta, recibirás instrucciones para recuperar tu contraseña."))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertEquals(respuestaExistente, respuestaInexistente);
+        verify(recuperacionContrasenaService).solicitar("cliente@example.com", "127.0.0.1");
+        verify(recuperacionContrasenaService).solicitar("desconocido@example.com", "127.0.0.1");
+    }
+
+    @Test
+    void confirmacionRecuperacionEsPublicaPeroExigeCsrf() throws Exception {
+        String cuerpo = """
+                {"token":"token-valido","nuevaContrasena":"NuevaClaveSegura9!"}
+                """;
+
+        mockMvc.perform(post("/usuarios/recuperar-contrasena/confirmar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isNoContent());
+        verify(recuperacionContrasenaService)
+                .completar("token-valido", "NuevaClaveSegura9!");
+
+        mockMvc.perform(post("/usuarios/recuperar-contrasena/confirmar")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void solicitudRecuperacionTambienExigeCsrf() throws Exception {
+        mockMvc.perform(post("/usuarios/recuperar-contrasena")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com"}
+                                """))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(recuperacionContrasenaService);
     }
 
     @Test
     void loginRechazaCredencialesIncorrectasConRespuesta401() throws Exception {
-        when(authService.autenticar("cliente@example.com", "incorrecta"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("incorrecta"), org.mockito.ArgumentMatchers.anyString()))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException(
                         "Correo o contraseña incorrectos."));
 
@@ -147,8 +391,28 @@ class AuthControllerSecurityTests {
     }
 
     @Test
+    void loginLimitadoDevuelve429YRetryAfter() throws Exception {
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
+                .thenThrow(new LoginRateLimitException(30));
+
+        mockMvc.perform(post("/usuarios/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"cliente@example.com","password":"ClaveSegura9!"}
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Retry-After", "30"))
+                .andExpect(jsonPath("$.error").value(
+                        "Demasiados intentos de inicio de sesión. Espera antes de volver a intentarlo."));
+    }
+
+    @Test
     void loginInactivoDevuelveAvisoDeCuentaPendiente() throws Exception {
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenThrow(new AccountPendingException());
 
         mockMvc.perform(post("/usuarios/login")
@@ -163,7 +427,8 @@ class AuthControllerSecurityTests {
 
     @Test
     void logoutInvalidaLaSesion() throws Exception {
-        when(authService.autenticar("cliente@example.com", "ClaveSegura9!"))
+        when(authService.autenticar(org.mockito.ArgumentMatchers.eq("cliente@example.com"),
+                org.mockito.ArgumentMatchers.eq("ClaveSegura9!"), org.mockito.ArgumentMatchers.anyString()))
                 .thenReturn(crearCliente(true));
 
         MvcResult resultadoLogin = mockMvc.perform(post("/usuarios/login")
@@ -239,7 +504,7 @@ class AuthControllerSecurityTests {
         AuthController controller = new AuthController(
                 authService,
                 mock(SecurityContextRepository.class),
-                mock(SesionService.class), totpService);
+                mock(SesionService.class), totpService, emailOtpService);
         Authentication autenticacionSinAutoridades = mock(Authentication.class);
         when(autenticacionSinAutoridades.getAuthorities()).thenReturn(List.of());
 

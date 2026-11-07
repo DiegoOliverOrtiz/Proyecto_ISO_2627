@@ -1,130 +1,78 @@
-<header class="favorites-header">
-  <h1>ESIBuy</h1>
-
-  <nav aria-label="Navegación de favoritos">
-    <a routerLink="/cliente">Catálogo</a>
-    <a routerLink="/carrito">Mi carrito</a>
-    <a routerLink="/perfil">Mi perfil</a>
-  </nav>
-</header>
-
-<main class="favorites-page">
-
-  <div class="favorites-heading">
+<main class="favorites-page pagina">
+  <div class="pagina-cabecera">
     <div>
-      <h2>Mis favoritos</h2>
-      <p>
-        Guarda tus productos preferidos para encontrarlos
-        fácilmente cuando los necesites.
+      <h1 class="pagina-titulo">Mis favoritos</h1>
+      <p class="pagina-descripcion">
+        Guarda tus productos preferidos para encontrarlos fácilmente cuando los necesites.
       </p>
     </div>
-
-    <a routerLink="/cliente" class="back-link">
-      Volver al catálogo
-    </a>
+    <a routerLink="/cliente" class="boton-secundario">Volver al catálogo</a>
   </div>
 
-  @if (error()) {
-    <p class="message error-message" role="alert">
-      {{ error() }}
-    </p>
-  }
-
   @if (exito()) {
-    <output class="message success-message">
-      {{ exito() }}
-    </output>
+    <output class="aviso aviso-exito">{{ exito() }}</output>
   }
 
   @if (cargando()) {
-
-    <output class="message">
-      Cargando favoritos...
-    </output>
-
-  } @else if (productos().length === 0) {
-
-    <section class="empty-favorites">
-      <h3>Todavía no tienes favoritos</h3>
-
-      <p>
-        Explora el catálogo y guarda los productos
-        que más te interesen.
-      </p>
-
-      <a routerLink="/cliente" class="primary-link">
-        Explorar productos
-      </a>
+    <output class="estado">Cargando favoritos...</output>
+  } @else if (error() && productos().length === 0) {
+    <!-- A17: con error no se muestra a la vez el estado vacío; M5: «Reintentar» común. -->
+    <section class="estado" role="alert">
+      <p class="estado-titulo">{{ error() }}</p>
+      <button type="button" class="boton-secundario" (click)="cargarFavoritos()">Reintentar</button>
     </section>
-
+  } @else if (productos().length === 0) {
+    <section class="estado">
+      <h2 class="estado-titulo">Todavía no tienes favoritos</h2>
+      <p>Explora el catálogo y guarda los productos que más te interesen.</p>
+      <a routerLink="/cliente" class="boton-principal">Explorar productos</a>
+    </section>
   } @else {
+    @if (error()) {
+      <p class="aviso aviso-error" role="alert">{{ error() }}</p>
+    }
 
     <p class="favorites-count">
       {{ productos().length }}
-      {{
-        productos().length === 1
-          ? 'producto guardado'
-          : 'productos guardados'
-      }}
+      {{ productos().length === 1 ? 'producto guardado' : 'productos guardados' }}
     </p>
 
     <ul class="favorites-grid">
-
       @for (producto of productos(); track producto.id) {
-
-        <li
-          class="favorite-card"
-          [class.unavailable]="!producto.disponible"
-        >
-
-          <div class="favorite-image">
-
+        <li class="favorite-card tarjeta" [class.unavailable]="!producto.disponible">
+          <div class="marco-imagen">
             @if (producto.imagen) {
-              <img
-                [src]="urlImagen(producto.imagen)"
-                [alt]="producto.nombre"
-              />
+              <img [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="400" height="300" />
             } @else {
-              <span>Sin imagen</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                <circle cx="9" cy="10" r="2"></circle>
+                <path d="M21 17l-5-5-9 8"></path>
+              </svg>
+              <span class="visually-hidden">Producto sin imagen</span>
             }
-
           </div>
 
           <div class="favorite-content">
-
-            <h3>{{ producto.nombre }}</h3>
-
+            <h2>{{ producto.nombre }}</h2>
             @if (producto.precio !== null) {
-              <p class="favorite-price">
-                {{ producto.precio | number:'1.2-2' }} €
-              </p>
+              <p class="precio">{{ producto.precio | number: '1.2-2' }} €</p>
             } @else {
-              <p class="favorite-price">
-                Precio no disponible
-              </p>
+              <p class="favorite-no-price">Precio no disponible</p>
             }
 
             @if (!producto.disponible) {
-              <output class="unavailable-message">
-                {{ producto.aviso || 'Producto no disponible' }}
-              </output>
+              <p class="aviso aviso-advertencia">{{ producto.aviso || 'Producto no disponible' }}</p>
             } @else {
-              <p class="available-message">
-                Disponible para comprar
-              </p>
+              <span class="chip chip-exito">Disponible</span>
             }
 
             <div class="favorite-actions">
-
               <button
                 type="button"
-                class="buy-button"
-                [disabled]="
-                  !producto.disponible ||
-                  operacion() !== null
-                "
-                (click)="anadirAlCarrito(producto)"
-              >
+                class="boton-principal"
+                [disabled]="!producto.disponible || operacion() !== null"
+                (click)="anadirAlCarrito(producto)">
                 {{
                   !producto.disponible
                     ? 'Producto no disponible'
@@ -133,39 +81,18 @@
                       : 'Añadir al carrito'
                 }}
               </button>
-
               <button
                 type="button"
-                class="remove-button"
+                class="boton-secundario"
                 [disabled]="operacion() !== null"
-                [attr.aria-label]="
-                  'Quitar ' + producto.nombre + ' de favoritos'
-                "
-                (click)="quitarFavorito(producto)"
-              >
+                [attr.aria-label]="'Quitar ' + producto.nombre + ' de favoritos'"
+                (click)="quitarFavorito(producto)">
                 Quitar de favoritos
               </button>
-
             </div>
-
           </div>
-
         </li>
-
       }
-
     </ul>
-
   }
-
-  @if (error() && !cargando() && productos().length === 0) {
-    <button
-      type="button"
-      class="retry-button"
-      (click)="cargarFavoritos()"
-    >
-      Reintentar
-    </button>
-  }
-
 </main>

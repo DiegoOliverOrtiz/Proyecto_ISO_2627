@@ -1,6 +1,7 @@
 package es.uclm.esibuy.backend.services;
 
-import java.time.LocalDate;
+import java.net.URI;
+
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +27,7 @@ import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
-import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
-import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
 
 @Service
@@ -45,18 +44,7 @@ public class AdministradorService {
 	private final Validator validator;
 	private final SesionService sesionService;
 	private final FavoritosRegistroService favoritosRegistroService;
-
-	public AdministradorService(
-			AdministradorDAO administradorDAO,
-			CategoriaDAO categoriaDAO,
-			UsuarioDAO usuarioDAO,
-			PasswordEncoder passwordEncoder,
-			PasswordPolicy passwordPolicy,
-			Validator validator,
-			SesionService sesionService) {
-		this(administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
-				passwordPolicy, validator, sesionService, null);
-	}
+	private final AuditoriaService auditoriaService;
 
 	@Autowired
 	public AdministradorService(
@@ -67,7 +55,8 @@ public class AdministradorService {
 			PasswordPolicy passwordPolicy,
 			Validator validator,
 			SesionService sesionService,
-			FavoritosRegistroService favoritosRegistroService) {
+			FavoritosRegistroService favoritosRegistroService,
+			AuditoriaService auditoriaService) {
 
 		this.administradorDAO = administradorDAO;
 		this.categoriaDAO = categoriaDAO;
@@ -77,6 +66,7 @@ public class AdministradorService {
 		this.validator = validator;
 		this.sesionService = sesionService;
 		this.favoritosRegistroService = favoritosRegistroService;
+		this.auditoriaService = auditoriaService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
@@ -145,6 +135,7 @@ public class AdministradorService {
 		}
 
 		validarTelefono(request.telefono());
+		validarImagenPerfil(request.imagenPerfil());
 
 		usuario.setNombre(
 				request.nombre().trim());
@@ -152,40 +143,20 @@ public class AdministradorService {
 		usuario.setApellidos(
 				request.apellidos().trim());
 
-		usuario.setTelefono(
-				request.telefono());
+		if (request.telefono() != null) {
+			usuario.setTelefono(request.telefono().isBlank() ? null : request.telefono());
+		}
 
 		usuario.setImagenPerfil(
-				request.imagenPerfil());
+				request.imagenPerfil() == null
+						? null
+						: request.imagenPerfil().trim());
 
 		/*
 		 * Campos específicos según
 		 * el tipo de usuario
 		 */
-		switch (usuario) {
-
-			case Cliente cliente -> modificarDatosCliente(cliente, request);
-
-            case Vendedor vendedor -> {
-                if (request.dniNif() != null) {
-                    validarDniNif(request.dniNif());
-                    vendedor.setDniNif(request.dniNif());
-                }
-
-				if (request.categoriaId() != null) {
-					String categoriaId = request.categoriaId().trim();
-					if (categoriaId.isBlank() || !categoriaDAO.existsById(categoriaId)) {
-						throw new IllegalArgumentException("La categoría seleccionada no existe.");
-					}
-					vendedor.setCategoriaId(categoriaId);
-				}
-            }
-
-			case Administrador administrador -> administrador.setSede(request.sede());
-
-			default -> throw new IllegalStateException(
-					"Tipo de usuario no soportado.");
-		}
+		DatosRolUsuario.modificar(usuario, request, categoriaDAO);
 
 		/*
 		 * Persistimos los cambios
@@ -197,48 +168,34 @@ public class AdministradorService {
 				usuarioGuardado);
 	}
 
-	private void modificarDatosCliente(
-			Cliente cliente,
-			ModificarUsuarioRequest request) {
-
-		if (request.fechaNacimiento() == null) {
-			throw new IllegalArgumentException(
-					"La fecha de nacimiento es obligatoria.");
-		}
-
-		LocalDate fechaLimite =
-				LocalDate.now().minusYears(18);
-
-		if (request.fechaNacimiento()
-				.isAfter(fechaLimite)) {
-
-			throw new IllegalArgumentException(
-					"El cliente debe ser mayor de edad.");
-		}
-
-        if (request.dniNif() != null) {
-            validarDniNif(request.dniNif());
-            cliente.setDniNif(request.dniNif());
-        }
-
-		cliente.setFechaNacimiento(
-				request.fechaNacimiento());
-
-		if (request.esPremium() != null) {
-			cliente.setEsPremium(request.esPremium());
-		}
-	}
-
-	private void validarDniNif(String dniNif) {
-		if (!dniNif.matches("^[0-9]{8}[A-Za-z]$")) {
-			throw new IllegalArgumentException("El DNI/NIF debe tener 8 números y una letra.");
-		}
-	}
-
 	private void validarTelefono(String telefono) {
 		if (telefono != null && !telefono.isBlank()
 				&& !telefono.matches("^\\+?[0-9\\s().-]{7,20}$")) {
 			throw new IllegalArgumentException("Introduce un teléfono válido o deja el campo vacío.");
+		}
+	}
+
+	private void validarImagenPerfil(String imagenPerfil) {
+		if (imagenPerfil == null || imagenPerfil.isBlank()) {
+			return;
+		}
+
+		String url = imagenPerfil.trim();
+		if (url.length() > 1000) {
+			throw new IllegalArgumentException("La URL de la imagen de perfil no puede superar 1000 caracteres.");
+		}
+
+		try {
+			URI uri = URI.create(url);
+			if (!"https".equalsIgnoreCase(uri.getScheme())
+					|| uri.getHost() == null
+					|| uri.getUserInfo() != null) {
+				throw new IllegalArgumentException(
+						"La imagen de perfil debe utilizar una URL HTTPS válida.");
+			}
+		} catch (IllegalArgumentException exception) {
+			throw new IllegalArgumentException(
+					"La imagen de perfil debe utilizar una URL HTTPS válida.", exception);
 		}
 	}
 
@@ -252,7 +209,8 @@ public class AdministradorService {
 		}
 
 		passwordPolicy.validate(
-				request.contrasena());
+				request.contrasena(),
+				java.util.List.of(request.nombre(), request.apellidos(), request.email()));
 
 		String email =
 				request.email()
@@ -298,6 +256,8 @@ public class AdministradorService {
 			Administrador guardado =
 					administradorDAO.save(
 							administrador);
+
+			auditoriaService.registrarAltaAdministrador();
 
 			if (favoritosRegistroService != null) {
 				favoritosRegistroService.crearListaPredeterminada(
@@ -443,6 +403,7 @@ public class AdministradorService {
 		}
 
 		administradorDAO.delete(objetivo);
+		auditoriaService.registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
 
 		sesionService.cerrarSesiones(
 				objetivo.getEmail());

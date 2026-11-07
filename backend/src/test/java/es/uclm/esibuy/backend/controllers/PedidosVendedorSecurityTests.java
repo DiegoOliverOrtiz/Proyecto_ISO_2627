@@ -68,17 +68,17 @@ class PedidosVendedorSecurityTests {
 
     private Pedido pedidoDe(String vendedorId, EstadoPedido estado) {
         Instant fecha = Instant.parse("2026-11-03T10:00:00Z");
-        return new Pedido(
-                "pedido-1",
-                "cliente-1",
-                List.of(new LineaPedido("producto-1", "Producto", new BigDecimal("10.00"), 1,
-                        vendedorId, "Tienda")),
-                estado,
-                new BigDecimal("10.00"),
-                fecha,
-                estado == EstadoPedido.EN_PROCESO ? null : fecha,
-                null,
-                "metodo-pago");
+        return Pedido.builder()
+                .id("pedido-1")
+                .clienteId("cliente-1")
+                .lineas(List.of(new LineaPedido("producto-1", "Producto", new BigDecimal("10.00"), 1,
+                        vendedorId, "Tienda")))
+                .estado(estado)
+                .importe(new BigDecimal("10.00"))
+                .fechaCreacion(fecha)
+                .fechaPago(estado == EstadoPedido.EN_PROCESO ? null : fecha)
+                .metodoPagoId("metodo-pago")
+                .build();
     }
 
     @Test
@@ -93,7 +93,7 @@ class PedidosVendedorSecurityTests {
                 .andExpect(jsonPath("$.estado").doesNotExist())
                 .andExpect(jsonPath("$.productos").doesNotExist());
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -112,7 +112,7 @@ class PedidosVendedorSecurityTests {
                 .andReturn().getResponse().getContentAsString();
 
         assertEquals(inexistente, ajeno);
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -120,7 +120,7 @@ class PedidosVendedorSecurityTests {
         when(pedidoDAO.findById("pedido-1"))
                 .thenReturn(Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.PAGADO_COMPLETADO)))
                 .thenReturn(Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.TRAMITADO_ENVIADO)));
-        when(pedidoDAO.actualizarEstado("pedido-1", "PAGADO_COMPLETADO", VENDEDOR_A, "TRAMITADO_ENVIADO"))
+        when(pedidoDAO.actualizarEstado(eq("pedido-1"), eq("PAGADO_COMPLETADO"), eq(VENDEDOR_A), eq("TRAMITADO_ENVIADO"), anyList()))
                 .thenReturn(1L);
 
         mvc.perform(patch(RUTA + "/pedido-1/aceptar")
@@ -140,7 +140,7 @@ class PedidosVendedorSecurityTests {
                         .with(csrf()))
                 .andExpect(status().isConflict());
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
@@ -153,14 +153,14 @@ class PedidosVendedorSecurityTests {
                         .with(csrf()))
                 .andExpect(status().isNotFound());
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 
     @Test
     void siOtraPeticionCambiaElPedidoAntesSeDevuelve409() throws Exception {
         when(pedidoDAO.findById("pedido-1"))
                 .thenReturn(Optional.of(pedidoDe(VENDEDOR_A, EstadoPedido.PAGADO_COMPLETADO)));
-        when(pedidoDAO.actualizarEstado(any(), any(), any(), any())).thenReturn(0L);
+        when(pedidoDAO.actualizarEstado(any(), any(), any(), any(), anyList())).thenReturn(0L);
 
         mvc.perform(patch(RUTA + "/pedido-1/aceptar")
                         .with(user(CORREO_A).roles("VENDEDOR"))
@@ -224,6 +224,6 @@ class PedidosVendedorSecurityTests {
                         .with(csrf()))
                 .andExpect(status().isNotFound());
 
-        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any());
+        verify(pedidoDAO, never()).actualizarEstado(any(), any(), any(), any(), anyList());
     }
 }

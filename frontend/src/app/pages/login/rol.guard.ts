@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService } from './auth.service';
+import { motivoSinSesion } from './marca-sesion';
 import { rutaParaRol } from './rutas-por-rol';
 
 export const rolGuard: CanActivateFn = (ruta) => {
@@ -21,7 +22,7 @@ export const rolGuard: CanActivateFn = (ruta) => {
           ['/login'],
           {
             queryParams: {
-              motivo: 'sesion-expirada'
+              motivo: motivoSinSesion()
             }
           }
         )

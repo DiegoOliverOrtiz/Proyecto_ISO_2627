@@ -1,9 +1,11 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { CategoriaPerfil, ModificarPerfilRequest, PerfilResponse, PerfilService } from './perfil.service';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 
 const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   if (!control.value) {
@@ -25,15 +27,22 @@ const mayorDeEdad: ValidatorFn = (control: AbstractControl): ValidationErrors | 
   return edad >= 18 ? null : { menorDeEdad: true };
 };
 
+const NOMBRES_TIPO_USUARIO: Record<string, string> = {
+  CLIENTE: 'Cliente',
+  VENDEDOR: 'Vendedor',
+  ADMIN: 'Administrador'
+};
+
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, RouterLink],
-  styleUrl: './perfil.css',
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, RouterLink],
+  styleUrls: ['../tienda/tienda.css', './perfil.css'],
   templateUrl: './perfil.html'
 })
 export class Perfil {
   private readonly servicioPerfil = inject(PerfilService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly enrutador = inject(Router);
   private readonly constructorFormularios = inject(FormBuilder);
 
@@ -56,14 +65,27 @@ export class Perfil {
   readonly codigoTOTP = signal('');
   readonly mensajeTOTP = signal('');
   readonly errorTOTP = signal('');
+  readonly guardandoEmailOtp = signal(false);
+  readonly errorEmailOtp = signal('');
+
+  /** Nombre legible del tipo de usuario (el backend envía el valor del enum). */
+  nombreTipoUsuario(tipo: string): string {
+    return NOMBRES_TIPO_USUARIO[tipo] ?? tipo;
+  }
+
+  /** Inicial del avatar, siempre en mayúscula (B9). */
+  inicial(nombre: string | null | undefined): string {
+    return (nombre ?? '').trim().charAt(0).toLocaleUpperCase('es-ES');
+  }
   readonly cargandoTOTP = signal(false);
 
   readonly formulario = this.constructorFormularios.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     apellidos: ['', [Validators.required, Validators.maxLength(150)]],
     telefono: ['', [Validators.maxLength(30), Validators.pattern(/^\+?[0-9\s().-]{7,20}$/)]],
-    imagenPerfil: ['', [Validators.maxLength(1000), Validators.pattern(/^https?:\/\/.+/i)]],
-    dniNif: ['', [Validators.maxLength(9), Validators.pattern(/^[0-9]{8}[A-Za-z]$/)]],
+    eliminarTelefono: [false],
+    imagenPerfil: ['', [Validators.maxLength(1000), Validators.pattern(/^https:\/\/[^\s/]+(?:\/[^\s]*)?$/i)]],
+    dniNif: ['', [Validators.maxLength(9), Validators.pattern(/^\d{8}[A-Za-z]$/)]],
     fechaNacimiento: ['', [mayorDeEdad]],
     sede: ['', [Validators.maxLength(150)]],
     categoriaId: ['']
@@ -110,7 +132,8 @@ export class Perfil {
     this.formulario.reset({
       nombre: datos.nombre,
       apellidos: datos.apellidos,
-      telefono: datos.tipoUsuario === 'ADMIN' ? '' : datos.telefono ?? '',
+      telefono: '',
+      eliminarTelefono: false,
       imagenPerfil: datos.imagenPerfil ?? '',
       dniNif: '',
       fechaNacimiento: datos.tipoUsuario === 'CLIENTE' ? datos.fechaNacimiento ?? '' : '',
@@ -140,10 +163,15 @@ export class Perfil {
     }
 
     const valores = this.formulario.getRawValue();
+    // El administrador no tiene teléfono; si se marca eliminarlo, se envía vacío.
+    let telefono: string | null = null;
+    if (datos.tipoUsuario !== 'ADMIN') {
+      telefono = valores.eliminarTelefono ? '' : this.valorNulo(valores.telefono);
+    }
     const solicitud: ModificarPerfilRequest = {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
-      telefono: datos.tipoUsuario === 'ADMIN' ? datos.telefono : this.valorNulo(valores.telefono),
+      telefono,
       imagenPerfil: this.valorNulo(valores.imagenPerfil)
     };
 
@@ -227,17 +255,6 @@ export class Perfil {
         }
       }
     });
-  }
-
-  volverAlPanel(): void {
-    const tipoUsuario = this.perfil()?.tipoUsuario;
-    const ruta = tipoUsuario === 'ADMIN'
-      ? '/admin'
-      : tipoUsuario === 'VENDEDOR'
-        ? '/vendedor'
-        : '/cliente';
-
-    void this.enrutador.navigateByUrl(ruta);
   }
 
   iniciarBaja(): void {
@@ -337,13 +354,74 @@ export class Perfil {
     });
   }
 
-  desactivarTOTP(): void {
+  actualizarPreferenciaEmailOtp(evento: Event): void {
+    const control = evento.target as HTMLInputElement;
+    const activado = control.checked;
+    // Mostrar únicamente la preferencia confirmada por el servidor.
+    control.checked = this.perfil()?.emailOtpActivado ?? false;
+    this.cambiarEmailOtp(activado);
+  }
+
+  cambiarEmailOtp(activado: boolean): void {
+    const datos = this.perfil();
+
+    if (!datos || datos.tipoUsuario !== 'CLIENTE' || this.guardandoEmailOtp() || this.cargandoTOTP()) {
+      return;
+    }
+
+    if (activado && !datos.totpActivado) {
+      this.errorEmailOtp.set(
+        'Activa primero la verificación con tu aplicación de autenticación.'
+      );
+      return;
+    }
+
+    this.guardandoEmailOtp.set(true);
+    this.errorEmailOtp.set('');
+
+    this.servicioPerfil.modificarPreferenciaTercerFactor(activado)
+      .subscribe({
+        next: () => {
+          this.guardandoEmailOtp.set(false);
+
+          this.perfil.update(actual =>
+            actual
+              ? { ...actual, emailOtpActivado: activado }
+              : actual
+          );
+
+          this.mensajeExito.set(
+            activado
+              ? 'Has activado la verificación adicional por correo.'
+              : 'Has desactivado la verificación adicional por correo.'
+          );
+        },
+        error: () => {
+          this.guardandoEmailOtp.set(false);
+          this.errorEmailOtp.set(
+            'No se pudo actualizar la configuración de seguridad.'
+          );
+        }
+      });
+  }
+
+  async desactivarTOTP(): Promise<void> {
+    if (this.perfil()?.emailOtpActivado || this.guardandoEmailOtp()) {
+      this.errorTOTP.set('Desactiva primero la verificación por correo.');
+      return;
+    }
     const codigo = this.codigoTOTP().replace(/[\s-]/g, '').toUpperCase();
     if (!/^(\d{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
       this.errorTOTP.set('Introduce un código actual de la aplicación o un código de respaldo para desactivar TOTP.');
       return;
     }
-    if (!confirm('¿Quieres desactivar el segundo factor de autenticación?')) {
+    const confirmado = await this.confirmacion.confirmar({
+      titulo: 'Desactivar el segundo factor',
+      mensaje: 'Tu cuenta quedará protegida solo con la contraseña.',
+      aceptar: 'Desactivar',
+      peligro: true
+    });
+    if (!confirmado) {
       return;
     }
     this.cargandoTOTP.set(true);

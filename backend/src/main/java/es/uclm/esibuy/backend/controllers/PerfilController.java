@@ -1,5 +1,9 @@
 package es.uclm.esibuy.backend.controllers;
 
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import es.uclm.esibuy.backend.model.Administrador;
+import es.uclm.esibuy.backend.model.Vendedor;
 import org.springframework.http.ResponseEntity;
 import java.util.Objects;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import es.uclm.esibuy.backend.dto.PerfilResponse;
+import es.uclm.esibuy.backend.dto.PreferenciaEmailOtpRequest;
 import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
 import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
 import es.uclm.esibuy.backend.dto.TwoFactorConfirmationResponse;
@@ -31,6 +36,15 @@ public class PerfilController {
     public PerfilController(PerfilService perfilService, TotpService totpService) {
         this.perfilService = perfilService;
         this.totpService = Objects.requireNonNull(totpService);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/3fa/preferencia")
+    public ResponseEntity<Void> modificarPreferenciaTercerFactor(
+            Authentication authentication,
+            @jakarta.validation.Valid @RequestBody PreferenciaEmailOtpRequest request) {
+        perfilService.modificarPreferenciaTercerFactor(authentication.getName(), request.activado());
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -77,9 +91,24 @@ public class PerfilController {
 
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/2fa")
-    public ResponseEntity<Void> desactivarSegundoFactor(Authentication authentication,
+    public ResponseEntity<Void> desactivarSegundoFactor(
+            Authentication authentication,
             @jakarta.validation.Valid @RequestBody TwoFactorCodeRequest request) {
-        totpService.desactivar(totpService.buscarUsuario(authentication.getName()), request.code());
+
+        Usuario usuario = totpService.buscarUsuario(authentication.getName());
+
+        if (usuario instanceof Vendedor || usuario instanceof Administrador) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "El segundo factor es obligatorio para este rol.");
+        }
+
+        if (usuario.isEmailOtpActivado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Desactiva primero la verificación por correo.");
+        }
+        totpService.desactivar(usuario, request.code());
+
         return ResponseEntity.noContent().build();
     }
 }

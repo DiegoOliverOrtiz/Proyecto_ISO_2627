@@ -1,0 +1,313 @@
+/* Mis pedidos. La página, botones y estados comunes vienen de ../tienda/tienda.css. */
+
+.cabecera-pedido,
+.cabecera-detalle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.detalle h2 {
+  margin-top: 0;
+}
+
+.cabecera-pedido p {
+  color: var(--color-text-secondary);
+}
+
+.seccion-pedidos {
+  margin-top: 2rem;
+}
+
+.seccion-pedidos > h2 {
+  color: var(--color-brand);
+}
+
+.lista-pedidos {
+  display: grid;
+  gap: 1rem;
+}
+
+.tarjeta-pedido,
+.detalle,
+.estado-vacio {
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.tarjeta-pedido h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.chip-estado {
+  padding: .45rem .85rem;
+  border-radius: 999px;
+  background: var(--color-accent-subtle);
+  color: var(--color-brand);
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.resumen {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin: .25rem 0 1rem;
+}
+
+.resumen p {
+  margin: 0;
+}
+
+.acciones-pedido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.boton-primario,
+.boton-secundario,
+.boton-cancelar {
+  padding: .7rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.boton-primario {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.boton-secundario {
+  border: 1px solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-brand);
+}
+
+.boton-cancelar {
+  border: 1px solid var(--color-accent);
+  color: var(--color-danger);
+  background: var(--color-surface);
+}
+
+.estado-cancelado {
+  background: var(--color-danger-background);
+  color: var(--color-danger);
+}
+
+button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.detalle {
+  margin-top: 2rem;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th,
+td {
+  padding: .8rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.boton-valorar {
+  padding: .4rem .7rem;
+  border: 1px solid #d36b54;
+  border-radius: 4px;
+  color: #a63120;
+  background: #fff;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fila-valoracion > td {
+  padding: 1rem;
+  background: #f7f9fa;
+}
+
+.fila-valoracion form {
+  display: grid;
+  gap: .65rem;
+  max-width: 36rem;
+}
+
+.fila-valoracion textarea {
+  width: 100%;
+  padding: .65rem;
+  border: 1px solid #7a8f97;
+  border-radius: 4px;
+  color: #173042;
+  background: #fff;
+}
+
+/* Es un <fieldset>: sin el borde, el margen ni el relleno del navegador. */
+.puntuacion-estrellas {
+  display: flex;
+  gap: .25rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.estrella-puntuacion {
+  padding: .1rem;
+  border: 0;
+  color: #aab8bf;
+  background: transparent;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.estrella-puntuacion.seleccionada {
+  color: #d36b2e;
+}
+
+.etiqueta-estrellas {
+  font-weight: 700;
+}
+
+.fila-valoracion small {
+  color: #526675;
+}
+
+.valoracion-completada { color: #255b4d; }
+
+/* Después de los estilos base de cada botón (S4664). */
+.boton-primario:focus-visible,
+.boton-secundario:focus-visible,
+.boton-valorar:focus-visible,
+.estrella-puntuacion:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.total {
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.direccion {
+  margin-top: 1.5rem;
+}
+
+.historial {
+  display: grid;
+  gap: 0;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.historial li {
+  position: relative;
+  display: flex;
+  gap: .85rem;
+  min-height: 3.5rem;
+}
+
+.historial li:not(:last-child)::before {
+  position: absolute;
+  top: .8rem;
+  bottom: -.1rem;
+  left: .38rem;
+  width: 2px;
+  background: var(--color-accent-subtle);
+  content: '';
+}
+
+.historial li.conector-completado::before {
+  background: var(--color-accent-subtle);
+}
+
+.punto {
+  z-index: 1;
+  flex: 0 0 .8rem;
+  height: .8rem;
+  margin-top: .2rem;
+  border-radius: 50%;
+  background: var(--color-accent-subtle);
+}
+
+.historial li.completado .punto {
+  background: var(--color-brand);
+}
+
+.historial li div {
+  display: grid;
+  gap: .2rem;
+  padding-bottom: 1rem;
+}
+
+.historial li strong {
+  color: var(--color-text-secondary);
+}
+
+.historial li.completado strong {
+  color: var(--color-text);
+}
+
+.historial time,
+.fecha-pendiente {
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.fecha-pendiente {
+  color: var(--color-text-secondary);
+}
+
+.nota {
+  margin-top: 1.5rem;
+}
+
+.estado-vacio {
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.mensaje-error {
+  padding: 1rem;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 8px;
+  background: var(--color-danger-background);
+  color: var(--color-danger);
+}
+
+.mensaje-exito {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  color: var(--color-brand);
+}
+
+@media (max-width: 640px) {
+  .tarjeta-pedido,
+  .detalle {
+    padding: 1rem;
+  }
+}

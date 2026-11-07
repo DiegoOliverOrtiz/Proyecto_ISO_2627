@@ -1,0 +1,112 @@
+/*
+ * Productos del administrador (solo lectura). La página, el aviso, las tarjetas, los chips y los
+ * estados vienen de ../tienda/tienda.css. Solo usa tokens de styles.css.
+ */
+
+.filtros-catalogo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.campo-filtro {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: .4rem;
+  min-width: 0;
+}
+
+.campo-busqueda {
+  flex-basis: 240px;
+}
+
+.campo-filtro label {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.campo-filtro input,
+.campo-filtro select {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: .55rem .8rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+}
+
+.resumen {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+}
+
+.lista-productos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarjeta-producto {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.tarjeta-producto.producto-desactivado {
+  background: var(--color-background);
+}
+
+.tarjeta-producto.producto-desactivado .chip-neutro {
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+}
+
+.cuerpo-producto h2 {
+  margin: .5rem 0 .25rem;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.vendedor-producto {
+  margin: 0 0 .75rem;
+  color: var(--color-text-secondary);
+}
+
+.datos-producto {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem 1rem;
+  margin: 0 0 .75rem;
+}
+
+.datos-producto div {
+  min-width: 0;
+}
+
+.datos-producto dt {
+  color: var(--color-text-secondary);
+  font-size: .875rem;
+}
+
+.datos-producto dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.descripcion-producto {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}

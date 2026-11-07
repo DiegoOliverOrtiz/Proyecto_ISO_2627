@@ -25,7 +25,7 @@ import es.uclm.esibuy.backend.dto.CrearProductoRequest;
 import es.uclm.esibuy.backend.dto.CrearProductoResponse;
 import es.uclm.esibuy.backend.dto.ModificarProductoRequest;
 import es.uclm.esibuy.backend.dto.NombreComercialResponse;
-import es.uclm.esibuy.backend.dto.RegistroUsuarioResponse;
+import es.uclm.esibuy.backend.dto.RegistroPublicoResponse;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
 import es.uclm.esibuy.backend.services.ProductoService;
 import es.uclm.esibuy.backend.services.VendedorService;
@@ -83,9 +83,16 @@ public class VendedorController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/productos/{id}")
+    public ResponseEntity<Void> eliminarProducto(Authentication authentication, @PathVariable String id) {
+        productoService.eliminarProducto(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<RegistroUsuarioResponse> register(@Valid @RequestBody RegistroVendedorRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(vendedorService.registrar(request));
+    public ResponseEntity<RegistroPublicoResponse> register(@Valid @RequestBody RegistroVendedorRequest request) {
+        vendedorService.registrar(request);
+        return ResponseEntity.accepted().body(RegistroPublicoResponse.confirmacion());
     }
 
     @GetMapping("/perfil")

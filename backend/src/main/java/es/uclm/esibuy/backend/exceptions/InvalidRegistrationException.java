@@ -11,6 +11,10 @@ public class InvalidRegistrationException extends RuntimeException {
 		this("Los datos de registro o la contraseña no cumplen los requisitos.", Map.of());
 	}
 
+	public InvalidRegistrationException(String message) {
+		this(message, Map.of());
+	}
+
 	public InvalidRegistrationException(String field, String message) {
 		this(message, Map.of(field, List.of(message)));
 	}

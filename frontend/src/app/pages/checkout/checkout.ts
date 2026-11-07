@@ -18,7 +18,7 @@ import { CheckoutService, CrearPedidoRequest, ErrorPreparacionPago, PedidoRespon
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './checkout.html',
-  styleUrls: ['../carrito/carrito.css', './checkout.css']
+  styleUrls: ['../tienda/tienda.css', './checkout.css']
 })
 export class Checkout {
   private readonly carritos = inject(CarritoService);
@@ -42,9 +42,26 @@ export class Checkout {
   readonly pedido = signal<PedidoResponse | null>(null);
   readonly puedePagar = computed(() => !this.cargando() && !this.procesando() && !this.pedido() && !!this.email()
     && (!!this.pendiente() || (!!this.carrito()?.productos.length
-      && this.carrito()!.productos.every(linea => linea.disponible)
+      && this.carrito()?.productos.every(linea => linea.disponible)
       && this.direcciones().some(d => d.id === this.direccionId())
       && this.metodos().some(m => m.id === this.metodoPagoId()))));
+
+  // M4: explica qué falta cuando «Pagar» está desactivado.
+  readonly motivoPagoDesactivado = computed(() => {
+    const carrito = this.carrito();
+    if (this.puedePagar() || this.cargando() || this.procesando() || this.pedido() || this.pendiente() || !carrito) {
+      return '';
+    }
+    if (carrito.productos.some(linea => !linea.disponible)) {
+      return 'Hay productos no disponibles: revísalos en el carrito antes de pagar.';
+    }
+    const faltaDireccion = !this.direcciones().some(d => d.id === this.direccionId());
+    const faltaMetodo = !this.metodos().some(m => m.id === this.metodoPagoId());
+    if (faltaDireccion && faltaMetodo) return 'Elige una dirección de envío y un método de pago.';
+    if (faltaDireccion) return 'Elige una dirección de envío.';
+    if (faltaMetodo) return 'Elige un método de pago.';
+    return '';
+  });
 
   constructor() { this.cargar(); }
 
@@ -136,7 +153,8 @@ export class Checkout {
   urlImagen(imagen: string): string {
     const ruta = imagen.trim();
     if (/^https?:\/\//i.test(ruta)) return ruta;
-    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
+    const destino = ruta.startsWith('/') ? ruta : `/product-images/${ruta}`;
+    return `${environment.apiUrl}${destino}`;
   }
 
   private tratarError(fallo: HttpErrorResponse, mensaje: string): void {

@@ -89,7 +89,7 @@ const passwordRules = [
   },
   {
     label: '1 número (0-9)',
-    test: (password: string) => /[0-9]/.test(password),
+    test: (password: string) => /\d/.test(password),
   },
   {
     label: '1 carácter especial (@, #, $, ...)',
@@ -118,7 +118,7 @@ const passwordRequirementsValidator: ValidatorFn = (
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-register',
-  styleUrl: './register.css',
+  styleUrls: ['../acceso/acceso.css', './register.css'],
   templateUrl: './register.html',
 })
 export class Register {
@@ -165,7 +165,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 
@@ -207,7 +207,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 
@@ -334,19 +334,12 @@ export class Register {
         control.hasError('pattern')
       )
     ) {
-      return 'El DNI debe tener 8 números y una letra.';
+      return 'El DNI/NIF debe tener 8 números y una letra.';
     }
 
     if (
       name === 'contrasena' &&
-      control.hasError('minlength')
-    ) {
-      return 'La contraseña debe tener al menos 8 caracteres.';
-    }
-
-    if (
-      name === 'contrasena' &&
-      control.hasError('passwordRequirements')
+      (control.hasError('minlength') || control.hasError('passwordRequirements'))
     ) {
       return 'La contraseña debe cumplir todos los requisitos indicados.';
     }
@@ -444,7 +437,7 @@ export class Register {
       };
 
       this.registrationService.registerCliente(request).subscribe({
-        next: () => this.completeRegistration(),
+        next: response => this.completeRegistration(response.mensaje),
         error: (error: unknown) => this.failRegistration(error),
       });
 
@@ -472,7 +465,7 @@ export class Register {
     };
 
     this.registrationService.registerVendedor(request).subscribe({
-      next: () => this.completeRegistration(),
+      next: response => this.completeRegistration(response.mensaje),
       error: (error: unknown) => this.failRegistration(error),
     });
   }
@@ -494,12 +487,12 @@ export class Register {
   }
 
 
-  private completeRegistration(): void {
+  private completeRegistration(mensaje: string): void {
     this.isSubmitting = false;
 
     this.feedback = {
       kind: 'success',
-      text: 'Registro realizado correctamente. El equipo administrador revisará tus datos antes de activar la cuenta.',
+      text: mensaje,
     };
 
     this.avatarFailed = false;

@@ -1,11 +1,8 @@
 <header class="header">
-  <div class="logo">
-    ESIBuy
-  </div>
+  <a class="logo" routerLink="/" aria-label="ESIBuy, inicio">ESIBuy</a>
 
   <nav class="navigation">
     <a routerLink="/">Inicio</a>
-    <a href="#">Productos</a>
   </nav>
 
   <div class="auth-actions">
@@ -24,9 +21,10 @@
         experiencia de compra sencilla con ESIBuy.
       </p>
 
-      <button class="primary-button">
+      <!-- Sin sesión no hay catálogo: explorar lleva a iniciar sesión. -->
+      <a class="primary-button" routerLink="/login">
         Explorar productos
-      </button>
+      </a>
     </div>
   </section>
 

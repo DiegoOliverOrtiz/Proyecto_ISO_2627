@@ -88,6 +88,70 @@ describe('Login', () => {
     expect(componente.mensajeError()).toBe('Espera 5 minutos.');
   });
 
+  it('no autentica ni redirige al vendedor hasta verificar el código de correo', () => {
+    vi.spyOn(servicioAutenticacion, 'verificarSegundoFactor').mockReturnValue(of({
+      email: 'vendedor@example.com',
+      role: 'VENDEDOR',
+      requiresEmailVerification: true,
+      emailVerificationEmailSent: true
+    }));
+    const navegar = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    componente.requiereSegundoFactor.set(true);
+    componente.codigoSegundoFactor = '123456';
+
+    componente.onSubmit();
+
+    expect(componente.requiereSegundoFactor()).toBe(false);
+    expect(componente.requiereVerificacionEmail()).toBe(true);
+    expect(componente.emailOtpEnviado()).toBe(true);
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('mantiene los códigos de respaldo y no autentica al terminar el alta TOTP', () => {
+    vi.spyOn(servicioAutenticacion, 'confirmarTotpObligatorio').mockReturnValue(of({
+      login: {
+        email: 'admin@example.com',
+        role: 'ADMIN',
+        requiresEmailVerification: true,
+        emailVerificationEmailSent: true
+      },
+      backupCodes: ['ABCD2345']
+    }));
+    const navegar = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    componente.requiereAltaTotp.set(true);
+    componente.codigoSegundoFactor = '123456';
+
+    componente.onSubmit();
+
+    expect(componente.codigosRespaldo()).toEqual(['ABCD2345']);
+    expect(componente.requiereVerificacionEmail()).toBe(true);
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('solo redirige al rol devuelto tras verificar el código de correo', () => {
+    vi.spyOn(servicioAutenticacion, 'verificarTercerFactor').mockReturnValue(of({
+      email: 'admin@example.com',
+      role: 'ADMIN'
+    }));
+    const navegar = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    componente.requiereVerificacionEmail.set(true);
+    componente.codigoSegundoFactor = '123456';
+
+    componente.onSubmit();
+
+    expect(navegar).toHaveBeenCalledWith('/admin');
+  });
+
+  it('permite solicitar el código cuando el envío inicial ha fallado', () => {
+    vi.spyOn(servicioAutenticacion, 'reenviarTercerFactor').mockReturnValue(of(void 0));
+    componente.requiereVerificacionEmail.set(true);
+
+    componente.reenviarCodigoEmail();
+
+    expect(servicioAutenticacion.reenviarTercerFactor).toHaveBeenCalled();
+    expect(componente.emailOtpEnviado()).toBe(true);
+  });
+
   it('marca los campos como tocados y no intenta autenticar si el formulario es inválido', () => {
     const iniciarSesion = vi.spyOn(
       servicioAutenticacion,

@@ -1,5 +1,7 @@
 package es.uclm.esibuy.backend.services;
 
+import java.time.Instant;
+
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -106,12 +108,20 @@ public class PedidosVendedorService {
             throw new TransicionEstadoPedidoException();
         }
 
-        // Si el cliente lo canceló u otro vendedor lo aceptó entre medias, no se modifica nada.
+        // Conservamos la transición en el historial del pedido.
+        Pedido pedidoActualizado = pedido.cambiarEstado(
+                destino,
+                Instant.now()
+        );
+
+        // Si el cliente lo canceló u otro vendedor lo aceptó entre medias,
+        // la actualización atómica no modificará ningún documento.
         long actualizados = pedidoDAO.actualizarEstado(
                 pedidoId,
                 pedido.getEstado().name(),
                 vendedorId,
-                destino.name()
+                destino.name(),
+                pedidoActualizado.getHistorialEstados()
         );
 
         if (actualizados == 0) {
