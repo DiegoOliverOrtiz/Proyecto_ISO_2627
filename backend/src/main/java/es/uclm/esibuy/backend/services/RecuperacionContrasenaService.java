@@ -62,7 +62,16 @@ public class RecuperacionContrasenaService {
         this.limiteSolicitudes = limiteSolicitudes;
         this.auditoriaService = auditoriaService;
         this.transaccion = new TransactionTemplate(transactionManager);
-        this.urlFrontend = urlFrontend.replaceAll("/+$", "");
+        this.urlFrontend = quitarBarrasFinales(urlFrontend);
+    }
+
+    // Equivale a replaceAll("/+$", "") sin expresión regular (S5852).
+    private static String quitarBarrasFinales(String url) {
+        int fin = url.length();
+        while (fin > 0 && url.charAt(fin - 1) == '/') {
+            fin--;
+        }
+        return url.substring(0, fin);
     }
 
     public void solicitar(String email, String ip) {

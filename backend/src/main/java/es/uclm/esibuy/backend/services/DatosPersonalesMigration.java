@@ -46,22 +46,27 @@ public class DatosPersonalesMigration implements ApplicationRunner {
                 COLECCION_USUARIOS)) {
             var iterador = documentos.iterator();
             while (iterador.hasNext()) {
-                Document documento = iterador.next();
-                Object id = documento.get("_id");
-                for (String campo : CAMPOS) {
-                    Object valorAlmacenado = documento.get(campo);
-                    if (valorAlmacenado instanceof String valor && !cifrado.estaCifrado(valor)) {
-                        var resultado = mongoTemplate.updateFirst(
-                                Query.query(Criteria.where("_id").is(id).and(campo).is(valor)),
-                                new Update().set(campo, cifrado.cifrar(valor, campo)),
-                                COLECCION_USUARIOS);
-                        camposMigrados += (int) resultado.getModifiedCount();
-                    }
-                }
+                camposMigrados += migrarDocumento(iterador.next());
             }
         }
 
         LOGGER.info("Migración de cifrado de datos personales completada: {} campos actualizados.",
                 camposMigrados);
+    }
+
+    private int migrarDocumento(Document documento) {
+        int camposMigrados = 0;
+        Object id = documento.get("_id");
+        for (String campo : CAMPOS) {
+            Object valorAlmacenado = documento.get(campo);
+            if (valorAlmacenado instanceof String valor && !cifrado.estaCifrado(valor)) {
+                var resultado = mongoTemplate.updateFirst(
+                        Query.query(Criteria.where("_id").is(id).and(campo).is(valor)),
+                        new Update().set(campo, cifrado.cifrar(valor, campo)),
+                        COLECCION_USUARIOS);
+                camposMigrados += (int) resultado.getModifiedCount();
+            }
+        }
+        return camposMigrados;
     }
 }

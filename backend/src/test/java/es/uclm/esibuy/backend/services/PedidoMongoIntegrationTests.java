@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -38,6 +38,13 @@ import es.uclm.esibuy.backend.model.*;
 /** Requiere un replica set de pruebas. Nunca escribe en la base de datos de la URI. */
 @EnabledIfEnvironmentVariable(named = "ESIBUY_TEST_MONGODB_URI", matches = ".+")
 class PedidoMongoIntegrationTests {
+    // Claves de operación válidas (formato UUID) y distintas en cada llamada, sin aleatoriedad.
+    private static final AtomicLong SECUENCIA = new AtomicLong();
+
+    private static String nuevaOperacion() {
+        return String.format("00000000-0000-4000-8000-%012d", SECUENCIA.incrementAndGet());
+    }
+
     private MongoClient client;
     private MongoTemplate template;
     private PedidoService servicio;
@@ -58,7 +65,9 @@ class PedidoMongoIntegrationTests {
         assertTrue(hello.containsKey("setName") || "isdbgrid".equals(hello.getString("msg")),
                 "La integración exige replica set o mongos, no standalone.");
         // Atlas limita el nombre a 38 bytes en esta instancia.
-        String database = "hu26_test_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
+        // Único por ejecución y por test, sin aleatoriedad: PID, hora y secuencia en base 36.
+        String database = "hu26_test_" + Long.toString(ProcessHandle.current().pid(), 36) + "_"
+                + Long.toString(System.currentTimeMillis(), 36) + "_" + Long.toString(SECUENCIA.incrementAndGet(), 36);
         template = new MongoTemplate(client, database);
         for (String collection : List.of("usuarios", "productos", "carritos", "pedidos", "metodos_pago")) {
             template.createCollection(collection);
@@ -107,7 +116,7 @@ class PedidoMongoIntegrationTests {
         SecurityContextHolder.clearContext();
         try {
             if (template != null) {
-                assertTrue(template.getDb().getName().matches("hu26_test_[0-9a-f]{24}"));
+                assertTrue(template.getDb().getName().matches("hu26_test_[0-9a-z]+_[0-9a-z]+_[0-9a-z]+"));
                 // readWrite permite borrar colecciones; no exige el permiso adicional dropDatabase.
                 for (String collection : List.of("usuarios", "productos", "carritos", "pedidos", "metodos_pago")) {
                     template.getCollection(collection).drop();
@@ -137,7 +146,7 @@ class PedidoMongoIntegrationTests {
         }
         template.updateFirst(Query.query(Criteria.where("id").is("producto")), update, Producto.class);
 
-        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        Pedido pedido = pagar("a", nuevaOperacion());
 
         assertEquals(EstadoPedido.PAGADO_COMPLETADO, pedido.getEstado());
         assertEquals(new BigDecimal("100.00"), pedido.getImporte());
@@ -175,7 +184,7 @@ class PedidoMongoIntegrationTests {
         assertEquals(10, productos.findById("producto").orElseThrow().getStock());
         assertEquals(0, pedidos.count());
 
-        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        Pedido pedido = pagar("a", nuevaOperacion());
         assertEquals(EstadoPedido.PAGADO_COMPLETADO, pedido.getEstado());
         assertEquals(8, productos.findById("producto").orElseThrow().getStock());
         assertTrue(carritos.findById("a").orElseThrow().getProductos().isEmpty());
@@ -185,7 +194,7 @@ class PedidoMongoIntegrationTests {
     void stockInsuficienteConservaExistenciasCarritoYSinPedido() {
         carritos.save(carritos.findById("a").orElseThrow().conCantidad("producto", 2));
         Carrito anterior = carritos.findById("a").orElseThrow();
-        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", nuevaOperacion()));
         assertEquals(1, productos.findById("producto").orElseThrow().getStock());
         assertEquals(0, pedidos.count());
         Carrito conservado = carritos.findById("a").orElseThrow();
@@ -196,7 +205,7 @@ class PedidoMongoIntegrationTests {
     @Test
     void compraVariosProductosDescuentaCadaCantidadExacta() {
         prepararDosProductos();
-        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        Pedido pedido = pagar("a", nuevaOperacion());
         assertEquals(8, productos.findById("producto").orElseThrow().getStock());
         assertEquals(2, productos.findById("producto-2").orElseThrow().getStock());
         assertEquals(new BigDecimal("260.00"), pedido.getImporte());
@@ -228,7 +237,7 @@ class PedidoMongoIntegrationTests {
         servicio = new PedidoService(new CarritoService(carritos, clientes, daoConFallo), carritos, daoConFallo,
                 metodos, factory.getRepository(VendedorDAO.class), pedidos, manager);
 
-        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", nuevaOperacion()));
         assertEquals(10, productos.findById("producto").orElseThrow().getStock());
         assertEquals(5, productos.findById("producto-2").orElseThrow().getStock());
         assertEquals(0, pedidos.count());
@@ -272,7 +281,7 @@ class PedidoMongoIntegrationTests {
     void mismaClaveDeClientesDistintosNoPermiteAccederAlPedidoAjeno() {
         template.updateFirst(Query.query(Criteria.where("id").is("producto")),
                 new Update().set("stock", 5), Producto.class);
-        String operacion = UUID.randomUUID().toString();
+        String operacion = nuevaOperacion();
         Pedido a = pagar("a", operacion);
         Pedido b = pagar("b", operacion);
         assertNotEquals(a.getId(), b.getId());
@@ -288,7 +297,7 @@ class PedidoMongoIntegrationTests {
     void peticionesSimultaneasConMismaClaveSoloCobranUnaVez() throws Exception {
         template.updateFirst(Query.query(Criteria.where("id").is("producto")),
                 new Update().set("stock", 5), Producto.class);
-        String operacion = UUID.randomUUID().toString();
+        String operacion = nuevaOperacion();
         CountDownLatch salida = new CountDownLatch(1);
         Callable<Boolean> intento = () -> {
             assertTrue(salida.await(5, TimeUnit.SECONDS));
@@ -322,7 +331,7 @@ class PedidoMongoIntegrationTests {
         Carrito anterior = carritos.findById("a").orElseThrow();
         if (eliminado) productos.deleteById("producto");
         else productos.actualizarVisibilidad("producto", false);
-        assertThrows(IllegalArgumentException.class, () -> pagar("a", UUID.randomUUID().toString()));
+        assertThrows(IllegalArgumentException.class, () -> pagar("a", nuevaOperacion()));
         assertEquals(0, pedidos.count());
         assertEquals(anterior.getProductos(), carritos.findById("a").orElseThrow().getProductos());
         if (!eliminado) assertEquals(1, productos.findById("producto").orElseThrow().getStock());
@@ -333,7 +342,7 @@ class PedidoMongoIntegrationTests {
         template.updateFirst(Query.query(Criteria.where("id").is("metodo-a")),
                 new Update().set("token", "token-privado-hu26").set("referenciaEnmascarada", "****4242"),
                 MetodoPago.class);
-        Pedido pedido = pagar("a", UUID.randomUUID().toString());
+        Pedido pedido = pagar("a", nuevaOperacion());
         Document guardado = template.getCollection("pedidos").find(new Document("_id", pedido.getId())).first();
         assertNotNull(guardado);
         assertEquals("metodo-a", guardado.getString("metodoPagoId"));
@@ -346,7 +355,7 @@ class PedidoMongoIntegrationTests {
     private boolean intentarCompra(String cliente, CountDownLatch salida) throws Exception {
         salida.await(5, TimeUnit.SECONDS);
         try {
-            pagar(cliente, UUID.randomUUID().toString());
+            pagar(cliente, nuevaOperacion());
             return true;
         } catch (IllegalArgumentException exception) {
             return false;
@@ -367,7 +376,7 @@ class PedidoMongoIntegrationTests {
         clientes.save(cliente);
         carritos.save(carritos.findById("a").orElseThrow().conCantidad("producto", 2));
 
-        String operacion = UUID.randomUUID().toString();
+        String operacion = nuevaOperacion();
         Pedido pedido = pagar("a", operacion);
         BigDecimal precioEsperado = new BigDecimal(premium ? "92.59" : "111.11");
         BigDecimal importeEsperado = new BigDecimal(premium ? "185.18" : "222.22");
@@ -411,7 +420,7 @@ class PedidoMongoIntegrationTests {
     @Test
     void errorPosteriorRevierteStockPedidoYCarrito() {
         assertThrows(IllegalStateException.class, () -> new TransactionTemplate(manager).execute(status -> {
-            pagar("a", UUID.randomUUID().toString());
+            pagar("a", nuevaOperacion());
             throw new IllegalStateException("Fallo después de guardar y vaciar");
         }));
         assertEquals(1, productos.findById("producto").orElseThrow().getStock());
@@ -422,7 +431,7 @@ class PedidoMongoIntegrationTests {
     @Test
     void edicionAntiguaNoSobrescribeStockYDesactivarNoLoRestaura() {
         Producto antiguo = productos.findById("producto").orElseThrow();
-        pagar("a", UUID.randomUUID().toString());
+        pagar("a", nuevaOperacion());
         assertThrows(org.springframework.dao.OptimisticLockingFailureException.class,
                 () -> productos.actualizarDatos(antiguo, 1));
         productos.actualizarVisibilidad("producto", false);

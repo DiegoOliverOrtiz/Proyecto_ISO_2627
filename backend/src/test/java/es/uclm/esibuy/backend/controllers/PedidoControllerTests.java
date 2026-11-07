@@ -78,9 +78,12 @@ class PedidoControllerTests {
         direccion.setId("direccion-a");
         direccion.setCalle("Calle original");
         Instant fecha = Instant.parse("2026-11-01T10:00:00Z");
-        return new Pedido("pedido-1", "cliente-a", List.of(new LineaPedido("p1", "Producto original",
-                new BigDecimal("75.00"), 2, "v1", "Tienda")), EstadoPedido.PAGADO_COMPLETADO,
-                new BigDecimal("150.00"), fecha, fecha, direccion, "metodo-a");
+        return Pedido.builder().id("pedido-1").clienteId("cliente-a")
+                .lineas(List.of(new LineaPedido("p1", "Producto original",
+                        new BigDecimal("75.00"), 2, "v1", "Tienda")))
+                .estado(EstadoPedido.PAGADO_COMPLETADO).importe(new BigDecimal("150.00"))
+                .fechaCreacion(fecha).fechaPago(fecha).direccionEnvio(direccion).metodoPagoId("metodo-a")
+                .build();
     }
 
     @Test
