@@ -54,7 +54,7 @@ public class AuthController {
     static final String SESION_2FA_ALTA = "ESIBUY_2FA_ALTA";
     static final String SESION_3FA_EMAIL = "ESIBUY_3FA_EMAIL";
     static final String SESION_3FA_CADUCIDAD = "ESIBUY_3FA_CADUCIDAD";
-    static final String SESION_3FA_SECRETO = "ESIBUY_3FA_SECRETO";
+    static final String SESION_3FA_TOTP_CIFRADO = "ESIBUY_3FA_TOTP_CIFRADO";
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
@@ -382,7 +382,7 @@ public class AuthController {
                 || !usuario.isTotpActivado()
                 || usuario.getSecretoTotpCifrado() == null
                 || !usuario.getSecretoTotpCifrado().equals(
-                        sesion.getAttribute(SESION_3FA_SECRETO))
+                        sesion.getAttribute(SESION_3FA_TOTP_CIFRADO))
                 || !RolUsuario.requiereTercerFactor(usuario)) {
             limpiarTercerFactorPendiente(sesion);
             return null;
@@ -397,7 +397,7 @@ public class AuthController {
         sesion.setAttribute(
                 SESION_3FA_CADUCIDAD,
                 Instant.now().plusSeconds(EmailOtpService.DURACION_RETO_SEGUNDOS));
-        sesion.setAttribute(SESION_3FA_SECRETO, usuario.getSecretoTotpCifrado());
+        sesion.setAttribute(SESION_3FA_TOTP_CIFRADO, usuario.getSecretoTotpCifrado());
         sesion.setMaxInactiveInterval(EmailOtpService.DURACION_RETO_SEGUNDOS);
         SecurityContextHolder.clearContext();
 
@@ -421,7 +421,7 @@ public class AuthController {
         if (sesion != null) {
             sesion.removeAttribute(SESION_3FA_EMAIL);
             sesion.removeAttribute(SESION_3FA_CADUCIDAD);
-            sesion.removeAttribute(SESION_3FA_SECRETO);
+            sesion.removeAttribute(SESION_3FA_TOTP_CIFRADO);
             emailOtpService.limpiar(sesion);
         }
     }
