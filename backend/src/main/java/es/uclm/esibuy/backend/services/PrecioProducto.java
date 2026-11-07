@@ -6,8 +6,8 @@ import java.math.RoundingMode;
 import es.uclm.esibuy.backend.model.Producto;
 
 /*
- * Precio que paga un cliente: el cliente premium usa el descuento premium si el producto tiene uno;
- * en otro caso se aplica el descuento normal.
+ * Precio que paga un cliente. Si es premium y el producto tiene descuento premium, se aplica ese
+ * descuento, y si no, el descuento normal del producto.
  */
 final class PrecioProducto {
 
