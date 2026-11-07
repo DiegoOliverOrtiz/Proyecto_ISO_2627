@@ -1,5 +1,7 @@
 package es.uclm.esibuy.backend.services;
 
+import java.net.URI;
+
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +135,7 @@ public class AdministradorService {
 		}
 
 		validarTelefono(request.telefono());
+		validarImagenPerfil(request.imagenPerfil());
 
 		usuario.setNombre(
 				request.nombre().trim());
@@ -145,7 +148,9 @@ public class AdministradorService {
 		}
 
 		usuario.setImagenPerfil(
-				request.imagenPerfil());
+				request.imagenPerfil() == null
+						? null
+						: request.imagenPerfil().trim());
 
 		/*
 		 * Campos específicos según
@@ -167,6 +172,30 @@ public class AdministradorService {
 		if (telefono != null && !telefono.isBlank()
 				&& !telefono.matches("^\\+?[0-9\\s().-]{7,20}$")) {
 			throw new IllegalArgumentException("Introduce un teléfono válido o deja el campo vacío.");
+		}
+	}
+
+	private void validarImagenPerfil(String imagenPerfil) {
+		if (imagenPerfil == null || imagenPerfil.isBlank()) {
+			return;
+		}
+
+		String url = imagenPerfil.trim();
+		if (url.length() > 1000) {
+			throw new IllegalArgumentException("La URL de la imagen de perfil no puede superar 1000 caracteres.");
+		}
+
+		try {
+			URI uri = URI.create(url);
+			if (!"https".equalsIgnoreCase(uri.getScheme())
+					|| uri.getHost() == null
+					|| uri.getUserInfo() != null) {
+				throw new IllegalArgumentException(
+						"La imagen de perfil debe utilizar una URL HTTPS válida.");
+			}
+		} catch (IllegalArgumentException exception) {
+			throw new IllegalArgumentException(
+					"La imagen de perfil debe utilizar una URL HTTPS válida.", exception);
 		}
 	}
 

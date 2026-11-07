@@ -223,6 +223,32 @@ describe('Perfil', () => {
     expect(fixture.nativeElement.textContent).toContain('No hay una categoría asociada');
   });
 
+  it.each([
+    'http://example.com/avatar.jpg',
+    'javascript:alert(1)',
+    'data:text/html,<h1>test</h1>'
+  ])('rechaza una URL de perfil con protocolo no permitido: %s', (url) => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    componente.formulario.controls.imagenPerfil.setValue(url);
+
+    expect(componente.formulario.controls.imagenPerfil.hasError('pattern')).toBe(true);
+    componente.guardarCambios();
+    expect(perfilServiceMock.modificarPerfil).not.toHaveBeenCalled();
+  });
+
+  it('acepta una URL HTTPS válida para la imagen de perfil', () => {
+    crearComponente(of(perfilCliente));
+    componente.iniciarEdicion();
+    componente.formulario.controls.imagenPerfil.setValue('https://example.com/avatar.jpg');
+    perfilServiceMock.modificarPerfil.mockReturnValue(of(perfilCliente));
+
+    componente.guardarCambios();
+
+    expect(componente.formulario.controls.imagenPerfil.valid).toBe(true);
+    expect(perfilServiceMock.modificarPerfil).toHaveBeenCalled();
+  });
+
   it('muestra el error devuelto por el backend', () => {
     crearComponente(throwError(() => new HttpErrorResponse({ status: 500 })));
 

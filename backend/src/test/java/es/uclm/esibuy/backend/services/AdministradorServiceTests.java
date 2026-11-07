@@ -162,6 +162,37 @@ class AdministradorServiceTests {
 	}
 
 	@Test
+	void aceptaSoloUrlsHttpsParaLaImagenDePerfil() {
+		Administrador administrador = new Administrador();
+		administrador.setId("admin-1");
+		when(usuarioDAO.findById("admin-1")).thenReturn(Optional.of(administrador));
+		when(usuarioDAO.save(any(Administrador.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		AdministradorService service = new AdministradorService(
+				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
+
+		service.modificarUsuario("admin-1", new ModificarUsuarioRequest(
+				"Ada", "Admin", null, "https://example.com/avatar.jpg", null, null, null, null));
+
+		assertEquals("https://example.com/avatar.jpg", administrador.getImagenPerfil());
+	}
+
+	@Test
+	void rechazaProtocolosPeligrososEnLaImagenDePerfil() {
+		Administrador administrador = new Administrador();
+		administrador.setId("admin-1");
+		when(usuarioDAO.findById("admin-1")).thenReturn(Optional.of(administrador));
+		AdministradorService service = new AdministradorService(
+				administradorDAO, categoriaDAO, usuarioDAO, passwordEncoder,
+				new PasswordPolicy(), VALIDATOR, sesionService, null, auditoriaService);
+
+		assertThrows(IllegalArgumentException.class, () -> service.modificarUsuario(
+				"admin-1", new ModificarUsuarioRequest(
+						"Ada", "Admin", null, "javascript:alert(1)", null, null, null, null)));
+		verify(usuarioDAO, org.mockito.Mockito.never()).save(any(Administrador.class));
+	}
+
+	@Test
 	void conservaElTelefonoSiNoSeIndicaYPermiteBorrarloExpresamente() {
 		Administrador administrador = new Administrador();
 		administrador.setId("admin-1");
