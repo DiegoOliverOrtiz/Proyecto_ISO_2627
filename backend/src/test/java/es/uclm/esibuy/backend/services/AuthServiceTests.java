@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
 import java.util.Optional;
 
@@ -63,6 +64,7 @@ class AuthServiceTests {
         assertSame(cliente, autenticado);
         verify(usuarioDAO).findByEmail(CORREO);
         verify(passwordEncoder).matches(CONTRASENA, HASH);
+        verify(loginAttemptService).registrarExito(CORREO);
         verifyNoInteractions(auditoriaService);
     }
 
@@ -134,6 +136,21 @@ class AuthServiceTests {
                 .getRetryAfterSeconds());
         verify(auditoriaService).registrarIntentoLoginFallido();
         verify(auditoriaService).registrarBloqueoLogin(30);
+    }
+
+    @Test
+    void noReseteaContadoresSiLaCuentaNoPuedeIniciarSesion() {
+        Cliente bloqueado = crearCliente(true, true);
+        Cliente pendiente = crearCliente(false, false);
+        when(usuarioDAO.findByEmail(CORREO)).thenReturn(Optional.of(bloqueado), Optional.of(pendiente));
+        when(passwordEncoder.matches(CONTRASENA, HASH)).thenReturn(true, true);
+
+        assertThrows(BadCredentialsException.class,
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
+        assertThrows(AccountPendingException.class,
+                () -> authService.autenticar(CORREO, CONTRASENA, "127.0.0.1"));
+
+        verify(loginAttemptService, never()).registrarExito(CORREO);
     }
 
             @Test

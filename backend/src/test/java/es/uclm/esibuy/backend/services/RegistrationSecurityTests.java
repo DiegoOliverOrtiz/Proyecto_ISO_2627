@@ -31,6 +31,7 @@ import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
+import es.uclm.esibuy.backend.exceptions.CorreoYaRegistradoException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -273,13 +274,10 @@ class RegistrationSecurityTests {
                 null,
                 false);
 
-        InvalidRegistrationException exception = assertThrows(
-                InvalidRegistrationException.class,
+        assertThrows(
+                CorreoYaRegistradoException.class,
                 () -> service.registrar(request));
 
-        // A21: mensaje genérico que no revela que el correo ya está en uso.
-        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
-        assertTrue(exception.getFieldErrors().isEmpty());
         verify(clienteDAO, never()).save(any(Cliente.class));
     }
 
@@ -307,19 +305,16 @@ class RegistrationSecurityTests {
                 null,
                 null);
 
-        InvalidRegistrationException exception = assertThrows(
-                InvalidRegistrationException.class,
+        assertThrows(
+                CorreoYaRegistradoException.class,
                 () -> service.registrar(request));
 
-        // A21: el mismo mensaje genérico que en el registro de cliente.
-        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
-        assertTrue(exception.getFieldErrors().isEmpty());
         verify(vendedorDAO, never()).save(any(Vendedor.class));
     }
 
     @Test
     void concurrentDuplicateEmailAlsoGetsGenericError() {
-        when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false);
+        when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false, true);
         when(clienteDAO.save(any(Cliente.class)))
                 .thenThrow(new DuplicateKeyException("uq_usuario_email"));
 
@@ -336,13 +331,9 @@ class RegistrationSecurityTests {
                 null,
                 false);
 
-        InvalidRegistrationException exception = assertThrows(
-                InvalidRegistrationException.class,
+        assertThrows(
+                CorreoYaRegistradoException.class,
                 () -> service.registrar(request));
-
-        // A21: la carrera con el índice único tampoco revela el motivo.
-        assertEquals(SoporteRegistro.MENSAJE_DATOS_NO_VALIDOS, exception.getMessage());
-        assertTrue(exception.getFieldErrors().isEmpty());
     }
 
     @Test

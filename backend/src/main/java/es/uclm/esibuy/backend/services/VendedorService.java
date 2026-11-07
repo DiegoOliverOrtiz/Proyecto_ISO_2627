@@ -106,7 +106,9 @@ public class VendedorService {
         vendedor.setActivada(false);
         vendedor.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
-        Vendedor guardado = soporteRegistro.guardarRegistro(() -> vendedorDAO.save(vendedor));
+                Vendedor guardado = soporteRegistro.guardarRegistroPublico(
+				email,
+				() -> vendedorDAO.save(vendedor));
 
         if (favoritosRegistroService != null) {
             favoritosRegistroService.crearListaPredeterminada(

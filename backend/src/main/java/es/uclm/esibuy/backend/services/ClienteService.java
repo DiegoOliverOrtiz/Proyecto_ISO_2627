@@ -95,7 +95,9 @@ public class ClienteService {
 		cliente.setActivada(false);
 		cliente.registrarContrasenaHash(soporteRegistro.codificarContrasena(request.contrasena()));
 
-		Cliente guardado = soporteRegistro.guardarRegistro(() -> clienteDAO.save(cliente));
+		Cliente guardado = soporteRegistro.guardarRegistroPublico(
+				email,
+				() -> clienteDAO.save(cliente));
 
 		if (favoritosRegistroService != null) {
 			favoritosRegistroService.crearListaPredeterminada(

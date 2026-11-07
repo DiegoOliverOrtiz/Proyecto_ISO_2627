@@ -287,8 +287,7 @@ describe('Register', () => {
     });
 
     request.flush({
-      id: 'customer-1',
-      tipoUsuario: 'CLIENTE'
+      mensaje: 'Si la solicitud puede tramitarse, el equipo administrador revisará los datos antes de activar la cuenta.'
     });
 
     fixture.detectChanges();
@@ -298,7 +297,7 @@ describe('Register', () => {
     ).toContain('revisará tus datos');
   });
 
-  it('shows a generic message that does not reveal an existing email (A21)', () => {
+  it('shows the same generic accepted message for an existing email (A21)', () => {
     component.clienteForm.setValue({
       nombre: 'Ada',
       apellidos: 'Lovelace',
@@ -318,19 +317,18 @@ describe('Register', () => {
       'https://localhost:8443/cliente/register'
     ).flush(
       {
-        error: 'Los datos introducidos no son correctos.',
-        errores: {}
+        mensaje: 'Si la solicitud puede tramitarse, el equipo administrador revisará los datos antes de activar la cuenta.'
       },
       {
-        status: 400,
-        statusText: 'Bad Request'
+        status: 202,
+        statusText: 'Accepted'
       }
     );
 
     fixture.detectChanges();
 
     const message = fixture.nativeElement.querySelector('output').textContent;
-    expect(message).toContain('Los datos introducidos no son correctos.');
+    expect(message).toContain('Si la solicitud puede tramitarse');
     expect(message).not.toContain('existe');
     expect(message).not.toContain('correo');
   });
@@ -439,8 +437,7 @@ describe('Register', () => {
     expect(request.request.body).toEqual(requestBody);
 
     request.flush({
-      id: 'seller-1',
-      tipoUsuario: 'VENDEDOR'
+      mensaje: 'Si la solicitud puede tramitarse, el equipo administrador revisará los datos antes de activar la cuenta.'
     });
   });
 
