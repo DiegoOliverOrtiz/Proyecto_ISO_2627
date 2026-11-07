@@ -25,7 +25,7 @@ const passwordRules = [
   },
   {
     label: '1 número (0-9)',
-    test: (password: string) => /[0-9]/.test(password),
+    test: (password: string) => /\d/.test(password),
   },
   {
     label: '1 carácter especial (@, #, $, ...)',

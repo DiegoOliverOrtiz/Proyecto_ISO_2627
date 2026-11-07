@@ -58,7 +58,7 @@ export const routes: Routes = [
     canActivate: [autenticadoGuard]
   },
   {
-    // HU-39: todo usuario tiene listas (al menos la de favoritos).
+    // HU-39: cualquier usuario tiene listas (al menos la de favoritos).
     path: 'listas',
     title: 'Mis listas · ESIBuy',
     component: Listas,

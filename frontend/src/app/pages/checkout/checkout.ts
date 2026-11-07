@@ -42,7 +42,7 @@ export class Checkout {
   readonly pedido = signal<PedidoResponse | null>(null);
   readonly puedePagar = computed(() => !this.cargando() && !this.procesando() && !this.pedido() && !!this.email()
     && (!!this.pendiente() || (!!this.carrito()?.productos.length
-      && this.carrito()!.productos.every(linea => linea.disponible)
+      && this.carrito()?.productos.every(linea => linea.disponible)
       && this.direcciones().some(d => d.id === this.direccionId())
       && this.metodos().some(m => m.id === this.metodoPagoId()))));
 
@@ -153,7 +153,8 @@ export class Checkout {
   urlImagen(imagen: string): string {
     const ruta = imagen.trim();
     if (/^https?:\/\//i.test(ruta)) return ruta;
-    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
+    const destino = ruta.startsWith('/') ? ruta : `/product-images/${ruta}`;
+    return `${environment.apiUrl}${destino}`;
   }
 
   private tratarError(fallo: HttpErrorResponse, mensaje: string): void {

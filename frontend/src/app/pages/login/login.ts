@@ -211,7 +211,7 @@ export class Login {
 
   verificarSegundoFactor(): void {
     const codigo = this.codigoSegundoFactor.replace(/[\s-]/g, '').toUpperCase();
-    if (!/^([0-9]{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
+    if (!/^(\d{6}|[A-Z2-7]{8}|[A-Z2-7]{16})$/.test(codigo)) {
       this.mensajeError.set('Introduce un código TOTP de 6 cifras o un código de respaldo válido.');
       return;
     }

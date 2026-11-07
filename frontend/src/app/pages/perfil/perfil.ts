@@ -83,7 +83,7 @@ export class Perfil {
     telefono: ['', [Validators.maxLength(30), Validators.pattern(/^\+?[0-9\s().-]{7,20}$/)]],
     eliminarTelefono: [false],
     imagenPerfil: ['', [Validators.maxLength(1000), Validators.pattern(/^https?:\/\/.+/i)]],
-    dniNif: ['', [Validators.maxLength(9), Validators.pattern(/^[0-9]{8}[A-Za-z]$/)]],
+    dniNif: ['', [Validators.maxLength(9), Validators.pattern(/^\d{8}[A-Za-z]$/)]],
     fechaNacimiento: ['', [mayorDeEdad]],
     sede: ['', [Validators.maxLength(150)]],
     categoriaId: ['']
@@ -161,12 +161,15 @@ export class Perfil {
     }
 
     const valores = this.formulario.getRawValue();
+    // El administrador no tiene teléfono; si se marca eliminarlo, se envía vacío.
+    let telefono: string | null = null;
+    if (datos.tipoUsuario !== 'ADMIN') {
+      telefono = valores.eliminarTelefono ? '' : this.valorNulo(valores.telefono);
+    }
     const solicitud: ModificarPerfilRequest = {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
-      telefono: datos.tipoUsuario === 'ADMIN'
-        ? null
-        : valores.eliminarTelefono ? '' : this.valorNulo(valores.telefono),
+      telefono,
       imagenPerfil: this.valorNulo(valores.imagenPerfil)
     };
 

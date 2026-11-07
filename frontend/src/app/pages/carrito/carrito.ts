@@ -65,7 +65,7 @@ export class Carrito {
   ajustarCantidad(linea: LineaCarritoResponse, cambio: number): void {
     if (this.operacion() !== null || this.cargando() || !this.puedeModificar(linea)) return;
     const actual = this.cantidades()[linea.productoId];
-    const cantidad = Number.isSafeInteger(actual) ? actual! : linea.cantidad;
+    const cantidad = typeof actual === 'number' && Number.isSafeInteger(actual) ? actual : linea.cantidad;
     this.cambiarCantidad(linea, Math.max(1, Math.min(linea.stock ?? 1, cantidad + cambio)));
     this.guardarCantidad(linea);
   }
@@ -114,7 +114,8 @@ export class Carrito {
   urlImagen(imagen: string): string {
     const ruta = imagen.trim();
     if (/^https?:\/\//i.test(ruta)) return ruta;
-    return `${environment.apiUrl}${ruta.startsWith('/') ? ruta : `/product-images/${ruta}`}`;
+    const destino = ruta.startsWith('/') ? ruta : `/product-images/${ruta}`;
+    return `${environment.apiUrl}${destino}`;
   }
 
   private ejecutar(peticion: Observable<CarritoResponse>, operacion: string, exito: string, error: string,
