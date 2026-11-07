@@ -42,21 +42,24 @@ public class TotpKeyMigration implements ApplicationRunner {
                     Document.class, "usuarios")) {
                 var iterator = documents.iterator();
                 while (iterator.hasNext()) {
-                    Document document = iterator.next();
-                    String encrypted = document.getString(field);
-                    try {
-                        cryptoService.descifrar(encrypted);
-                        continue; // Ya migrado: no vuelve a cifrar ni altera otros campos.
-                    } catch (IllegalStateException differentKey) {
-                        String plain = TotpCryptoService.descifrarConClaveAnterior(encrypted, previousKey);
-                        var result = mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(document.get("_id"))
-                                        .and(field).is(encrypted)),
-                                new Update().set(field, cryptoService.cifrar(plain)), "usuarios");
-                        count += (int) result.getModifiedCount();
-                    }
+                    count += migrarSecreto(iterator.next(), field);
                 }
             }
         }
         LOGGER.info("Migración de cifrado TOTP completada: {} secretos actualizados.", count);
+    }
+
+    private int migrarSecreto(Document document, String field) {
+        String encrypted = document.getString(field);
+        try {
+            cryptoService.descifrar(encrypted);
+            return 0; // Ya migrado: no vuelve a cifrar ni altera otros campos.
+        } catch (IllegalStateException differentKey) {
+            String plain = TotpCryptoService.descifrarConClaveAnterior(encrypted, previousKey);
+            var result = mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(document.get("_id"))
+                            .and(field).is(encrypted)),
+                    new Update().set(field, cryptoService.cifrar(plain)), "usuarios");
+            return (int) result.getModifiedCount();
+        }
     }
 }

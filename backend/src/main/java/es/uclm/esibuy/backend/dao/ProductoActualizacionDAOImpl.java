@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import es.uclm.esibuy.backend.model.Producto;
 
 public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
+    private static final String CAMPO_STOCK = "stock";
     private final MongoTemplate mongoTemplate;
 
     public ProductoActualizacionDAOImpl(MongoTemplate mongoTemplate) {
@@ -17,10 +18,10 @@ public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
 
     @Override
     public Producto actualizarDatos(Producto producto, int stockAnterior) {
-        Query query = Query.query(Criteria.where("id").is(producto.getId()).and("stock").is(stockAnterior));
+        Query query = Query.query(Criteria.where("id").is(producto.getId()).and(CAMPO_STOCK).is(stockAnterior));
         Update update = new Update().set("nombre", producto.getNombre()).set("categoria", producto.getCategoria())
                 .set("descripcion", producto.getDescripcion()).set("precio", producto.getPrecio())
-                .set("stock", producto.getStock()).set("descuento", producto.getDescuento())
+                .set(CAMPO_STOCK, producto.getStock()).set("descuento", producto.getDescuento())
                 .set("descuentoPremium", producto.getDescuentoPremium()).set("soloPremium", producto.isSoloPremium())
                 .set("imagen", producto.getImagen());
         comprobarActualizacion(mongoTemplate.updateFirst(query, update, Producto.class).getMatchedCount());
@@ -37,13 +38,13 @@ public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
     public void descontarStock(Producto producto, int cantidad) {
         if (cantidad <= 0) throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
         Query query = Query.query(Criteria.where("id").is(producto.getId())
-                .and("stock").gte(cantidad).and("esVisible").is(true)
+                .and(CAMPO_STOCK).gte(cantidad).and("esVisible").is(true)
                 .and("precio").is(producto.getPrecio())
                 .andOperator(
                         valorPredeterminadoCompatible("descuento", producto.getDescuento(), 0),
                         valorPredeterminadoCompatible("descuentoPremium", producto.getDescuentoPremium(), 0),
                         valorPredeterminadoCompatible("soloPremium", producto.isSoloPremium(), false)));
-        long modificados = mongoTemplate.updateFirst(query, new Update().inc("stock", -cantidad), Producto.class)
+        long modificados = mongoTemplate.updateFirst(query, new Update().inc(CAMPO_STOCK, -cantidad), Producto.class)
                 .getModifiedCount();
         if (modificados != 1) {
             throw new IllegalArgumentException("El producto ha cambiado o no hay stock suficiente.");
@@ -58,7 +59,7 @@ public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
 
         long modificados = mongoTemplate.updateFirst(
                 Query.query(Criteria.where("id").is(productoId)),
-                new Update().inc("stock", cantidad),
+                new Update().inc(CAMPO_STOCK, cantidad),
                 Producto.class).getModifiedCount();
         comprobarActualizacion(modificados);
     }

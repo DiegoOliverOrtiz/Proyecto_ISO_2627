@@ -78,18 +78,18 @@ class PedidosVendedorServiceTests {
 
         Instant fecha = Instant.parse("2026-11-02T12:00:00Z");
 
-        return new Pedido(
-                id,
-                "cliente-1",
-                List.of(lineas),
-                estado,
-                new BigDecimal("999.00"),
-                fecha,
-                estado == EstadoPedido.EN_PROCESO
+        return Pedido.builder()
+                .id(id)
+                .clienteId("cliente-1")
+                .lineas(List.of(lineas))
+                .estado(estado)
+                .importe(new BigDecimal("999.00"))
+                .fechaCreacion(fecha)
+                .fechaPago(estado == EstadoPedido.EN_PROCESO
                         ? null
-                        : fecha,
-                null,
-                "metodo-pago-privado");
+                        : fecha)
+                .metodoPagoId("metodo-pago-privado")
+                .build();
     }
 
     @Test

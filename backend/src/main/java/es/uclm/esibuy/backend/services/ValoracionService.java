@@ -23,6 +23,7 @@ public class ValoracionService {
     private static final int PUNTUACION_MINIMA = 1;
     private static final int PUNTUACION_MAXIMA = 5;
     private static final int LONGITUD_MAXIMA_COMENTARIO = 500;
+    private static final String MENSAJE_PRODUCTO_OBLIGATORIO = "El producto es obligatorio.";
 
     private final ValoracionDAO valoracionDAO;
     private final PedidoDAO pedidoDAO;
@@ -46,7 +47,7 @@ public class ValoracionService {
         validarPuntuacion(puntuacion);
         validarComentario(comentario);
         validarIdentificador(pedidoId, "El pedido es obligatorio.");
-        validarIdentificador(productoId, "El producto es obligatorio.");
+        validarIdentificador(productoId, MENSAJE_PRODUCTO_OBLIGATORIO);
 
         Cliente cliente = clienteDAO.findByEmail(normalizarEmail(emailCliente))
                 .orElseThrow(() -> new IllegalArgumentException("El cliente no existe."));
@@ -89,7 +90,7 @@ public class ValoracionService {
     }
 
     public double calcularMediaProducto(String productoId) {
-        validarIdentificador(productoId, "El producto es obligatorio.");
+        validarIdentificador(productoId, MENSAJE_PRODUCTO_OBLIGATORIO);
         return valoracionDAO.findByProductoId(productoId).stream()
                 .mapToInt(Valoracion::puntuacion)
                 .average()
@@ -97,7 +98,7 @@ public class ValoracionService {
     }
 
     public ValoracionesProductoResponse consultarValoracionesProducto(String productoId) {
-        validarIdentificador(productoId, "El producto es obligatorio.");
+        validarIdentificador(productoId, MENSAJE_PRODUCTO_OBLIGATORIO);
         List<Valoracion> valoraciones = valoracionDAO.findByProductoId(productoId);
         double media = valoraciones.stream()
                 .mapToInt(Valoracion::puntuacion)
@@ -111,7 +112,7 @@ public class ValoracionService {
 
     public boolean estaValorado(String emailCliente, String pedidoId, String productoId) {
         validarIdentificador(pedidoId, "El pedido es obligatorio.");
-        validarIdentificador(productoId, "El producto es obligatorio.");
+        validarIdentificador(productoId, MENSAJE_PRODUCTO_OBLIGATORIO);
 
         Cliente cliente = clienteDAO.findByEmail(normalizarEmail(emailCliente))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));

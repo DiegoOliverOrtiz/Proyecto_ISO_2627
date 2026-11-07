@@ -32,18 +32,84 @@ public class Pedido {
     private Instant fechaCreacion;
     private Instant fechaPago;
 
-    public Pedido(String clienteId, List<LineaPedido> lineas, EstadoPedido estado,
-        BigDecimal importe, Instant fechaCreacion, Instant fechaPago,
-        Direccion direccionEnvio, String metodoPagoId) {
-    this(null, clienteId, lineas, estado, importe, fechaCreacion, fechaPago,
-            direccionEnvio, metodoPagoId);
-}
+    /*
+     * Crea un pedido nuevo. Si no se indica el historial, empieza con la entrada «En proceso»
+     * cuando el pedido se crea en ese estado.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    public Pedido(String id, String clienteId, List<LineaPedido> lineas, EstadoPedido estado,
-            BigDecimal importe, Instant fechaCreacion, Instant fechaPago,
-            Direccion direccionEnvio, String metodoPagoId) {
-        this(id, clienteId, lineas, estado, importe, fechaCreacion, fechaPago,
-                direccionEnvio, metodoPagoId, historialInicial(estado, fechaCreacion));
+    public static final class Builder {
+        private String id;
+        private String clienteId;
+        private List<LineaPedido> lineas;
+        private EstadoPedido estado;
+        private BigDecimal importe;
+        private Instant fechaCreacion;
+        private Instant fechaPago;
+        private Direccion direccionEnvio;
+        private String metodoPagoId;
+
+        private Builder() {
+        }
+
+        public Builder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder clienteId(String clienteId) {
+            this.clienteId = clienteId;
+            return this;
+        }
+
+        public Builder lineas(List<LineaPedido> lineas) {
+            this.lineas = lineas;
+            return this;
+        }
+
+        public Builder estado(EstadoPedido estado) {
+            this.estado = estado;
+            return this;
+        }
+
+        public Builder importe(BigDecimal importe) {
+            this.importe = importe;
+            return this;
+        }
+
+        public Builder fechaCreacion(Instant fechaCreacion) {
+            this.fechaCreacion = fechaCreacion;
+            return this;
+        }
+
+        public Builder fechaPago(Instant fechaPago) {
+            this.fechaPago = fechaPago;
+            return this;
+        }
+
+        public Builder direccionEnvio(Direccion direccionEnvio) {
+            this.direccionEnvio = direccionEnvio;
+            return this;
+        }
+
+        public Builder metodoPagoId(String metodoPagoId) {
+            this.metodoPagoId = metodoPagoId;
+            return this;
+        }
+
+        public Pedido build() {
+            return new Pedido(id, clienteId, lineas, estado, importe, fechaCreacion, fechaPago,
+                    direccionEnvio, metodoPagoId, historialInicial());
+        }
+
+        private List<CambioEstadoPedido> historialInicial() {
+            if (estado == EstadoPedido.EN_PROCESO && fechaCreacion != null) {
+                return List.of(new CambioEstadoPedido(estado, fechaCreacion));
+            }
+            return List.of();
+        }
     }
 
     @PersistenceCreator
@@ -65,12 +131,6 @@ public class Pedido {
                 : List.copyOf(historialEstados);
     }
 
-    private static List<CambioEstadoPedido> historialInicial(EstadoPedido estado, Instant fechaCreacion) {
-        if (estado == EstadoPedido.EN_PROCESO && fechaCreacion != null) {
-            return List.of(new CambioEstadoPedido(estado, fechaCreacion));
-        }
-        return List.of();
-    }
     public String getId() {
         return id;
     }

@@ -31,6 +31,16 @@ public class LoginAttemptStore {
     private static final int ADAPTIVE_USER_THRESHOLD = 20;
     private static final int ADAPTIVE_DELAY_SECONDS = 2;
     private static final int[] BACKOFF_SECONDS = { 30, 120, 240, 300 };
+    private static final String TIPO_CUENTA = "cuenta";
+    private static final String CAMPO_WINDOW_START = "windowStart";
+    private static final String CAMPO_FAILURES = "failures";
+    private static final String CAMPO_BACKOFF_STEP = "backoffStep";
+    private static final String CAMPO_LOCK_UNTIL = "lockUntil";
+    private static final String CAMPO_EXPIRES_AT = "expiresAt";
+    private static final String CAMPO_ATTEMPTS = "attempts";
+    private static final String CAMPO_USERS = "users";
+    private static final String CAMPO_NEXT_ALLOWED_AT = "nextAllowedAt";
+    private static final String CAMPO_ADAPTIVE_ATTEMPTS = "adaptiveAttempts";
 
     private final MongoTemplate mongoTemplate;
     private final String pepper;
@@ -44,7 +54,7 @@ public class LoginAttemptStore {
 
     public int reservarIntento(String ip, String email, Instant now) {
         ensureTtlIndex();
-        String accountId = id("cuenta", email);
+        String accountId = id(TIPO_CUENTA, email);
         int accountWait = esperaBloqueoCuenta(accountId, now);
         if (accountWait > 0) {
             return accountWait;
@@ -71,30 +81,30 @@ public class LoginAttemptStore {
 
     public int registrarFallo(String email, Instant now) {
         ensureTtlIndex();
-        String accountId = id("cuenta", email);
+        String accountId = id(TIPO_CUENTA, email);
         prepararVentana(accountId, now, ACCOUNT_FAILURE_WINDOW_SECONDS, true);
         Query activeWindow = Query.query(Criteria.where("_id").is(accountId)
-                .and("windowStart").gt(Date.from(now.minusSeconds(ACCOUNT_FAILURE_WINDOW_SECONDS))));
-        mongoTemplate.updateFirst(activeWindow, new Update().inc("failures", 1), COLLECTION);
+                .and(CAMPO_WINDOW_START).gt(Date.from(now.minusSeconds(ACCOUNT_FAILURE_WINDOW_SECONDS))));
+        mongoTemplate.updateFirst(activeWindow, new Update().inc(CAMPO_FAILURES, 1), COLLECTION);
 
         Document account = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(accountId)),
                 Document.class, COLLECTION);
-        int failures = account == null ? 0 : account.getInteger("failures", 0);
+        int failures = account == null ? 0 : account.getInteger(CAMPO_FAILURES, 0);
         if (failures < MAX_PAIR_ATTEMPTS) {
             return 0;
         }
 
-        int step = Math.min(account.getInteger("backoffStep", 0), BACKOFF_SECONDS.length - 1);
+        int step = Math.min(account.getInteger(CAMPO_BACKOFF_STEP, 0), BACKOFF_SECONDS.length - 1);
         Query lockable = Query.query(Criteria.where("_id").is(accountId)
-                .and("backoffStep").is(account.getInteger("backoffStep", 0))
-                .and("failures").gte(MAX_PAIR_ATTEMPTS)
+                .and(CAMPO_BACKOFF_STEP).is(account.getInteger(CAMPO_BACKOFF_STEP, 0))
+                .and(CAMPO_FAILURES).gte(MAX_PAIR_ATTEMPTS)
                 .andOperator(new Criteria().orOperator(
-                        Criteria.where("lockUntil").exists(false),
-                        Criteria.where("lockUntil").lte(Date.from(now)))));
+                        Criteria.where(CAMPO_LOCK_UNTIL).exists(false),
+                        Criteria.where(CAMPO_LOCK_UNTIL).lte(Date.from(now)))));
         Instant lockUntil = now.plusSeconds(BACKOFF_SECONDS[step]);
         long updated = mongoTemplate.updateFirst(lockable,
-                new Update().set("lockUntil", Date.from(lockUntil)).inc("backoffStep", 1)
-                        .set("expiresAt", Date.from(now.plus(Duration.ofDays(1)))),
+                new Update().set(CAMPO_LOCK_UNTIL, Date.from(lockUntil)).inc(CAMPO_BACKOFF_STEP, 1)
+                        .set(CAMPO_EXPIRES_AT, Date.from(now.plus(Duration.ofDays(1)))),
                 COLLECTION).getModifiedCount();
         if (updated == 1) {
             return BACKOFF_SECONDS[step];
@@ -104,50 +114,50 @@ public class LoginAttemptStore {
 
     public void registrarExito(String email, Instant now) {
         ensureTtlIndex();
-        Query account = Query.query(Criteria.where("_id").is(id("cuenta", email)));
+        Query account = Query.query(Criteria.where("_id").is(id(TIPO_CUENTA, email)));
         mongoTemplate.updateFirst(account,
-                new Update().set("windowStart", Date.from(now)).set("failures", 0)
-                        .set("backoffStep", 0).unset("lockUntil")
-                        .set("expiresAt", Date.from(now.plus(Duration.ofDays(1)))),
+                new Update().set(CAMPO_WINDOW_START, Date.from(now)).set(CAMPO_FAILURES, 0)
+                        .set(CAMPO_BACKOFF_STEP, 0).unset(CAMPO_LOCK_UNTIL)
+                        .set(CAMPO_EXPIRES_AT, Date.from(now.plus(Duration.ofDays(1)))),
                 COLLECTION);
     }
 
     private int reservarVentana(String documentId, Instant now, int limit) {
         prepararVentana(documentId, now, WINDOW_SECONDS, false);
         Query withinWindow = Query.query(Criteria.where("_id").is(documentId)
-                .and("windowStart").gt(Date.from(now.minusSeconds(WINDOW_SECONDS)))
-                .and("attempts").lt(limit));
-        if (mongoTemplate.updateFirst(withinWindow, new Update().inc("attempts", 1), COLLECTION)
+                .and(CAMPO_WINDOW_START).gt(Date.from(now.minusSeconds(WINDOW_SECONDS)))
+                .and(CAMPO_ATTEMPTS).lt(limit));
+        if (mongoTemplate.updateFirst(withinWindow, new Update().inc(CAMPO_ATTEMPTS, 1), COLLECTION)
                 .getModifiedCount() == 1) {
             return 0;
         }
         Document window = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(documentId)),
                 Document.class, COLLECTION);
         return window == null ? WINDOW_SECONDS
-                : segundosRestantes(window.getDate("windowStart").toInstant().plusSeconds(WINDOW_SECONDS), now);
+                : segundosRestantes(window.getDate(CAMPO_WINDOW_START).toInstant().plusSeconds(WINDOW_SECONDS), now);
     }
 
     private int registrarUsuarioIp(String ipId, String emailKey, Instant now) {
         prepararVentana(ipId, now, WINDOW_SECONDS, false);
         Document ipState = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(ipId)),
                 Document.class, COLLECTION);
-        List<String> users = ipState == null ? List.of() : ipState.getList("users", String.class, List.of());
+        List<String> users = ipState == null ? List.of() : ipState.getList(CAMPO_USERS, String.class, List.of());
         if (!users.contains(emailKey) && users.size() < ADAPTIVE_USER_THRESHOLD) {
             mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(ipId)),
-                    new Update().addToSet("users", emailKey), COLLECTION);
+                    new Update().addToSet(CAMPO_USERS, emailKey), COLLECTION);
         }
         ipState = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(ipId)),
                 Document.class, COLLECTION);
-        return ipState == null ? 0 : ipState.getList("users", String.class, List.of()).size();
+        return ipState == null ? 0 : ipState.getList(CAMPO_USERS, String.class, List.of()).size();
     }
 
     private int reservarRetrasoAdaptativo(String ipId, Instant now) {
         Query ready = Query.query(Criteria.where("_id").is(ipId)
                 .andOperator(new Criteria().orOperator(
-                        Criteria.where("nextAllowedAt").exists(false),
-                        Criteria.where("nextAllowedAt").lte(Date.from(now)))));
+                        Criteria.where(CAMPO_NEXT_ALLOWED_AT).exists(false),
+                        Criteria.where(CAMPO_NEXT_ALLOWED_AT).lte(Date.from(now)))));
         long updated = mongoTemplate.updateFirst(ready,
-                new Update().set("nextAllowedAt", Date.from(now.plusSeconds(ADAPTIVE_DELAY_SECONDS))),
+                new Update().set(CAMPO_NEXT_ALLOWED_AT, Date.from(now.plusSeconds(ADAPTIVE_DELAY_SECONDS))),
                 COLLECTION).getModifiedCount();
         if (updated == 1) {
             return 0;
@@ -155,38 +165,38 @@ public class LoginAttemptStore {
         Document ipState = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(ipId)),
                 Document.class, COLLECTION);
         return ipState == null ? ADAPTIVE_DELAY_SECONDS
-                : segundosRestantes(ipState.getDate("nextAllowedAt").toInstant(), now);
+                : segundosRestantes(ipState.getDate(CAMPO_NEXT_ALLOWED_AT).toInstant(), now);
     }
 
     private int reservarCupoIpAdaptativo(String ipId, Instant now) {
         Query underLimit = Query.query(Criteria.where("_id").is(ipId)
-                .and("adaptiveAttempts").lt(2));
-        if (mongoTemplate.updateFirst(underLimit, new Update().inc("adaptiveAttempts", 1), COLLECTION)
+                .and(CAMPO_ADAPTIVE_ATTEMPTS).lt(2));
+        if (mongoTemplate.updateFirst(underLimit, new Update().inc(CAMPO_ADAPTIVE_ATTEMPTS, 1), COLLECTION)
                 .getModifiedCount() == 1) {
             return 0;
         }
         Document ipState = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(ipId)),
                 Document.class, COLLECTION);
-        if (ipState == null || ipState.getDate("windowStart") == null) {
+        if (ipState == null || ipState.getDate(CAMPO_WINDOW_START) == null) {
             return WINDOW_SECONDS;
         }
-        return segundosRestantes(ipState.getDate("windowStart").toInstant().plusSeconds(WINDOW_SECONDS), now);
+        return segundosRestantes(ipState.getDate(CAMPO_WINDOW_START).toInstant().plusSeconds(WINDOW_SECONDS), now);
     }
 
     private int esperaBloqueoCuenta(String accountId, Instant now) {
         Document account = mongoTemplate.findOne(Query.query(Criteria.where("_id").is(accountId)),
                 Document.class, COLLECTION);
-        if (account == null || account.getDate("lockUntil") == null) {
+        if (account == null || account.getDate(CAMPO_LOCK_UNTIL) == null) {
             return 0;
         }
-        return segundosRestantes(account.getDate("lockUntil").toInstant(), now);
+        return segundosRestantes(account.getDate(CAMPO_LOCK_UNTIL).toInstant(), now);
     }
 
     private void ensureTtlIndex() {
         if (ttlIndexReady.compareAndSet(false, true)) {
             try {
                 mongoTemplate.indexOps(COLLECTION)
-                        .createIndex(new Index().on("expiresAt", org.springframework.data.domain.Sort.Direction.ASC)
+                        .createIndex(new Index().on(CAMPO_EXPIRES_AT, org.springframework.data.domain.Sort.Direction.ASC)
                                 .expire(Duration.ZERO));
             } catch (RuntimeException exception) {
                 ttlIndexReady.set(false);
@@ -200,24 +210,24 @@ public class LoginAttemptStore {
         Date expiry = Date.from(now.plus(Duration.ofDays(1)));
         try {
             mongoTemplate.upsert(identity, new Update()
-                    .setOnInsert("windowStart", Date.from(now))
-                    .setOnInsert("attempts", 0)
-                    .setOnInsert("adaptiveAttempts", 0)
-                    .setOnInsert("failures", 0)
-                    .setOnInsert("backoffStep", 0)
-                    .setOnInsert("users", new ArrayList<String>())
-                    .setOnInsert("expiresAt", expiry), COLLECTION);
+                    .setOnInsert(CAMPO_WINDOW_START, Date.from(now))
+                    .setOnInsert(CAMPO_ATTEMPTS, 0)
+                    .setOnInsert(CAMPO_ADAPTIVE_ATTEMPTS, 0)
+                    .setOnInsert(CAMPO_FAILURES, 0)
+                    .setOnInsert(CAMPO_BACKOFF_STEP, 0)
+                    .setOnInsert(CAMPO_USERS, new ArrayList<String>())
+                    .setOnInsert(CAMPO_EXPIRES_AT, expiry), COLLECTION);
         } catch (DuplicateKeyException ignored) {
             // Another request created the window; subsequent atomic updates decide the winner.
         }
         Query expired = Query.query(Criteria.where("_id").is(documentId)
-                .and("windowStart").lte(Date.from(now.minusSeconds(windowSeconds))));
-        Update reset = new Update().set("windowStart", Date.from(now)).set("expiresAt", expiry);
+                .and(CAMPO_WINDOW_START).lte(Date.from(now.minusSeconds(windowSeconds))));
+        Update reset = new Update().set(CAMPO_WINDOW_START, Date.from(now)).set(CAMPO_EXPIRES_AT, expiry);
         if (preserveBackoff) {
-            reset.set("failures", 0);
+            reset.set(CAMPO_FAILURES, 0);
         } else {
-                reset.set("attempts", 0).set("adaptiveAttempts", 0).set("users", List.of())
-                    .unset("nextAllowedAt");
+                reset.set(CAMPO_ATTEMPTS, 0).set(CAMPO_ADAPTIVE_ATTEMPTS, 0).set(CAMPO_USERS, List.of())
+                    .unset(CAMPO_NEXT_ALLOWED_AT);
         }
         mongoTemplate.updateFirst(expired, reset, COLLECTION);
     }

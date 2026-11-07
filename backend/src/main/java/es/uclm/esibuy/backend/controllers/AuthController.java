@@ -23,10 +23,8 @@ import es.uclm.esibuy.backend.dto.LoginResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorEnrollmentLoginResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorSetupResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
-import es.uclm.esibuy.backend.model.Administrador;
-import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
-import es.uclm.esibuy.backend.model.Vendedor;
+import es.uclm.esibuy.backend.security.RolUsuario;
 import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.SesionService;
@@ -307,20 +305,10 @@ public class AuthController {
     }
 
     private String obtenerRol(Usuario usuario) {
-        if (usuario instanceof Administrador) {
-            return "ADMIN";
-        }
-        if (usuario instanceof Cliente) {
-            return "CLIENTE";
-        }
-        if (usuario instanceof Vendedor) {
-            return "VENDEDOR";
-        }
-        throw new IllegalStateException("Tipo de usuario no soportado para el inicio de sesión.");
+        return RolUsuario.de(usuario);
     }
 
     private boolean requiereTotpObligatorio(Usuario usuario) {
-        return usuario instanceof Vendedor
-                || usuario instanceof Administrador;
+        return RolUsuario.requiereTotpObligatorio(usuario);
     }
 }
