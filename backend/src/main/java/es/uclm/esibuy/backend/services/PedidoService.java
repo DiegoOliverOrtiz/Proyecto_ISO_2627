@@ -40,6 +40,7 @@ import es.uclm.esibuy.backend.dto.PedidoConsultaResponse;
 
 @Service
 public class PedidoService {
+    private static final String MENSAJE_PEDIDO_NO_ENCONTRADO = "Pedido no encontrado.";
     private final CarritoService carritoService;
     private final CarritoDAO carritoDAO;
     private final ProductoDAO productoDAO;
@@ -119,7 +120,7 @@ public class PedidoService {
         Pedido pedido = pedidoDAO.findByIdAndClienteId(
                 pedidoId, clienteId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+                        HttpStatus.NOT_FOUND, MENSAJE_PEDIDO_NO_ENCONTRADO));
 
         if (pedido.getEstado() != EstadoPedido.TRAMITADO_ENVIADO) {
             throw new ResponseStatusException(
@@ -151,7 +152,7 @@ public class PedidoService {
             String clienteId) {
         Pedido pedido = pedidoDAO.findByIdAndClienteId(pedidoId, clienteId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+                        HttpStatus.NOT_FOUND, MENSAJE_PEDIDO_NO_ENCONTRADO));
 
         EstadoPedido estadoActual = pedido.getEstado();
         if (estadoActual == null || !estadoActual.permiteTransicionA(EstadoPedido.CANCELADO)) {
@@ -301,6 +302,6 @@ public class PedidoService {
         return pedidoDAO.findByIdAndClienteId(pedidoId, cliente.getId())
                 .map(PedidoConsultaResponse::de)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Pedido no encontrado."));
+                        HttpStatus.NOT_FOUND, MENSAJE_PEDIDO_NO_ENCONTRADO));
     }
 }

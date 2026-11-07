@@ -19,6 +19,7 @@ import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 
 @Component
 public class PasswordPolicy {
+	private static final String CAMPO_CONTRASENA = "contrasena";
 
 	private final Set<String> commonPasswords;
 
@@ -46,7 +47,7 @@ public class PasswordPolicy {
 				|| !contains(password, Character::isDigit)
 				|| !containsSpecial(password)) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña debe tener al menos 8 caracteres e incluir mayúsculas, minúsculas, números y símbolos.");
 		}
 
@@ -57,7 +58,7 @@ public class PasswordPolicy {
 				|| commonPasswords.contains(alphanumericPassword)
 				|| commonPasswords.contains(passwordWithoutTrailingDigits)) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener términos de la lista de contraseñas comunes.");
 		}
 
@@ -73,7 +74,7 @@ public class PasswordPolicy {
 				.anyMatch(normalizedPasswordIdentifiers::contains);
 		if (containsPersonalData) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener datos personales ni el nombre de la aplicación.");
 		}
 
@@ -84,7 +85,7 @@ public class PasswordPolicy {
 				.anyMatch(normalizedPasswordDigits::contains);
 		if (containsPersonalNumber) {
 			throw new InvalidRegistrationException(
-					"contrasena",
+					CAMPO_CONTRASENA,
 					"La contraseña no puede contener la fecha de nacimiento, el teléfono ni el DNI.");
 		}
 	}

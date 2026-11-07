@@ -42,6 +42,11 @@ public class TotpService {
     private static final String BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
     private static final int BACKUP_CODE_COUNT = 8;
     private static final int STEP_SECONDS = 30;
+    private static final String CAMPO_TOTP_ACTIVADO = "totpActivado";
+    private static final String CAMPO_SECRETO_TOTP_CIFRADO = "secretoTotpCifrado";
+    private static final String CAMPO_CODIGOS_RESPALDO_TOTP = "codigosRespaldoTotp";
+    private static final String CAMPO_SECRETO_TOTP_PENDIENTE_CIFRADO = "secretoTotpPendienteCifrado";
+    private static final String CAMPO_CADUCIDAD_TOTP_PENDIENTE = "caducidadTotpPendiente";
 
     private final UsuarioDAO usuarioDAO;
     private final TotpCryptoService cryptoService;
@@ -144,10 +149,10 @@ public class TotpService {
                     return false;
                 }
                 if (mongoTemplate.updateFirst(Query.query(cuentaActiva(usuario)
-                                .and("totpActivado").is(true)
-                                .and("secretoTotpCifrado").is(usuario.getSecretoTotpCifrado())
-                                .and("codigosRespaldoTotp").is(hash)),
-                        new Update().pull("codigosRespaldoTotp", hash), Usuario.class).getModifiedCount() != 1) {
+                                .and(CAMPO_TOTP_ACTIVADO).is(true)
+                                .and(CAMPO_SECRETO_TOTP_CIFRADO).is(usuario.getSecretoTotpCifrado())
+                                .and(CAMPO_CODIGOS_RESPALDO_TOTP).is(hash)),
+                        new Update().pull(CAMPO_CODIGOS_RESPALDO_TOTP, hash), Usuario.class).getModifiedCount() != 1) {
                     return false;
                 }
                 remaining.remove(i);
@@ -186,12 +191,12 @@ public class TotpService {
         var backupCodes = generarCodigosRespaldo();
         var hashes = backupCodes.stream().map(passwordEncoder::encode).toList();
         String encrypted = cryptoService.cifrar(secret);
-        var update = new Update().set("secretoTotpCifrado", encrypted)
-                .set("totpActivado", true).set("codigosRespaldoTotp", hashes)
-                .unset("secretoTotpPendienteCifrado").unset("caducidadTotpPendiente");
+        var update = new Update().set(CAMPO_SECRETO_TOTP_CIFRADO, encrypted)
+                .set(CAMPO_TOTP_ACTIVADO, true).set(CAMPO_CODIGOS_RESPALDO_TOTP, hashes)
+                .unset(CAMPO_SECRETO_TOTP_PENDIENTE_CIFRADO).unset(CAMPO_CADUCIDAD_TOTP_PENDIENTE);
         if (mongoTemplate.updateFirst(Query.query(cuentaActiva(usuario)
-                        .and("totpActivado").ne(true).and("secretoTotpPendienteCifrado").is(pending)
-                        .and("caducidadTotpPendiente").gt(Date.from(Instant.now()))),
+                        .and(CAMPO_TOTP_ACTIVADO).ne(true).and(CAMPO_SECRETO_TOTP_PENDIENTE_CIFRADO).is(pending)
+                        .and(CAMPO_CADUCIDAD_TOTP_PENDIENTE).gt(Date.from(Instant.now()))),
                 update, Usuario.class).getModifiedCount() != 1) {
             throw new IllegalArgumentException("La configuración ha cambiado. Genera un QR nuevo.");
         }
@@ -208,11 +213,11 @@ public class TotpService {
             throw new IllegalArgumentException("El código del segundo factor no es válido o ya se ha utilizado.");
         }
         if (mongoTemplate.updateFirst(Query.query(cuentaActiva(usuario)
-                        .and("totpActivado").is(true)
-                        .and("secretoTotpCifrado").is(usuario.getSecretoTotpCifrado())),
-                new Update().set("totpActivado", false).unset("secretoTotpCifrado")
-                        .unset("secretoTotpPendienteCifrado").unset("caducidadTotpPendiente")
-                        .set("codigosRespaldoTotp", List.of()), Usuario.class).getModifiedCount() != 1) {
+                        .and(CAMPO_TOTP_ACTIVADO).is(true)
+                        .and(CAMPO_SECRETO_TOTP_CIFRADO).is(usuario.getSecretoTotpCifrado())),
+                new Update().set(CAMPO_TOTP_ACTIVADO, false).unset(CAMPO_SECRETO_TOTP_CIFRADO)
+                        .unset(CAMPO_SECRETO_TOTP_PENDIENTE_CIFRADO).unset(CAMPO_CADUCIDAD_TOTP_PENDIENTE)
+                        .set(CAMPO_CODIGOS_RESPALDO_TOTP, List.of()), Usuario.class).getModifiedCount() != 1) {
             throw new IllegalArgumentException("La configuración de seguridad ha cambiado. Recarga el perfil.");
         }
         usuario.setSecretoTotpCifrado(null);
@@ -233,9 +238,9 @@ public class TotpService {
     public void guardarSecretoPendiente(Usuario usuario, String secret) {
         String encrypted = cryptoService.cifrar(secret);
         Instant expires = Instant.now().plusSeconds(600);
-        if (mongoTemplate.updateFirst(Query.query(cuentaActiva(usuario).and("totpActivado").ne(true)),
-                new Update().set("secretoTotpPendienteCifrado", encrypted)
-                        .set("caducidadTotpPendiente", Date.from(expires)), Usuario.class).getModifiedCount() != 1) {
+        if (mongoTemplate.updateFirst(Query.query(cuentaActiva(usuario).and(CAMPO_TOTP_ACTIVADO).ne(true)),
+                new Update().set(CAMPO_SECRETO_TOTP_PENDIENTE_CIFRADO, encrypted)
+                        .set(CAMPO_CADUCIDAD_TOTP_PENDIENTE, Date.from(expires)), Usuario.class).getModifiedCount() != 1) {
             throw new IllegalArgumentException("No se puede iniciar la configuración del segundo factor.");
         }
         usuario.setSecretoTotpPendienteCifrado(encrypted);

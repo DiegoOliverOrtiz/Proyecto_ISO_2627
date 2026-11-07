@@ -23,6 +23,9 @@ import es.uclm.esibuy.backend.model.Producto;
 
 @Service
 public class CarritoService {
+    private static final String MENSAJE_CARRITO_NO_ACTUALIZADO = "No se ha podido actualizar el carrito.";
+    private static final String MENSAJE_SOLO_PREMIUM = "Este producto solo está disponible para clientes Premium.";
+    private static final String MENSAJE_PRECIO_NO_DISPONIBLE = "Un producto del carrito no tiene un precio disponible.";
     private final CarritoDAO carritoDAO;
     private final ClienteDAO clienteDAO;
     private final ProductoDAO productoDAO;
@@ -72,7 +75,7 @@ public class CarritoService {
                 }
             }
         }
-        throw new IllegalStateException("No se ha podido actualizar el carrito.");
+        throw new IllegalStateException(MENSAJE_CARRITO_NO_ACTUALIZADO);
     }
 
     private CarritoResponse modificarLinea(String idProducto, Integer cantidad) {
@@ -94,7 +97,7 @@ public class CarritoService {
                 productoModificado = productoDAO.findById(idProducto)
                         .orElseThrow(ProductoNoEncontradoException::new);
                 if (productoModificado.isSoloPremium() && !cliente.isEsPremium()) {
-                    throw new AccessDeniedException("Este producto solo está disponible para clientes Premium.");
+                    throw new AccessDeniedException(MENSAJE_SOLO_PREMIUM);
                 }
                 String aviso = comprobarDisponibilidad(productoModificado, cantidad, cliente);
                 if (aviso != null) {
@@ -113,7 +116,7 @@ public class CarritoService {
                 }
             }
         }
-        throw new IllegalStateException("No se ha podido actualizar el carrito.");
+        throw new IllegalStateException(MENSAJE_CARRITO_NO_ACTUALIZADO);
     }
 
     private CarritoResponse presentarCarrito(Carrito carrito, Cliente cliente) {
@@ -147,7 +150,7 @@ public class CarritoService {
         if (producto == null) return "El producto ha sido eliminado.";
         if (!producto.isEsVisible()) return "El producto ya no está disponible.";
         if (producto.isSoloPremium() && !cliente.isEsPremium()) {
-            return "Este producto solo está disponible para clientes Premium.";
+            return MENSAJE_SOLO_PREMIUM;
         }
         if (producto.getStock() <= 0) return "El producto está agotado.";
         if (cantidad <= 0 || cantidad > producto.getStock()) {
@@ -155,11 +158,11 @@ public class CarritoService {
         }
         Double precio = producto.getPrecio();
         if (precio == null || !Double.isFinite(precio) || precio < 0) {
-            return "Un producto del carrito no tiene un precio disponible.";
+            return MENSAJE_PRECIO_NO_DISPONIBLE;
         }
         Double precioAplicable = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
         if (precioAplicable == null || !Double.isFinite(precioAplicable) || precioAplicable < 0) {
-            return "Un producto del carrito no tiene un precio disponible.";
+            return MENSAJE_PRECIO_NO_DISPONIBLE;
         }
         return null;
     }
@@ -167,7 +170,7 @@ public class CarritoService {
     private LineaCarritoResponse calcularLinea(Producto producto, int cantidad, Cliente cliente) {
         Double precio = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
         if (precio == null || !Double.isFinite(precio) || precio < 0) {
-            throw new IllegalArgumentException("Un producto del carrito no tiene un precio disponible.");
+            throw new IllegalArgumentException(MENSAJE_PRECIO_NO_DISPONIBLE);
         }
         BigDecimal precioUnitario = BigDecimal.valueOf(precio).setScale(2);
         BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
@@ -192,7 +195,7 @@ public class CarritoService {
                 throw new IllegalArgumentException("El producto ya no está disponible.");
             }
             if (producto.isSoloPremium() && !cliente.isEsPremium()) {
-                throw new AccessDeniedException("Este producto solo está disponible para clientes Premium.");
+                throw new AccessDeniedException(MENSAJE_SOLO_PREMIUM);
             }
 
             Carrito carrito = carritoDAO.findById(cliente.getId())
@@ -213,7 +216,7 @@ public class CarritoService {
                 }
             }
         }
-        throw new IllegalStateException("No se ha podido actualizar el carrito.");
+        throw new IllegalStateException(MENSAJE_CARRITO_NO_ACTUALIZADO);
     }
 
     private record Resultado(Carrito carrito, CarritoResponse respuesta) {
