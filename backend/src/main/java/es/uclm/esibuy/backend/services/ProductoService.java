@@ -107,7 +107,7 @@ public class ProductoService {
                 .filter(producto -> filtros.precioMaximo() == null
                         || (producto.precio() != null && producto.precio() <= filtros.precioMaximo()))
                 .filter(producto -> filtros.disponible() == null
-                        || (filtros.disponible() ? producto.stock() > 0 : producto.stock() <= 0))
+                        || (Boolean.TRUE.equals(filtros.disponible()) ? producto.stock() > 0 : producto.stock() <= 0))
                 .toList();
     }
 
