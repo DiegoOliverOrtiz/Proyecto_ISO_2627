@@ -290,7 +290,10 @@
 
             <label>
               Imagen de perfil
-              <input type="url" formControlName="imagenPerfil" placeholder="https://..." />
+              <input type="url" formControlName="imagenPerfil" placeholder="https://ejemplo.com/imagen.jpg" />
+              @if (formulario.controls.imagenPerfil.hasError('pattern')) {
+                <small class="campo-error">Introduce una URL HTTPS válida.</small>
+              }
             </label>
 
             @if (datos.tipoUsuario === 'CLIENTE' || datos.tipoUsuario === 'VENDEDOR') {

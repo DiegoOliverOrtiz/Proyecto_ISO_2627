@@ -39,6 +39,7 @@ public class ProductoImagenService {
     private final Path directorio;
     private final ProductoImagenMongoService almacenMongo;
     private final boolean usarMongo;
+    private final VirusTotalService virusTotalService;
 
     // Constructor conservado para los tests actuales del modo local.
     public ProductoImagenService(String directorio) {
@@ -48,16 +49,24 @@ public class ProductoImagenService {
 
         this.almacenMongo = null;
         this.usarMongo = false;
+        this.virusTotalService = null;
     }
 
     // Constructor que utiliza Spring Boot en la aplicación real.
+    // Constructor conservado para los tests del almacenamiento MongoDB.
+    public ProductoImagenService(String directorio, String almacenamiento,
+            ProductoImagenMongoService almacenMongo) {
+        this(directorio, almacenamiento, almacenMongo, null);
+    }
+
     @Autowired
     public ProductoImagenService(
             @Value("${app.productos.imagenes.directorio:uploads/productos}")
             String directorio,
             @Value("${app.productos.imagenes.almacenamiento:local}")
             String almacenamiento,
-            ProductoImagenMongoService almacenMongo) {
+            ProductoImagenMongoService almacenMongo,
+            VirusTotalService virusTotalService) {
 
         this.directorio = Path.of(directorio)
                 .toAbsolutePath()
@@ -72,6 +81,7 @@ public class ProductoImagenService {
 
         this.almacenMongo = almacenMongo;
         this.usarMongo = "mongo".equals(almacenamiento);
+        this.virusTotalService = virusTotalService;
     }
 
     public String guardar(MultipartFile imagen) {
@@ -100,6 +110,10 @@ public class ProductoImagenService {
         }
 
         // El nombre original nunca se usa: se genera uno propio con una extensión de la lista blanca.
+        if (virusTotalService != null) {
+            virusTotalService.verificar(contenido, tipo.contentType);
+        }
+
         String nombreArchivo = UUID.randomUUID() + tipo.extensionGuardada;
 
         if (usarMongo) {
