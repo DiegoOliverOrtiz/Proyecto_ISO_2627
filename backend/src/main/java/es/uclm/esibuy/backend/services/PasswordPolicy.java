@@ -53,7 +53,7 @@ public class PasswordPolicy {
 
 		String normalizedPassword = normalize(password);
 		String alphanumericPassword = normalizedPassword.replaceAll("[^\\p{L}\\p{N}]+", "");
-		String passwordWithoutTrailingDigits = alphanumericPassword.replaceFirst("\\p{N}+$", "");
+		String passwordWithoutTrailingDigits = quitarNumerosFinales(alphanumericPassword);
 		if (commonPasswords.contains(normalizedPassword)
 				|| commonPasswords.contains(alphanumericPassword)
 				|| commonPasswords.contains(passwordWithoutTrailingDigits)) {
@@ -113,6 +113,27 @@ public class PasswordPolicy {
 
 	private static String normalize(String value) {
 		return Normalizer.normalize(value, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
+	}
+
+	// Equivale a replaceFirst("\\p{N}+$", "") sin expresión regular, para que el coste sea lineal
+	// aunque la contraseña tenga muchos dígitos que no estén al final (S5852).
+	private static String quitarNumerosFinales(String value) {
+		int fin = value.length();
+		while (fin > 0) {
+			int codePoint = value.codePointBefore(fin);
+			if (!esNumero(codePoint)) {
+				break;
+			}
+			fin -= Character.charCount(codePoint);
+		}
+		return value.substring(0, fin);
+	}
+
+	private static boolean esNumero(int codePoint) {
+		int tipo = Character.getType(codePoint);
+		return tipo == Character.DECIMAL_DIGIT_NUMBER
+				|| tipo == Character.LETTER_NUMBER
+				|| tipo == Character.OTHER_NUMBER;
 	}
 
 	private static Set<String> identifierTokens(String value) {
