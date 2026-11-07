@@ -13,16 +13,16 @@
     </button>
   </div>
   @if (resultadoCancelacion()) {
-    <p class="mensaje-exito" role="status">{{ resultadoCancelacion() }}</p>
+    <p class="mensaje-exito"><output>{{ resultadoCancelacion() }}</output></p>
   }
   @if (errorCancelacion()) {
     <p class="mensaje-error" role="alert">{{ errorCancelacion() }}</p>
   }
 
   @if (resultadoRecepcion()) {
-    <p class="mensaje-exito" role="status">
+    <p class="mensaje-exito"><output>
       {{ resultadoRecepcion() }}
-    </p>
+    </output></p>
   }
 
   @if (errorRecepcion()) {
@@ -34,7 +34,7 @@
     <h2 id="titulo-activos">Pedidos activos</h2>
 
     @if (cargandoActivos()) {
-      <p role="status">Cargando pedidos activos...</p>
+      <p><output>Cargando pedidos activos...</output></p>
     } @else if (errorActivos()) {
       <p class="mensaje-error" role="alert">{{ errorActivos() }}</p>
     } @else if (pedidosActivos().length === 0) {
@@ -94,7 +94,7 @@
     <h2 id="titulo-historico">Histórico de pedidos</h2>
 
     @if (cargandoHistorico()) {
-      <p role="status">Cargando histórico...</p>
+      <p><output>Cargando histórico...</output></p>
     } @else if (errorHistorico()) {
       <p class="mensaje-error" role="alert">{{ errorHistorico() }}</p>
     } @else if (pedidosHistoricos().length === 0) {
@@ -133,7 +133,7 @@
   </section>
 
   @if (cargandoDetalle()) {
-    <p role="status">Cargando detalle del pedido...</p>
+    <p><output>Cargando detalle del pedido...</output></p>
   }
 
   @if (errorDetalle()) {
@@ -200,7 +200,7 @@
                   @if (pedido.estado === 'FINALIZADO') {
                     @if (estadoValoracion(linea.productoId); as estado) {
                       @if (estado.estado === 'cargando') {
-                        <span role="status">Comprobando...</span>
+                        <output>Comprobando...</output>
                       } @else if (estado.estado === 'valorada') {
                         <span class="valoracion-completada">Ya valorado</span>
                       } @else if (estado.estado === 'error') {
@@ -245,9 +245,8 @@
                         <span class="etiqueta-estrellas" [id]="'etiqueta-puntuacion-' + linea.productoId">
                           Puntuación
                         </span>
-                        <div
+                        <fieldset
                           class="puntuacion-estrellas"
-                          role="group"
                           [attr.aria-labelledby]="'etiqueta-puntuacion-' + linea.productoId">
                           @for (estrella of estrellas; track estrella) {
                             <button
@@ -262,7 +261,7 @@
                               {{ formulario.controls.puntuacion.value >= estrella ? '★' : '☆' }}
                             </button>
                           }
-                        </div>
+                        </fieldset>
 
                         <label [for]="'comentario-' + linea.productoId">
                           Comentario (opcional)

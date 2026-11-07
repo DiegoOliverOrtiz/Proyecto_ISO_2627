@@ -12,12 +12,12 @@
   }
 
   @if (pedido(); as confirmado) {
-    <section class="confirmation-card tarjeta" role="status" aria-labelledby="pedido-confirmado">
+    <section class="confirmation-card tarjeta" aria-labelledby="pedido-confirmado">
       <div class="confirmation-banner">
         <span class="confirmation-mark" aria-hidden="true">✓</span>
         <div>
           <h2 id="pedido-confirmado">Compra completada</h2>
-          <p>El pago se ha completado correctamente.</p>
+          <p><output>El pago se ha completado correctamente.</output></p>
         </div>
       </div>
       <dl class="confirmation-details">

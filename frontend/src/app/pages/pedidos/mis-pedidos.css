@@ -161,9 +161,14 @@ td {
   background: #fff;
 }
 
+/* Es un <fieldset>: sin el borde, el margen ni el relleno del navegador. */
 .puntuacion-estrellas {
   display: flex;
   gap: .25rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .estrella-puntuacion {

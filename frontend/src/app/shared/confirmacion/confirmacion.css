@@ -22,7 +22,7 @@
   box-shadow: 0 18px 48px color-mix(in srgb, var(--color-text) 25%, transparent);
 }
 
-.confirmacion h2 {
+.confirmacion h1 {
   margin: 0;
   font-size: 1.25rem;
 }

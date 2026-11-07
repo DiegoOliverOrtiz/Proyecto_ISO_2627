@@ -328,7 +328,7 @@ describe('PanelCliente - catálogo HU-19', () => {
     fixture.detectChanges();
     expect(boton.disabled).toBe(false);
     expect(boton.getAttribute('aria-busy')).toBe('false');
-    expect(fixture.nativeElement.querySelector('.product-card [role="status"]').textContent)
+    expect(fixture.nativeElement.querySelector('.product-card output.status-message').textContent)
       .toContain('Producto añadido al carrito. Importe del carrito: 25.00 €');
   });
 
