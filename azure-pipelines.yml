@@ -1,20 +1,20 @@
 # Azure Pipelines Configuration - ESIBuy
-# Pipeline as Code: validación automática al integrar en main y develop
-# (los push a ramas feature/* no lanzan la pipeline, para no saturar el agente propio)
-# El análisis de seguridad (CodeQL) se ejecuta en GitHub Actions: .github/workflows/codeql.yml
-# SonarQube se ejecuta de forma manual en local (no forma parte de esta pipeline)
+# Validación automática al integrar en main y develop.
+# Los push a feature/* no lanzan la pipeline.
+# CodeQL se ejecuta en GitHub Actions: .github/workflows/codeql.yml
+# SonarScanner utiliza el sonar-project.properties de cada carpeta.
+# Configurar SQ_TOKEN como variable secreta con acceso a ambos proyectos.
 
 trigger:
   branches:
     include:
-    - main                 # Rama de producción
-    - develop             # Rama de integración
+    - main
+    - develop
   paths:
     exclude:
-    - README.md           # Ignore documentación
-    - docs/**             # Ignore carpeta de docs
+    - README.md
+    - docs/**
 
-# Pull requests hacia las ramas de integración y estables (se validan antes del merge)
 pr:
   branches:
     include:
@@ -22,12 +22,13 @@ pr:
     - develop
 
 pool:
-  name: Default             # Agente propio (WSL Ubuntu); ver documents/sprint2/instruccionesCI-CD.md
+  name: Default
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: '-Dmaven.repo.local=$(Pipeline.Workspace)/.m2/repository'
   NODE_VERSION: '22.x'
+
 stages:
 
 # ========== STAGE 1: BUILD BACKEND ==========
@@ -38,13 +39,11 @@ stages:
     displayName: 'Maven Compile & Tests'
     steps:
 
-    # Paso 1: Comprobar Java 21 (instalado en el agente propio; JavaToolInstaller@0 exigiría JAVA_HOME_21_X64)
     - script: |
         java -version
         java -version 2>&1 | grep -q '"21' || { echo "##vso[task.logissue type=error]Se requiere Java 21 en el agente"; exit 1; }
       displayName: 'Comprobar Java 21'
 
-    # Paso 2: Cache Maven (acelera builds posteriores)
     - task: Cache@2
       inputs:
         key: 'maven | "$(Agent.OS)" | backend/pom.xml'
@@ -53,8 +52,8 @@ stages:
         path: $(MAVEN_CACHE_FOLDER)
       displayName: 'Cache Maven dependencies'
 
-    # Paso 3: Compilación + tests + informe JaCoCo (el pom.xml aún no define umbral de cobertura)
-    # BackendApplicationTests (@SpringBootTest) necesita conexión a MongoDB, por eso se excluye en CI
+    # Compilación, tests e informe JaCoCo.
+    # BackendApplicationTests necesita MongoDB y se mantiene excluido.
     - script: |
         chmod +x mvnw
         ./mvnw -B clean verify \
@@ -63,7 +62,6 @@ stages:
       workingDirectory: backend
       displayName: 'Maven Build (Compile + JUnit + Coverage report)'
 
-    # Paso 4: Publicar resultados de tests
     - task: PublishTestResults@2
       inputs:
         testResultsFormat: 'JUnit'
@@ -72,15 +70,13 @@ stages:
       displayName: 'Publish JUnit Test Results'
       condition: always()
 
-    # Paso 5: Publicar reporte de cobertura
     - task: PublishCodeCoverageResults@2
       inputs:
         summaryFileLocation: '$(System.DefaultWorkingDirectory)/backend/target/site/jacoco/jacoco.xml'
       displayName: 'Publish JaCoCo Coverage Report'
       condition: always()
 
-    # Paso 6: Análisis de dependencias del backend (falla con CVSS >= 9, severidad crítica).
-    # NVD_API_KEY: variable secreta; la base de datos de vulnerabilidades se cachea entre ejecuciones.
+    # Análisis de dependencias del backend.
     - task: Cache@2
       inputs:
         key: 'dependency-check | "$(Agent.OS)" | "$(Build.BuildNumber)"'
@@ -108,7 +104,6 @@ stages:
         SONATYPE_USERNAME: $(SONATYPE_USERNAME)
         SONATYPE_TOKEN: $(SONATYPE_TOKEN)
 
-    # Paso 7: Publicar artefacto (JAR compilado)
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(System.DefaultWorkingDirectory)/backend/target/backend-0.0.1-SNAPSHOT.jar'
@@ -116,8 +111,14 @@ stages:
       displayName: 'Publish Backend JAR'
       condition: succeeded()
 
+    # Guardar las clases y JaCoCo para la fase de SonarQube.
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/backend/target'
+        artifact: 'backend-sonar'
+      displayName: 'Publicar clases Java y JaCoCo'
+
 # ========== STAGE 2: BUILD FRONTEND ==========
-# Independiente del backend: se ejecuta en paralelo
 - stage: BuildFrontend
   displayName: 'Build & Test Frontend'
   dependsOn: []
@@ -135,12 +136,11 @@ stages:
       workingDirectory: frontend
       displayName: 'npm install (clean)'
 
-    # Falla ante dependencias con severidad crítica (requisito: 0 vulnerabilidades críticas/bloqueantes)
     - script: npm audit --audit-level=critical
       workingDirectory: frontend
       displayName: 'npm audit (dependencias, umbral crítico)'
 
-    # Cobertura mínima 60 % (statements y lines) definida en angular.json: falla si no se alcanza
+    # Mantiene los umbrales de cobertura de angular.json.
     - script: npm test -- --watch=false --coverage
       workingDirectory: frontend
       displayName: 'npm test (Vitest + cobertura ≥60%)'
@@ -148,10 +148,8 @@ stages:
     - script: npm run build
       workingDirectory: frontend
       displayName: 'npm build (production)'
+
 # ========== STAGE 3: ESCÁNER DE SECRETOS ==========
-# Gestión de secretos: el repositorio no debe contener credenciales ni claves.
-# --no-git analiza los ficheros versionados del commit; el historial (credenciales ya expuestas)
-# se revisará tras rotarlas.
 - stage: SecretScan
   displayName: 'Secret Scan'
   dependsOn: []
@@ -159,21 +157,42 @@ stages:
   - job: Gitleaks
     displayName: 'Gitleaks'
     steps:
+
     - script: |
         docker run --rm -v "$(Build.SourcesDirectory):/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 detect --source /repo --no-git --redact --verbose
       displayName: 'Gitleaks (secretos en el repositorio)'
-  
-  # ========== STAGE 4: SONARQUBE ==========
+
+# ========== STAGE 4: SONARQUBE ==========
 - stage: Sonarqube
   displayName: 'SonarQube Code Analysis'
   dependsOn: [BuildBackend, BuildFrontend, SecretScan]
+  condition: succeeded()
   jobs:
   - job: SonarqubeJob
-    displayName: 'SonarQube Scanner'
+    displayName: 'SonarQube - Backend y Frontend'
     steps:
+
+    - checkout: self
+      fetchDepth: 0
+
+    # Recuperar las clases y JaCoCo generados por BuildBackend.
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'backend-sonar'
+        targetPath: '$(System.DefaultWorkingDirectory)/backend/target'
+      displayName: 'Descargar clases Java y JaCoCo'
+
     - script: sonar-scanner
-      displayName: 'Ejecutar análisis SonarQube'
+      workingDirectory: backend
+      displayName: 'Analizar Backend'
+      env:
+        SONAR_TOKEN: $(SQ_TOKEN)
+
+    - script: sonar-scanner
+      workingDirectory: frontend
+      displayName: 'Analizar Frontend'
       env:
         SONAR_TOKEN: $(SQ_TOKEN)
 
@@ -183,15 +202,37 @@ stages:
   dependsOn: [BuildBackend, BuildFrontend, SecretScan, Sonarqube]
   condition: always()
   jobs:
+
   - job: NotifyOk
     displayName: 'Pipeline OK'
-    condition: and(eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'), eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'), eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'))
+    condition: |
+      and(
+        not(canceled()),
+        eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
+        eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
+        eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
+        eq(stageDependencies.Sonarqube.SonarqubeJob.result, 'Succeeded')
+      )
     steps:
-    - script: echo "##[section]✅ PIPELINE PASSED - All checks green"
+    - script: |
+        echo "##[section]PIPELINE OK - Builds, tests, secretos y envío a SonarQube completados."
+        echo "Consulta en SonarQube el resultado del Quality Gate de cada proyecto."
       displayName: 'Summary'
+
   - job: NotifyFail
-    displayName: 'Pipeline FAILED'
-    condition: or(ne(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'), ne(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'), ne(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'))
+    displayName: 'Pipeline con errores o incompleta'
+    condition: |
+      and(
+        not(canceled()),
+        or(
+          ne(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
+          ne(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
+          ne(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
+          ne(stageDependencies.Sonarqube.SonarqubeJob.result, 'Succeeded')
+        )
+      )
     steps:
-    - script: echo "##[error]❌ PIPELINE FAILED - See logs above"
+    - script: |
+        echo "##[error]PIPELINE CON ERRORES O INCOMPLETA - Revisa las fases anteriores."
+        exit 1
       displayName: 'Summary'

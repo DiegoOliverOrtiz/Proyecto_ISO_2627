@@ -1,5 +1,9 @@
 package es.uclm.esibuy.backend.controllers;
 
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import es.uclm.esibuy.backend.model.Administrador;
+import es.uclm.esibuy.backend.model.Vendedor;
 import org.springframework.http.ResponseEntity;
 import java.util.Objects;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -77,9 +81,20 @@ public class PerfilController {
 
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/2fa")
-    public ResponseEntity<Void> desactivarSegundoFactor(Authentication authentication,
+    public ResponseEntity<Void> desactivarSegundoFactor(
+            Authentication authentication,
             @jakarta.validation.Valid @RequestBody TwoFactorCodeRequest request) {
-        totpService.desactivar(totpService.buscarUsuario(authentication.getName()), request.code());
+
+        Usuario usuario = totpService.buscarUsuario(authentication.getName());
+
+        if (usuario instanceof Vendedor || usuario instanceof Administrador) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "El segundo factor es obligatorio para este rol.");
+        }
+
+        totpService.desactivar(usuario, request.code());
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import es.uclm.esibuy.backend.dto.CsrfTokenResponse;
 import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.dto.LoginResponse;
+import es.uclm.esibuy.backend.dto.TwoFactorEnrollmentLoginResponse;
+import es.uclm.esibuy.backend.dto.TwoFactorSetupResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.model.Cliente;
@@ -43,6 +45,8 @@ public class AuthController {
     static final String SESION_2FA_CADUCIDAD = "ESIBUY_2FA_CADUCIDAD";
     // Nombre de un atributo de sesión; su valor no es una credencial.
     static final String SESION_2FA_SECRETO = "ESIBUY_2FA_SECRETO"; // gitleaks:allow
+
+    static final String SESION_2FA_ALTA = "ESIBUY_2FA_ALTA";
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
@@ -70,26 +74,155 @@ public class AuthController {
             @Valid @RequestBody LoginRequest peticion,
             HttpServletRequest request,
             HttpServletResponse response) {
+
         Usuario usuarioValidado = authService.autenticar(
-            peticion.email(), peticion.password(), request.getRemoteAddr());
+                peticion.email(),
+                peticion.password(),
+                request.getRemoteAddr());
+
         String rol = obtenerRol(usuarioValidado);
-        if (usuarioValidado.isTotpActivado()) {
+
+        boolean necesitaAlta = !usuarioValidado.isTotpActivado()
+                && requiereTotpObligatorio(usuarioValidado);
+
+        if (usuarioValidado.isTotpActivado() || necesitaAlta) {
             HttpSession anterior = request.getSession(false);
+
             if (anterior != null) {
                 anterior.invalidate();
             }
+
             SecurityContextHolder.clearContext();
+
             HttpSession sesionPendiente = request.getSession(true);
-            sesionPendiente.setAttribute(SESION_EMAIL_2FA_PENDIENTE, usuarioValidado.getEmail());
-            sesionPendiente.setAttribute(SESION_2FA_CADUCIDAD, Instant.now().plusSeconds(300));
-            sesionPendiente.setAttribute(SESION_2FA_SECRETO, usuarioValidado.getSecretoTotpCifrado());
+
+            sesionPendiente.setAttribute(
+                    SESION_EMAIL_2FA_PENDIENTE,
+                    usuarioValidado.getEmail());
+
+            sesionPendiente.setAttribute(
+                    SESION_2FA_CADUCIDAD,
+                    Instant.now().plusSeconds(300));
+
+            sesionPendiente.setAttribute(
+                    SESION_2FA_SECRETO,
+                    usuarioValidado.getSecretoTotpCifrado());
+
+            sesionPendiente.setAttribute(SESION_2FA_ALTA, necesitaAlta);
             sesionPendiente.setMaxInactiveInterval(5 * 60);
+
             return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(new LoginResponse(usuarioValidado.getEmail(), rol, true, null));
+                    .body(new LoginResponse(
+                            usuarioValidado.getEmail(),
+                            rol,
+                            true,
+                            null,
+                            necesitaAlta));
         }
+
         limpiarSegundoFactorPendiente(request.getSession(false));
         completarAutenticacion(usuarioValidado, request, response);
-        return ResponseEntity.ok(new LoginResponse(usuarioValidado.getEmail(), rol));
+
+        return ResponseEntity.ok(
+                new LoginResponse(usuarioValidado.getEmail(), rol));
+    }
+
+    @PostMapping("/login/2fa/configurar")
+    public ResponseEntity<TwoFactorSetupResponse> configurarAltaObligatoria(
+            HttpServletRequest request) {
+
+        HttpSession sesion = request.getSession(false);
+
+        if (sesion == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        synchronized (sesion) {
+            Usuario usuario = obtenerUsuarioPendienteDeAlta(sesion);
+
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String secreto = totpService.generarSecreto();
+
+            totpService.guardarSecretoPendiente(usuario, secreto);
+
+            String uri = totpService.crearUriAlta(
+                    usuario.getEmail(), secreto);
+
+            return ResponseEntity.ok(
+                    new TwoFactorSetupResponse(
+                            uri,
+                            totpService.generarQrDataUrl(uri),
+                            false));
+        }
+    }
+
+    @PostMapping("/login/2fa/confirmar-alta")
+    public ResponseEntity<TwoFactorEnrollmentLoginResponse> confirmarAltaObligatoria(
+            @Valid @RequestBody TwoFactorCodeRequest peticion,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        HttpSession sesion = request.getSession(false);
+
+        if (sesion == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        synchronized (sesion) {
+            Usuario usuario = obtenerUsuarioPendienteDeAlta(sesion);
+
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            var confirmacion = totpService.confirmarConfiguracion(
+                    usuario, peticion.code());
+
+            limpiarSegundoFactorPendiente(sesion);
+
+            completarAutenticacion(usuario, request, response);
+
+            return ResponseEntity.ok(
+                    new TwoFactorEnrollmentLoginResponse(
+                            new LoginResponse(
+                                    usuario.getEmail(),
+                                    obtenerRol(usuario)),
+                            confirmacion.backupCodes()));
+        }
+    }
+
+    private Usuario obtenerUsuarioPendienteDeAlta(HttpSession sesion) {
+
+        String email = (String) sesion.getAttribute(
+                SESION_EMAIL_2FA_PENDIENTE);
+
+        Instant caducidad = (Instant) sesion.getAttribute(
+                SESION_2FA_CADUCIDAD);
+
+        if (!Boolean.TRUE.equals(sesion.getAttribute(SESION_2FA_ALTA))
+                || email == null
+                || caducidad == null
+                || !Instant.now().isBefore(caducidad)) {
+
+            limpiarSegundoFactorPendiente(sesion);
+            return null;
+        }
+
+        Usuario usuario = authService.buscarPorCorreo(email);
+
+        if (!usuario.isActivada()
+                || usuario.isBloqueada()
+                || usuario.isTotpActivado()
+                || !requiereTotpObligatorio(usuario)) {
+
+            limpiarSegundoFactorPendiente(sesion);
+            return null;
+        }
+
+        return usuario;
     }
 
     @PostMapping("/login/2fa")
@@ -129,6 +262,7 @@ public class AuthController {
             sesion.removeAttribute(SESION_EMAIL_2FA_PENDIENTE);
             sesion.removeAttribute(SESION_2FA_CADUCIDAD);
             sesion.removeAttribute(SESION_2FA_SECRETO);
+            sesion.removeAttribute(SESION_2FA_ALTA);
         }
     }
 
@@ -183,5 +317,10 @@ public class AuthController {
             return "VENDEDOR";
         }
         throw new IllegalStateException("Tipo de usuario no soportado para el inicio de sesión.");
+    }
+
+    private boolean requiereTotpObligatorio(Usuario usuario) {
+        return usuario instanceof Vendedor
+                || usuario instanceof Administrador;
     }
 }
