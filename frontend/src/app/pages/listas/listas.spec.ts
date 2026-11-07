@@ -199,6 +199,8 @@ describe('Listas - HU-39', () => {
     await esperarConfirmacion();
 
     http.expectNone(csrfUrl);
+    expect(texto()).not.toContain('eliminada');
+    expect(fixture.nativeElement.querySelectorAll('.lists-menu button').length).toBe(2);
   });
 
   it('quita un producto de la lista y actualiza el contador', () => {
