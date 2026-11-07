@@ -1,5 +1,7 @@
 # Azure Pipelines Configuration - ESIBuy
-# Validación automática al integrar en main y develop.
+# Validación automática al integrar en main y develop, y en las ramas release/*.
+# release/* se incluye porque Render despliega release/sprint2 solo tras pasar el CI
+# («After CI Checks Pass»); sin pipeline en esa rama no hay checks que esperar.
 # Los push a feature/* no lanzan la pipeline.
 # CodeQL se ejecuta en GitHub Actions: .github/workflows/codeql.yml
 # SonarScanner utiliza el sonar-project.properties de cada carpeta.
@@ -10,6 +12,7 @@ trigger:
     include:
     - main
     - develop
+    - release/*
   paths:
     exclude:
     - README.md
@@ -20,6 +23,7 @@ pr:
     include:
     - main
     - develop
+    - release/*
 
 pool:
   name: Default
