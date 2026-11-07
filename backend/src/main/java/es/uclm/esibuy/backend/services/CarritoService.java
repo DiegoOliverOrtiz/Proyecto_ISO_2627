@@ -173,7 +173,7 @@ public class CarritoService {
         if (precio == null || !Double.isFinite(precio) || precio < 0) {
             return MENSAJE_PRECIO_NO_DISPONIBLE;
         }
-        Double precioAplicable = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
+        Double precioAplicable = PrecioProducto.paraCliente(producto, cliente.isEsPremium());
         if (precioAplicable == null || !Double.isFinite(precioAplicable) || precioAplicable < 0) {
             return MENSAJE_PRECIO_NO_DISPONIBLE;
         }
@@ -181,7 +181,7 @@ public class CarritoService {
     }
 
     private LineaCarritoResponse calcularLinea(Producto producto, int cantidad, Cliente cliente) {
-        Double precio = ProductoService.calcularPrecioParaCliente(producto, cliente.isEsPremium());
+        Double precio = PrecioProducto.paraCliente(producto, cliente.isEsPremium());
         if (precio == null || !Double.isFinite(precio) || precio < 0) {
             throw new IllegalArgumentException(MENSAJE_PRECIO_NO_DISPONIBLE);
         }

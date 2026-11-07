@@ -207,7 +207,7 @@ public class FavoritoService {
 
         Double precio = producto.isSoloPremium() && !premium
                 ? null
-                : ProductoService.calcularPrecioParaCliente(
+                : PrecioProducto.paraCliente(
                         producto, premium
                 );
 

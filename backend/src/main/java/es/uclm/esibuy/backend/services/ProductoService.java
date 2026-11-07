@@ -1,13 +1,9 @@
 package es.uclm.esibuy.backend.services;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,10 +23,7 @@ import es.uclm.esibuy.backend.dto.ProductoAdministracionResponse;
 import es.uclm.esibuy.backend.dto.ProductoCatalogoResponse;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
-import es.uclm.esibuy.backend.exceptions.ProductoAjenoException;
-import es.uclm.esibuy.backend.exceptions.ProductoConPedidosEnCursoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
-import es.uclm.esibuy.backend.model.EstadoPedido;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Producto;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -38,10 +31,6 @@ import jakarta.validation.Validator;
 
 @Service
 public class ProductoService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProductoService.class);
-    // Pedidos en curso que impiden eliminar un producto: los carritos (EN_PROCESO) y los finalizados no cuentan.
-    private static final List<String> ESTADOS_PEDIDO_EN_CURSO = List.of(
-            EstadoPedido.PAGADO_COMPLETADO.name(), EstadoPedido.TRAMITADO_ENVIADO.name());
     // Listado del administrador: por vendedor y después por nombre, sin distinguir mayúsculas.
     private static final Comparator<Producto> ORDEN_ADMINISTRACION = Comparator
             .comparing(Producto::getVendedor, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
@@ -150,13 +139,13 @@ public class ProductoService {
     }
 
     private ProductoCatalogoResponse aProductoCatalogoResponse(Producto producto, boolean clientePremium) {
-        int descuentoAplicado = obtenerDescuentoAplicable(producto, clientePremium);
+        int descuentoAplicado = PrecioProducto.descuentoAplicable(producto, clientePremium);
         return new ProductoCatalogoResponse(
                 producto.getId(),
                 producto.getNombre(),
                 producto.getCategoria(),
                 producto.getStock(),
-                calcularPrecioParaCliente(producto, clientePremium),
+                PrecioProducto.paraCliente(producto, clientePremium),
                 producto.getPrecio(),
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
@@ -167,26 +156,6 @@ public class ProductoService {
                 producto.isEsVisible(),
                 producto.isSoloPremium(),
                 !producto.isSoloPremium() || clientePremium);
-    }
-
-    static Double calcularPrecioParaCliente(Producto producto, boolean clientePremium) {
-        return calcularPrecioFinal(producto.getPrecio(), obtenerDescuentoAplicable(producto, clientePremium));
-    }
-
-    private static int obtenerDescuentoAplicable(Producto producto, boolean clientePremium) {
-        return clientePremium && producto.getDescuentoPremium() > 0
-                ? producto.getDescuentoPremium()
-                : producto.getDescuento();
-    }
-
-    private static Double calcularPrecioFinal(Double precio, int descuento) {
-        if (precio == null) {
-            return null;
-        }
-        return BigDecimal.valueOf(precio)
-                .multiply(BigDecimal.valueOf(100L - descuento))
-                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)
-                .doubleValue();
     }
 
     private ConsultarProductosResponse aConsultarProductosResponse(Producto producto) {
@@ -394,21 +363,10 @@ public class ProductoService {
                 emailVendedor, "Solo un vendedor activo puede eliminar sus productos.");
         Producto producto = productoDAO.findById(idProducto)
                 .orElseThrow(ProductoNoEncontradoException::new);
-        if (!vendedor.getNombreComercial().equals(producto.getVendedor())) {
-            throw new ProductoAjenoException();
-        }
-        // Los pedidos finalizados no lo impiden: sus líneas guardan los datos del producto (T-26.3).
-        if (pedidoDAO.existsByProductoIdAndEstadoIn(producto.getId(), ESTADOS_PEDIDO_EN_CURSO)) {
-            throw new ProductoConPedidosEnCursoException();
-        }
+        EliminacionProducto.comprobarEliminable(vendedor, producto, pedidoDAO);
 
         productoDAO.delete(producto);
-        // La imagen se borra después del producto: si falla, solo queda un archivo huérfano.
-        try {
-            productoImagenService.eliminar(producto.getImagen());
-        } catch (RuntimeException exception) {
-            LOGGER.warn("No se pudo limpiar la imagen de un producto eliminado.");
-        }
+        EliminacionProducto.eliminarImagen(productoImagenService, producto.getImagen());
     }
 
     /*
