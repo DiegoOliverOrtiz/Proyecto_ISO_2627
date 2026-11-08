@@ -180,7 +180,7 @@ export class PanelCliente implements OnInit {
 
         if (error.status === 401) {
 
-          void this.enrutador.navigate(
+          this.enrutador.navigate(
             ['/login'],
             {
               queryParams: {
@@ -454,7 +454,7 @@ export class PanelCliente implements OnInit {
             error.status === 401
           ) {
 
-            void this.enrutador.navigate(
+            this.enrutador.navigate(
               ['/login'],
               {
                 queryParams: {
@@ -483,7 +483,7 @@ export class PanelCliente implements OnInit {
         if (this.detalle()?.id !== productoId) return;
         this.cargandoValoraciones.set(false);
         if (error.status === 401) {
-          void this.enrutador.navigate(['/login'], {
+          this.enrutador.navigate(['/login'], {
             queryParams: { motivo: 'sesion-expirada' }
           });
           this.errorValoraciones.set('Tu sesión ha caducado. Inicia sesión nuevamente.');
@@ -550,7 +550,7 @@ export class PanelCliente implements OnInit {
   }
 
   private irALogin(): void {
-    void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+    this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
   }
 
   private mensajeErrorCarrito(error: HttpErrorResponse): string {

@@ -156,7 +156,7 @@ export class CrearAdministrador {
     this.administradorService.crearAdministrador(request).subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        void this.router.navigate(['/admin/administradores']);
+        this.router.navigate(['/admin/administradores']);
       },
       error: (error: HttpErrorResponse) => {
         this.isSubmitting.set(false);

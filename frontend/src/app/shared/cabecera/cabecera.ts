@@ -88,7 +88,7 @@ export class Cabecera {
       next: () => {
         this.cerrandoSesion.set(false);
         olvidarSesion();
-        void this.enrutador.navigateByUrl('/login');
+        this.enrutador.navigateByUrl('/login');
       },
       error: (error: HttpErrorResponse) => {
         this.cerrandoSesion.set(false);

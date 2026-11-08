@@ -132,7 +132,7 @@ export class Favoritos implements OnInit {
   ): void {
     if (fallo.status === 401) {
       this.error.set('Tu sesión ha caducado.');
-      void this.enrutador.navigate(
+      this.enrutador.navigate(
         ['/login'],
         {
           queryParams: {
