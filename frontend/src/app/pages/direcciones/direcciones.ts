@@ -162,7 +162,7 @@ export class Direcciones {
 
   private obtenerMensajeError(error: HttpErrorResponse, mensajeGenerico: string): string {
     if (error.status === 401) {
-      void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+      this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
       return 'Tu sesión ya no es válida. Vuelve a iniciar sesión.';
     }
     if (error.status === 403) {

@@ -98,7 +98,7 @@ export class RecuperacionContrasena {
     if (this.token) {
       // El token se queda en memoria y se quita de la URL para que no quede
       // en el historial del navegador ni en capturas de pantalla.
-      void this.router.navigate([], {
+      this.router.navigate([], {
         relativeTo: this.route,
         queryParams: { token: null },
         queryParamsHandling: 'merge',

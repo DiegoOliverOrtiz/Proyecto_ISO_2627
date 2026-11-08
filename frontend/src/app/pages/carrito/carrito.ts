@@ -108,7 +108,7 @@ export class Carrito {
 
   comprar(): void {
     if (this.cargando() || this.operacion() !== null || !this.carrito()?.productos.length || this.hayAvisos()) return;
-    void this.enrutador.navigate(['/cliente/checkout']);
+    this.enrutador.navigate(['/cliente/checkout']);
   }
 
   urlImagen(imagen: string): string {
@@ -172,6 +172,6 @@ export class Carrito {
   }
 
   private irALogin(): void {
-    void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+    this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
   }
 }

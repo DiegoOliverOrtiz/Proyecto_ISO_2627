@@ -400,7 +400,7 @@ export class MisPedidos implements OnInit {
 
   private mensajeErrorRecepcion(error: HttpErrorResponse): string {
     if (error.status === 401) {
-      void this.router.navigate(['/login'], {
+      this.router.navigate(['/login'], {
         queryParams: { motivo: 'sesion-expirada' }
       });
       return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
@@ -438,7 +438,7 @@ export class MisPedidos implements OnInit {
 
   private mensajeErrorValoracion(error: HttpErrorResponse): string {
     if (error.status === 401) {
-      void this.router.navigate(['/login'], {
+      this.router.navigate(['/login'], {
         queryParams: { motivo: 'sesion-expirada' }
       });
       return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
@@ -503,7 +503,7 @@ export class MisPedidos implements OnInit {
 
   private mensajeErrorCancelacion(error: HttpErrorResponse): string {
     if (error.status === 401) {
-      void this.router.navigate(['/login'], {
+      this.router.navigate(['/login'], {
         queryParams: { motivo: 'sesion-expirada' }
       });
       return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
@@ -528,7 +528,7 @@ export class MisPedidos implements OnInit {
 
   private mensajeError(error: HttpErrorResponse): string {
     if (error.status === 401) {
-      void this.router.navigate(['/login'], {
+      this.router.navigate(['/login'], {
         queryParams: { motivo: 'sesion-expirada' }
       });
       return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
