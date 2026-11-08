@@ -15,6 +15,8 @@ import org.springframework.web.client.RestClientException;
 @Service
 public class BrevoEmailService {
 
+    private static final String CAMPO_EMAIL = "email";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(BrevoEmailService.class);
 
     private final String apiKey;
@@ -55,8 +57,8 @@ public class BrevoEmailService {
         Map<String, Object> cuerpo = Map.of(
                 "sender", Map.of(
                         "name", nombreRemitente,
-                        "email", emailRemitente),
-                "to", List.of(Map.of("email", destinatario)),
+                        CAMPO_EMAIL, emailRemitente),
+                "to", List.of(Map.of(CAMPO_EMAIL, destinatario)),
                 "subject", "Recupera tu contraseña de ESIBuy",
                 "textContent", """
                         Hemos recibido una solicitud para cambiar la contraseña de tu cuenta ESIBuy.
@@ -85,8 +87,8 @@ public class BrevoEmailService {
         Map<String, Object> cuerpo = Map.of(
                 "sender", Map.of(
                         "name", nombreRemitente,
-                        "email", emailRemitente),
-                "to", List.of(Map.of("email", destinatario)),
+                        CAMPO_EMAIL, emailRemitente),
+                "to", List.of(Map.of(CAMPO_EMAIL, destinatario)),
                 "subject", "Código de verificación de ESIBuy",
                 "textContent", """
                         Tu código de verificación de ESIBuy es: %s

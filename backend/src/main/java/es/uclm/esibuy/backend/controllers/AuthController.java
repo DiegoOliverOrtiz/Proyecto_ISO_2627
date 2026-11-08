@@ -1,19 +1,9 @@
 package es.uclm.esibuy.backend.controllers;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.time.Instant;
-import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,16 +11,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import es.uclm.esibuy.backend.dto.CsrfTokenResponse;
-import es.uclm.esibuy.backend.dto.ApiErrorResponse;
 import es.uclm.esibuy.backend.dto.LoginRequest;
 import es.uclm.esibuy.backend.dto.LoginResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorEnrollmentLoginResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorSetupResponse;
 import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
 import es.uclm.esibuy.backend.model.Usuario;
-import es.uclm.esibuy.backend.exceptions.EmailOtpRateLimitException;
+import es.uclm.esibuy.backend.security.ContextoAutenticacion;
 import es.uclm.esibuy.backend.security.RolUsuario;
-import es.uclm.esibuy.backend.security.SesionAbsolutaFilter;
 import es.uclm.esibuy.backend.services.AuthService;
 import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.SesionService;
@@ -44,8 +32,7 @@ import jakarta.validation.Valid;
 @RequestMapping("/usuarios")
 public class AuthController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
-    private static final String PREFIJO_ROL = "ROLE_";
+    private static final String PREFIJO_ROL = ContextoAutenticacion.PREFIJO_ROL;
     static final String SESION_EMAIL_2FA_PENDIENTE = "ESIBUY_2FA_EMAIL_PENDIENTE";
     static final String SESION_2FA_CADUCIDAD = "ESIBUY_2FA_CADUCIDAD";
     // Nombre de un atributo de sesión; su valor no es una credencial.
@@ -71,8 +58,8 @@ public class AuthController {
         this.authService = authService;
         this.securityContextRepository = securityContextRepository;
         this.sesionService = sesionService;
-        this.totpService = Objects.requireNonNull(totpService);
-        this.emailOtpService = Objects.requireNonNull(emailOtpService);
+        this.totpService = ContextoAutenticacion.requerido(totpService);
+        this.emailOtpService = ContextoAutenticacion.requerido(emailOtpService);
     }
 
     @GetMapping("/csrf")
@@ -103,7 +90,7 @@ public class AuthController {
                 anterior.invalidate();
             }
 
-            SecurityContextHolder.clearContext();
+            ContextoAutenticacion.limpiar();
 
             HttpSession sesionPendiente = request.getSession(true);
 
@@ -113,7 +100,7 @@ public class AuthController {
 
             sesionPendiente.setAttribute(
                     SESION_2FA_CADUCIDAD,
-                    Instant.now().plusSeconds(300));
+                    ContextoAutenticacion.caducaEn(300));
 
             sesionPendiente.setAttribute(
                     SESION_2FA_SECRETO,
@@ -122,8 +109,7 @@ public class AuthController {
             sesionPendiente.setAttribute(SESION_2FA_ALTA, necesitaAlta);
             sesionPendiente.setMaxInactiveInterval(5 * 60);
 
-            return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(new LoginResponse(
+            return RespuestasTercerFactor.aceptado(new LoginResponse(
                             usuarioValidado.getEmail(),
                             rol,
                             true,
@@ -145,14 +131,14 @@ public class AuthController {
         HttpSession sesion = request.getSession(false);
 
         if (sesion == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         synchronized (sesion) {
             Usuario usuario = obtenerUsuarioPendienteDeAlta(sesion);
 
             if (usuario == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return RespuestasTercerFactor.noAutenticado();
             }
 
             String secreto = totpService.generarSecreto();
@@ -178,23 +164,21 @@ public class AuthController {
         HttpSession sesion = request.getSession(false);
 
         if (sesion == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         synchronized (sesion) {
             Usuario usuario = obtenerUsuarioPendienteDeAlta(sesion);
 
             if (usuario == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return RespuestasTercerFactor.noAutenticado();
             }
 
             var confirmacion = totpService.confirmarConfiguracion(
                     usuario, peticion.code());
 
             boolean codigoEmailEnviado = iniciarTercerFactor(usuario, sesion);
-            return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(
-                    new TwoFactorEnrollmentLoginResponse(
+            return RespuestasTercerFactor.aceptado(new TwoFactorEnrollmentLoginResponse(
                             new LoginResponse(
                                     usuario.getEmail(),
                                     obtenerRol(usuario),
@@ -212,13 +196,11 @@ public class AuthController {
         String email = (String) sesion.getAttribute(
                 SESION_EMAIL_2FA_PENDIENTE);
 
-        Instant caducidad = (Instant) sesion.getAttribute(
-                SESION_2FA_CADUCIDAD);
+        Object caducidad = sesion.getAttribute(SESION_2FA_CADUCIDAD);
 
         if (!Boolean.TRUE.equals(sesion.getAttribute(SESION_2FA_ALTA))
                 || email == null
-                || caducidad == null
-                || !Instant.now().isBefore(caducidad)) {
+                || !ContextoAutenticacion.vigente(caducidad)) {
 
             limpiarSegundoFactorPendiente(sesion);
             return null;
@@ -245,29 +227,28 @@ public class AuthController {
             HttpServletResponse response) {
         HttpSession sesion = request.getSession(false);
         if (sesion == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
         synchronized (sesion) {
             String email = (String) sesion.getAttribute(SESION_EMAIL_2FA_PENDIENTE);
-            Instant caducidad = (Instant) sesion.getAttribute(SESION_2FA_CADUCIDAD);
-            if (email == null || caducidad == null || !Instant.now().isBefore(caducidad)) {
+            Object caducidad = sesion.getAttribute(SESION_2FA_CADUCIDAD);
+            if (email == null || !ContextoAutenticacion.vigente(caducidad)) {
                 limpiarSegundoFactorPendiente(sesion);
-                return ResponseEntity.status(HttpStatus.GONE).build();
+                return RespuestasTercerFactor.caducado();
             }
             Usuario usuario = authService.buscarPorCorreo(email);
             if (!usuario.isActivada() || usuario.isBloqueada() || !usuario.isTotpActivado()
                     || usuario.getSecretoTotpCifrado() == null
                     || !usuario.getSecretoTotpCifrado().equals(sesion.getAttribute(SESION_2FA_SECRETO))) {
                 limpiarSegundoFactorPendiente(sesion);
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return RespuestasTercerFactor.noAutenticado();
             }
             if (!totpService.verificarSegundoFactor(usuario, peticion.code())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                return RespuestasTercerFactor.noAutenticado();
             }
             if (RolUsuario.requiereTercerFactor(usuario)) {
                 boolean codigoEmailEnviado = iniciarTercerFactor(usuario, sesion);
-                return ResponseEntity.status(HttpStatus.ACCEPTED)
-                        .body(new LoginResponse(
+                return RespuestasTercerFactor.aceptado(new LoginResponse(
                                 usuario.getEmail(),
                                 obtenerRol(usuario),
                                 false,
@@ -289,33 +270,23 @@ public class AuthController {
             HttpServletResponse response) {
         HttpSession sesion = request.getSession(false);
         if (sesion == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         synchronized (sesion) {
             Usuario usuario = obtenerUsuarioPendienteDeTercerFactor(sesion);
             if (usuario == null) {
-                return ResponseEntity.status(HttpStatus.GONE).build();
+                return RespuestasTercerFactor.caducado();
             }
 
-            EmailOtpService.ResultadoVerificacion resultado = emailOtpService.verificar(
+            ResponseEntity<?> error = RespuestasTercerFactor.verificar(
+                    emailOtpService,
                     sesion,
                     usuario.getEmail(),
-                    peticion.code());
-            if (resultado == EmailOtpService.ResultadoVerificacion.INVALIDO) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ApiErrorResponse("El código de verificación no es válido."));
-            }
-            if (resultado == EmailOtpService.ResultadoVerificacion.BLOQUEADO) {
-                limpiarTercerFactorPendiente(sesion);
-                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                        .header("Retry-After", Integer.toString(EmailOtpService.DURACION_RETO_SEGUNDOS))
-                        .body(new ApiErrorResponse(
-                                "Se ha alcanzado el límite de intentos. Inicia sesión de nuevo más tarde."));
-            }
-            if (resultado == EmailOtpService.ResultadoVerificacion.CADUCADO) {
-                limpiarTercerFactorPendiente(sesion);
-                return ResponseEntity.status(HttpStatus.GONE).build();
+                    peticion.code(),
+                    () -> limpiarTercerFactorPendiente(sesion));
+            if (error != null) {
+                return error;
             }
 
             limpiarTercerFactorPendiente(sesion);
@@ -328,50 +299,27 @@ public class AuthController {
     public ResponseEntity<?> reenviarTercerFactor(HttpServletRequest request) {
         HttpSession sesion = request.getSession(false);
         if (sesion == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         synchronized (sesion) {
             Usuario usuario = obtenerUsuarioPendienteDeTercerFactor(sesion);
             if (usuario == null) {
-                return ResponseEntity.status(HttpStatus.GONE).build();
+                return RespuestasTercerFactor.caducado();
             }
 
-            try {
-                EmailOtpService.ResultadoReenvio resultado = emailOtpService.reenviar(
-                        sesion,
-                        usuario.getEmail());
-                return switch (resultado.estado()) {
-                    case ENVIADO -> ResponseEntity.noContent().build();
-                    case ESPERA -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                            .header("Retry-After", Integer.toString(resultado.segundosEspera()))
-                            .body(new ApiErrorResponse(
-                                    "Espera antes de solicitar otro código de verificación."));
-                    case LIMITE -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                            .body(new ApiErrorResponse(
-                                    "Has alcanzado el límite de envíos para este inicio de sesión."));
-                    case CADUCADO -> {
-                        limpiarTercerFactorPendiente(sesion);
-                        yield ResponseEntity.status(HttpStatus.GONE).build();
-                    }
-                };
-            } catch (EmailOtpRateLimitException exception) {
-                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                        .header("Retry-After", Integer.toString(exception.getRetryAfterSeconds()))
-                        .body(new ApiErrorResponse(exception.getMessage()));
-            } catch (RestClientException | IllegalStateException exception) {
-                LOGGER.error("No se pudo enviar el código del tercer factor por correo.", exception);
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                        .body(new ApiErrorResponse(
-                                "No se pudo enviar el código. Inténtalo de nuevo más tarde."));
-            }
+            return RespuestasTercerFactor.reenviar(
+                    emailOtpService,
+                    sesion,
+                    usuario.getEmail(),
+                    () -> limpiarTercerFactorPendiente(sesion));
         }
     }
 
     private Usuario obtenerUsuarioPendienteDeTercerFactor(HttpSession sesion) {
         String email = (String) sesion.getAttribute(SESION_3FA_EMAIL);
-        Instant caducidad = (Instant) sesion.getAttribute(SESION_3FA_CADUCIDAD);
-        if (email == null || caducidad == null || !Instant.now().isBefore(caducidad)) {
+        Object caducidad = sesion.getAttribute(SESION_3FA_CADUCIDAD);
+        if (email == null || !ContextoAutenticacion.vigente(caducidad)) {
             limpiarTercerFactorPendiente(sesion);
             return null;
         }
@@ -396,25 +344,13 @@ public class AuthController {
         sesion.setAttribute(SESION_3FA_EMAIL, usuario.getEmail());
         sesion.setAttribute(
                 SESION_3FA_CADUCIDAD,
-                Instant.now().plusSeconds(EmailOtpService.DURACION_RETO_SEGUNDOS));
+                ContextoAutenticacion.caducaEn(EmailOtpService.DURACION_RETO_SEGUNDOS));
         sesion.setAttribute(SESION_3FA_TOTP_CIFRADO, usuario.getSecretoTotpCifrado());
         sesion.setMaxInactiveInterval(EmailOtpService.DURACION_RETO_SEGUNDOS);
-        SecurityContextHolder.clearContext();
+        ContextoAutenticacion.limpiar();
 
-        try {
-            emailOtpService.iniciar(sesion, usuario.getEmail());
-            return true;
-        } catch (EmailOtpRateLimitException exception) {
-            emailOtpService.limpiar(sesion);
-            LOGGER.warn("Se ha alcanzado el límite global de envíos para el tercer factor.");
-            return false;
-        } catch (RestClientException | IllegalStateException exception) {
-            emailOtpService.limpiar(sesion);
-            LOGGER.error("No se pudo iniciar el tercer factor por correo para el rol {}.",
-                    obtenerRol(usuario),
-                    exception);
-            return false;
-        }
+        return RespuestasTercerFactor.iniciar(
+                emailOtpService, sesion, usuario.getEmail(), obtenerRol(usuario));
     }
 
     private void limpiarTercerFactorPendiente(HttpSession sesion) {
@@ -439,27 +375,21 @@ public class AuthController {
             Usuario usuarioValidado,
             HttpServletRequest request,
             HttpServletResponse response) {
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                usuarioValidado.getEmail(),
-                null,
-                java.util.List.of(new SimpleGrantedAuthority(PREFIJO_ROL + obtenerRol(usuarioValidado))));
-
         HttpSession sesion = request.getSession(true);
         request.changeSessionId();
         sesion.setMaxInactiveInterval(30 * 60);
-        sesion.setAttribute(SesionAbsolutaFilter.ATRIBUTO_SESION_AUTENTICADA_EN, Instant.now());
+        ContextoAutenticacion.marcarInicioSesion(sesion);
         sesionService.registrarSesion(sesion.getId(), usuarioValidado.getEmail());
 
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
+        var context = ContextoAutenticacion.crear(usuarioValidado.getEmail(), obtenerRol(usuarioValidado));
+        ContextoAutenticacion.establecer(context);
         securityContextRepository.saveContext(context, request, response);
     }
 
     @GetMapping("/sesion-actual")
     public ResponseEntity<LoginResponse> obtenerSesionActual(Authentication authentication) {
         if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         String autoridad = authentication.getAuthorities().stream()
@@ -468,7 +398,7 @@ public class AuthController {
                 .findFirst()
                 .orElse(null);
         if (autoridad == null || autoridad.length() == PREFIJO_ROL.length()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return RespuestasTercerFactor.noAutenticado();
         }
 
         String rol = autoridad.substring(PREFIJO_ROL.length());
