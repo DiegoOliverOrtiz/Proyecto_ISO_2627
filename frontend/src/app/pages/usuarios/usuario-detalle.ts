@@ -474,7 +474,7 @@ export class UsuarioDetalle implements OnInit {
 
         next: () => {
 
-          void this.router.navigate([
+          this.router.navigate([
             '/admin/administradores'
           ]);
 

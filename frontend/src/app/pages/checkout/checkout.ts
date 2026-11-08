@@ -165,7 +165,7 @@ export class Checkout {
     }
     if (fallo.status === 401) {
       mensaje = 'Tu sesión ha caducado. Inicia sesión de nuevo para continuar.';
-      void this.router.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+      this.router.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
     }
     if (fallo.status === 403) {
       mensaje = 'No tienes permiso para completar esta operación. Comprueba tu sesión e inténtalo de nuevo.';
@@ -173,7 +173,7 @@ export class Checkout {
         next: () => {},
         error: (sesion: HttpErrorResponse) => {
           if ([401, 403].includes(sesion.status)) {
-            void this.router.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+            this.router.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
           }
         }
       });

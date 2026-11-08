@@ -227,7 +227,7 @@ export class Listas implements OnInit {
   private gestionarError(fallo: HttpErrorResponse, mensajePredeterminado: string): void {
     if (fallo.status === 401) {
       this.error.set('Tu sesión ha caducado.');
-      void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+      this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
       return;
     }
 

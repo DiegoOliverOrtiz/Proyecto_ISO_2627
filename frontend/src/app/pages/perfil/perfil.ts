@@ -115,7 +115,7 @@ export class Perfil {
         this.mensajeError.set(this.obtenerMensajeError(error, 'No se pudo cargar el perfil. Inténtalo de nuevo.'));
 
         if (error.status === 401) {
-          void this.enrutador.navigate(['/login'], {
+          this.enrutador.navigate(['/login'], {
             queryParams: { motivo: 'sesion-expirada' }
           });
         }
@@ -204,7 +204,7 @@ export class Perfil {
         this.mensajeFormulario.set(this.obtenerMensajeError(error, 'No se pudieron guardar los cambios.'));
 
         if (error.status === 401) {
-          void this.enrutador.navigate(['/login'], {
+          this.enrutador.navigate(['/login'], {
             queryParams: { motivo: 'sesion-expirada' }
           });
         }
@@ -249,7 +249,7 @@ export class Perfil {
         this.mensajeFormulario.set(this.obtenerMensajeError(error, 'No se pudo actualizar el tipo de cliente.'));
 
         if (error.status === 401) {
-          void this.enrutador.navigate(['/login'], {
+          this.enrutador.navigate(['/login'], {
             queryParams: { motivo: 'sesion-expirada' }
           });
         }
@@ -287,13 +287,13 @@ export class Perfil {
       next: () => {
         this.bajaEnCurso.set(false);
         this.pasoConfirmacionBaja.set(0);
-        void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'cuenta-eliminada' } });
+        this.enrutador.navigate(['/login'], { queryParams: { motivo: 'cuenta-eliminada' } });
       },
       error: (error: HttpErrorResponse) => {
         this.bajaEnCurso.set(false);
         this.pasoConfirmacionBaja.set(0);
         if (error.status === 401) {
-          void this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
+          this.enrutador.navigate(['/login'], { queryParams: { motivo: 'sesion-expirada' } });
           return;
         }
         this.errorBaja.set(this.obtenerMensajeError(error,

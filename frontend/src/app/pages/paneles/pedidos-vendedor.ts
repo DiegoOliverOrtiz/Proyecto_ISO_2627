@@ -223,7 +223,7 @@ export class PedidosVendedor implements OnInit {
 
   private mensajeError(error: HttpErrorResponse): string {
     if (error.status === 401) {
-      void this.router.navigateByUrl('/login');
+      this.router.navigateByUrl('/login');
       return 'Tu sesión ha caducado. Inicia sesión nuevamente.';
     }
 
