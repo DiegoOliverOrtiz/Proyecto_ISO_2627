@@ -1,0 +1,25 @@
+@if (servicio.solicitud(); as solicitud) {
+  <div class="confirmacion-fondo" (click)="responder(false)" (keydown.escape)="responder(false)"></div>
+  <div
+    class="confirmacion"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="confirmacion-titulo"
+    aria-describedby="confirmacion-mensaje"
+    (keydown)="manejarTeclado($event)">
+    <h1 id="confirmacion-titulo">{{ solicitud.titulo }}</h1>
+    <p id="confirmacion-mensaje">{{ solicitud.mensaje }}</p>
+    <div class="confirmacion-acciones">
+      <button type="button" class="confirmacion-cancelar" (click)="responder(false)">
+        {{ solicitud.cancelar }}
+      </button>
+      <button
+        type="button"
+        class="confirmacion-aceptar"
+        [class.peligro]="solicitud.peligro"
+        (click)="responder(true)">
+        {{ solicitud.aceptar }}
+      </button>
+    </div>
+  </div>
+}

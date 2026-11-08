@@ -34,6 +34,9 @@ class AdministradorServiceHU04Tests {
     private AdministradorDAO administradorDAO;
 
     @Mock
+    private es.uclm.esibuy.backend.dao.CategoriaDAO categoriaDAO;
+
+    @Mock
     private UsuarioDAO usuarioDAO;
 
     @Mock
@@ -48,17 +51,23 @@ class AdministradorServiceHU04Tests {
     @Mock
     private SesionService sesionService;
 
+    @Mock
+    private AuditoriaService auditoriaService;
+
     private AdministradorService servicio;
 
     @BeforeEach
     void setUp() {
         servicio = new AdministradorService(
                 administradorDAO,
+                categoriaDAO,
                 usuarioDAO,
                 passwordEncoder,
                 passwordPolicy,
                 validator,
-                sesionService);
+                sesionService,
+                null,
+                auditoriaService);
     }
 
     @Test

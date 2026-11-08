@@ -1,121 +1,48 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../login/auth.service';
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-panel-administrador',
   standalone: true,
   imports: [RouterLink],
-  styleUrl: './administrador.css',
+  styleUrls: ['../tienda/tienda.css', './administrador.css'],
   template: `
-    <main class="admin-shell">
-      <section class="admin-content">
-        <header class="topbar">
-          <a class="topbar-brand" routerLink="/admin">EsiBuy</a>
-          <span class="breadcrumb">
-            Gestión
-            <span aria-hidden="true">/</span>
-            Panel de administración
-          </span>
-          <span class="account">
-            <span class="account-dot" aria-hidden="true"></span>
-            Administrador
-          </span>
-        </header>
-
-        <div class="welcome-block">
-          <p class="eyebrow">Espacio de gestión</p>
-          <h1>Bienvenido, administrador</h1>
-          <p>
-            Consulta y gestiona la información administrativa de EsiBuy.
+    <main class="pagina">
+      <header class="pagina-cabecera">
+        <div>
+          <h1 class="pagina-titulo">Bienvenido, administrador</h1>
+          <p class="pagina-descripcion">
+            Consulta y gestiona la información administrativa de ESIBuy.
           </p>
-
-          <a class="primary-action" routerLink="/admin/usuarios">
-            Consultar usuarios
-          </a>
         </div>
+      </header>
 
-        <div class="overview-grid">
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Usuarios</strong>
-            <small>Consulta administrativa</small>
+      <div class="overview-grid">
+        <article class="tarjeta">
+          <h2>Usuarios</h2>
+          <p>Consulta administrativa</p>
+          <a class="boton-secundario" routerLink="/admin/usuarios">Abrir listado</a>
+        </article>
 
-            <a routerLink="/admin/usuarios">
-              Abrir listado
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
+        <article class="tarjeta">
+          <h2>Categorías</h2>
+          <p>Consulta administrativa</p>
+          <a class="boton-secundario" routerLink="/admin/categorias">Abrir categorías</a>
+        </article>
 
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Categorías</strong>
-            <small>Consulta administrativa</small>
+        <article class="tarjeta">
+          <h2>Productos</h2>
+          <p>Consulta en solo lectura</p>
+          <a class="boton-secundario" routerLink="/admin/productos">Abrir productos</a>
+        </article>
 
-            <a routerLink="/admin/categorias">
-              Abrir categorías
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
-
-          <article>
-            <span class="card-label">Área activa</span>
-            <strong>Administradores</strong>
-            <small>Gestión interna</small>
-
-            <a routerLink="/admin/administradores">
-              Abrir administradores
-              <span aria-hidden="true">→</span>
-            </a>
-          </article>
-        </div>
-
-        <button
-          class="logout-button"
-          type="button"
-          [disabled]="cerrandoSesion()"
-          (click)="cerrarSesion()">
-          {{ cerrandoSesion()
-            ? 'Cerrando sesión...'
-            : 'Cerrar sesión'
-          }}
-        </button>
-
-        @if (mensajeError()) {
-          <p class="error-message" role="alert">
-            {{ mensajeError() }}
-          </p>
-        }
-      </section>
+        <article class="tarjeta">
+          <h2>Administradores</h2>
+          <p>Gestión interna</p>
+          <a class="boton-secundario" routerLink="/admin/administradores">Abrir administradores</a>
+        </article>
+      </div>
     </main>
   `
 })
-export class PanelAdministrador {
-  private readonly servicioAutenticacion = inject(AuthService);
-  private readonly enrutador = inject(Router);
-
-  readonly cerrandoSesion = signal(false);
-  readonly mensajeError = signal('');
-
-  cerrarSesion(): void {
-    this.cerrandoSesion.set(true);
-    this.mensajeError.set('');
-
-    this.servicioAutenticacion.cerrarSesion().subscribe({
-      next: () => {
-        this.cerrandoSesion.set(false);
-        void this.enrutador.navigateByUrl('/login');
-      },
-      error: (error: HttpErrorResponse) => {
-        this.cerrandoSesion.set(false);
-
-        this.mensajeError.set(
-          error.status === 0
-            ? 'No se pudo conectar con el servicio. Inténtalo de nuevo.'
-            : 'No se pudo cerrar la sesión. Inténtalo de nuevo.'
-        );
-      }
-    });
-  }
-}
+export class PanelAdministrador {}

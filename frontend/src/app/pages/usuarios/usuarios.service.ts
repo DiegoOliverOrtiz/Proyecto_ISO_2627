@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -45,10 +46,6 @@ export interface EstadisticasUsuarios {
   activos: number;
   pendientes: number;
   desactivados: number;
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({ providedIn: 'root' })

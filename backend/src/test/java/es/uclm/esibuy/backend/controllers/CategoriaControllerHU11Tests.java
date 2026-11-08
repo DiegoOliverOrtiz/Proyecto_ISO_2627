@@ -26,139 +26,169 @@ import es.uclm.esibuy.backend.services.CategoriaService;
 @Import(SecurityConfiguration.class)
 class CategoriaControllerHU11Tests {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private CategoriaService categoriaService;
+        @MockitoBean
+        private CategoriaService categoriaService;
 
-    @Test
-    void administradorPuedeConsultarElListadoDeCategorias() throws Exception {
-        Categoria deportes = new Categoria(
-                "Deportes",
-                "Productos y equipamiento deportivo");
-        deportes.setId("categoria-1");
+        @Test
+        void administradorPuedeConsultarElListadoDeCategorias() throws Exception {
+                Categoria deportes = new Categoria(
+                                "Deportes",
+                                "Productos y equipamiento deportivo");
+                deportes.setId("categoria-1");
 
-        Categoria electronica = new Categoria(
-                "Electrónica",
-                "Productos electrónicos");
-        electronica.setId("categoria-2");
+                Categoria electronica = new Categoria(
+                                "Electrónica",
+                                "Productos electrónicos");
+                electronica.setId("categoria-2");
 
-        when(categoriaService.obtenerTodas())
-                .thenReturn(List.of(deportes, electronica));
+                when(categoriaService.obtenerTodas())
+                                .thenReturn(List.of(deportes, electronica));
 
-        mockMvc.perform(get("/categorias")
-                        .with(user("admin").roles("ADMIN")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("categoria-1"))
-                .andExpect(jsonPath("$[0].nombre").value("Deportes"))
-                .andExpect(jsonPath("$[0].descripcion")
-                        .value("Productos y equipamiento deportivo"))
-                .andExpect(jsonPath("$[1].id").value("categoria-2"))
-                .andExpect(jsonPath("$[1].nombre").value("Electrónica"));
+                mockMvc.perform(get("/categorias")
+                                .with(user("admin").roles("ADMIN")))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].id").value("categoria-1"))
+                                .andExpect(jsonPath("$[0].nombre").value("Deportes"))
+                                .andExpect(jsonPath("$[0].descripcion")
+                                                .value("Productos y equipamiento deportivo"))
+                                .andExpect(jsonPath("$[1].id").value("categoria-2"))
+                                .andExpect(jsonPath("$[1].nombre").value("Electrónica"));
 
-        verify(categoriaService).obtenerTodas();
-    }
+                verify(categoriaService).obtenerTodas();
+        }
 
-    @Test
-    void administradorRecibeListaVaciaSiNoHayCategorias() throws Exception {
-        when(categoriaService.obtenerTodas())
-                .thenReturn(List.of());
+        @Test
+        void administradorRecibeListaVaciaSiNoHayCategorias() throws Exception {
+                when(categoriaService.obtenerTodas())
+                                .thenReturn(List.of());
 
-        mockMvc.perform(get("/categorias")
-                        .with(user("admin").roles("ADMIN")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                mockMvc.perform(get("/categorias")
+                                .with(user("admin").roles("ADMIN")))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$").isArray())
+                                .andExpect(jsonPath("$").isEmpty());
 
-        verify(categoriaService).obtenerTodas();
-    }
+                verify(categoriaService).obtenerTodas();
+        }
 
-    @Test
-    void administradorPuedeConsultarElDetalleDeUnaCategoria() throws Exception {
-        Categoria categoria = new Categoria(
-                "Deportes",
-                "Productos y equipamiento deportivo");
-        categoria.setId("categoria-1");
+        @Test
+        void administradorPuedeConsultarElDetalleDeUnaCategoria() throws Exception {
+                Categoria categoria = new Categoria(
+                                "Deportes",
+                                "Productos y equipamiento deportivo");
+                categoria.setId("categoria-1");
 
-        when(categoriaService.obtenerPorId("categoria-1"))
-                .thenReturn(Optional.of(categoria));
+                when(categoriaService.obtenerPorId("categoria-1"))
+                                .thenReturn(Optional.of(categoria));
 
-        mockMvc.perform(get("/categorias/categoria-1")
-                        .with(user("admin").roles("ADMIN")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("categoria-1"))
-                .andExpect(jsonPath("$.nombre").value("Deportes"))
-                .andExpect(jsonPath("$.descripcion")
-                        .value("Productos y equipamiento deportivo"));
+                mockMvc.perform(get("/categorias/categoria-1")
+                                .with(user("admin").roles("ADMIN")))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value("categoria-1"))
+                                .andExpect(jsonPath("$.nombre").value("Deportes"))
+                                .andExpect(jsonPath("$.descripcion")
+                                                .value("Productos y equipamiento deportivo"));
 
-        verify(categoriaService).obtenerPorId("categoria-1");
-    }
+                verify(categoriaService).obtenerPorId("categoria-1");
+        }
 
-    @Test
-    void devuelve404SiLaCategoriaNoExiste() throws Exception {
-        when(categoriaService.obtenerPorId("categoria-inexistente"))
-                .thenReturn(Optional.empty());
+        @Test
+        void devuelve404SiLaCategoriaNoExiste() throws Exception {
+                when(categoriaService.obtenerPorId("categoria-inexistente"))
+                                .thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/categorias/categoria-inexistente")
-                        .with(user("admin").roles("ADMIN")))
-                .andExpect(status().isNotFound());
+                mockMvc.perform(get("/categorias/categoria-inexistente")
+                                .with(user("admin").roles("ADMIN")))
+                                .andExpect(status().isNotFound());
 
-        verify(categoriaService).obtenerPorId("categoria-inexistente");
-    }
+                verify(categoriaService).obtenerPorId("categoria-inexistente");
+        }
 
-    @Test
-    void clienteNoPuedeConsultarCategorias() throws Exception {
-        mockMvc.perform(get("/categorias")
-                        .with(user("cliente").roles("CLIENTE")))
-                .andExpect(status().isForbidden());
+        @Test
+        void clienteNoPuedeConsultarCategorias() throws Exception {
+                mockMvc.perform(get("/categorias")
+                                .with(user("cliente").roles("CLIENTE")))
+                                .andExpect(status().isForbidden());
 
-        verifyNoInteractions(categoriaService);
-    }
+                verifyNoInteractions(categoriaService);
+        }
 
-    @Test
-    void vendedorPuedeConsultarCategorias() throws Exception {
-        Categoria categoria = new Categoria(
-                "Deportes",
-                "Productos y equipamiento deportivo");
-        categoria.setId("categoria-1");
+        @Test
+        void vendedorPuedeConsultarCategorias() throws Exception {
+                Categoria categoria = new Categoria(
+                                "Deportes",
+                                "Productos y equipamiento deportivo");
+                categoria.setId("categoria-1");
 
-        when(categoriaService.obtenerTodas())
-                .thenReturn(List.of(categoria));
+                when(categoriaService.obtenerTodas())
+                                .thenReturn(List.of(categoria));
 
-        mockMvc.perform(get("/categorias")
-                        .with(user("vendedor").roles("VENDEDOR")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("categoria-1"))
-                .andExpect(jsonPath("$[0].nombre").value("Deportes"));
+                mockMvc.perform(get("/categorias")
+                                .with(user("vendedor").roles("VENDEDOR")))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].id").value("categoria-1"))
+                                .andExpect(jsonPath("$[0].nombre").value("Deportes"));
 
-        verify(categoriaService).obtenerTodas();
-    }
+                verify(categoriaService).obtenerTodas();
+        }
 
-    @Test
-    void usuarioNoAutenticadoNoPuedeConsultarCategorias() throws Exception {
-        mockMvc.perform(get("/categorias"))
-                .andExpect(status().isForbidden());
+        @Test
+        void usuarioNoAutenticadoNoPuedeConsultarCategorias() throws Exception {
+                mockMvc.perform(get("/categorias"))
+                                .andExpect(status().isForbidden());
 
-        verifyNoInteractions(categoriaService);
-    }
+                verifyNoInteractions(categoriaService);
+        }
 
-    @Test
-    void categoriasDeRegistroSiguenSiendoPublicas() throws Exception {
-        Categoria categoria = new Categoria(
-                "Deportes",
-                "Productos y equipamiento deportivo");
-        categoria.setId("categoria-1");
+        @Test
+        void categoriasDeRegistroSiguenSiendoPublicas() throws Exception {
+                Categoria categoria = new Categoria(
+                                "Deportes",
+                                "Productos y equipamiento deportivo");
+                categoria.setId("categoria-1");
 
-        when(categoriaService.obtenerTodas())
-                .thenReturn(List.of(categoria));
+                when(categoriaService.obtenerTodas())
+                                .thenReturn(List.of(categoria));
 
-        mockMvc.perform(get("/categorias/registro"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("categoria-1"))
-                .andExpect(jsonPath("$[0].nombre").value("Deportes"))
-                .andExpect(jsonPath("$[0].descripcion").doesNotExist());
+                mockMvc.perform(get("/categorias/registro"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].id").value("categoria-1"))
+                                .andExpect(jsonPath("$[0].nombre").value("Deportes"))
+                                .andExpect(jsonPath("$[0].descripcion").doesNotExist());
 
-        verify(categoriaService).obtenerTodas();
-    }
+                verify(categoriaService).obtenerTodas();
+        }
+
+        @Test
+        void administradorPuedeBuscarCategorias() throws Exception {
+                Categoria deportes = new Categoria(
+                                "Deportes", "Material deportivo");
+
+                when(categoriaService.buscarCategorias("dep", "asc"))
+                                .thenReturn(List.of(deportes));
+
+                mockMvc.perform(get("/categorias")
+                                .param("nombre", "dep")
+                                .param("orden", "asc")
+                                .with(user("admin").roles("ADMIN")))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].nombre")
+                                                .value("Deportes"));
+
+                verify(categoriaService)
+                                .buscarCategorias("dep", "asc");
+        }
+
+        @Test
+        void clienteNoPuedeBuscarCategorias() throws Exception {
+                mockMvc.perform(get("/categorias")
+                                .param("nombre", "dep")
+                                .with(user("cliente").roles("CLIENTE")))
+                                .andExpect(status().isForbidden());
+
+                verifyNoInteractions(categoriaService);
+        }
 }

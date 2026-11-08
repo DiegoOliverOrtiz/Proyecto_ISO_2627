@@ -1,7 +1,10 @@
 package es.uclm.esibuy.backend.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,9 +18,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 
 import es.uclm.esibuy.backend.dto.LoginRequest;
+import es.uclm.esibuy.backend.dto.TwoFactorCodeRequest;
 import es.uclm.esibuy.backend.model.Administrador;
 import es.uclm.esibuy.backend.services.AuthService;
+import es.uclm.esibuy.backend.services.EmailOtpService;
 import es.uclm.esibuy.backend.services.SesionService;
+import es.uclm.esibuy.backend.services.TotpService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerSesionTests {
@@ -31,6 +37,10 @@ class AuthControllerSesionTests {
 	private SecurityContextRepository securityContextRepository;
 	@Mock
 	private SesionService sesionService;
+	@Mock
+	private TotpService totpService;
+	@Mock
+	private EmailOtpService emailOtpService;
 
 	@InjectMocks
 	private AuthController controller;
@@ -41,15 +51,45 @@ class AuthControllerSesionTests {
 	}
 
 	@Test
-	void iniciarSesion_registraLaSesionConElEmailDelUsuario() {
-		Administrador administrador = new Administrador();
-		administrador.setEmail(EMAIL);
-		when(authService.autenticar(EMAIL, PASSWORD)).thenReturn(administrador);
-		MockHttpServletRequest request = new MockHttpServletRequest();
-		MockHttpServletResponse response = new MockHttpServletResponse();
+	void iniciarSesion_registraLaSesionSoloDespuesDeVerificarTotp() {
+	    Administrador administrador = new Administrador();
+	    administrador.setEmail(EMAIL);
+	    administrador.setActivada(true);
+	    administrador.setTotpActivado(true);
+	    administrador.setSecretoTotpCifrado("secreto-cifrado-prueba");
 
-		controller.iniciarSesion(new LoginRequest(EMAIL, PASSWORD), request, response);
+	    when(authService.autenticar(
+	            org.mockito.ArgumentMatchers.eq(EMAIL),
+	            org.mockito.ArgumentMatchers.eq(PASSWORD),
+	            org.mockito.ArgumentMatchers.anyString()))
+	            .thenReturn(administrador);
 
-		verify(sesionService).registrarSesion(request.getSession(false).getId(), EMAIL);
+	    MockHttpServletRequest request = new MockHttpServletRequest();
+	    MockHttpServletResponse response = new MockHttpServletResponse();
+
+	    var inicio = controller.iniciarSesion(
+	            new LoginRequest(EMAIL, PASSWORD), request, response);
+
+	    assertEquals(202, inicio.getStatusCode().value());
+	    verifyNoInteractions(sesionService);
+
+	    when(authService.buscarPorCorreo(EMAIL)).thenReturn(administrador);
+	    when(totpService.verificarSegundoFactor(administrador, "123456"))
+	            .thenReturn(true);
+
+	    var confirmacion = controller.verificarSegundoFactor(
+	            new TwoFactorCodeRequest("123456"), request, response);
+
+	    assertEquals(202, confirmacion.getStatusCode().value());
+	    verifyNoInteractions(sesionService);
+
+	    when(emailOtpService.verificar(any(), org.mockito.ArgumentMatchers.eq(EMAIL), org.mockito.ArgumentMatchers.eq("654321")))
+	            .thenReturn(EmailOtpService.ResultadoVerificacion.VALIDO);
+	    var verificacionCorreo = controller.verificarTercerFactor(
+	            new TwoFactorCodeRequest("654321"), request, response);
+
+	    assertEquals(200, verificacionCorreo.getStatusCode().value());
+	    verify(sesionService).registrarSesion(
+	            request.getSession(false).getId(), EMAIL);
 	}
 }

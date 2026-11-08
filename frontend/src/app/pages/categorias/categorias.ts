@@ -5,8 +5,8 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import {
   Categoria,
   CategoriasService,
@@ -16,15 +16,13 @@ import {
 
 @Component({
   selector: 'app-categorias',
-  imports: [
-    ReactiveFormsModule,
-    RouterLink
-  ],
+  imports: [ReactiveFormsModule],
   templateUrl: './categorias.html',
-  styleUrl: './categorias.css',
+  styleUrls: ['../tienda/tienda.css', './categorias.css'],
 })
 export class Categorias implements OnInit {
   private readonly categoriasService = inject(CategoriasService);
+  private readonly confirmacion = inject(ConfirmacionService);
   private readonly formBuilder = inject(FormBuilder);
 
   readonly categorias = signal<Categoria[]>([]);
@@ -39,6 +37,15 @@ export class Categorias implements OnInit {
   readonly mensajeResultado = signal('');
   readonly errorFormulario = signal('');
 
+  readonly filtros = this.formBuilder.nonNullable.group({
+    nombre: [''],
+    orden: ['']
+  });
+
+  readonly busquedaAplicada = signal('');
+  readonly ordenAplicado = signal('');
+
+
   readonly formularioCategoria = this.formBuilder.nonNullable.group({
     nombre: ['', Validators.required],
     descripcion: ['', Validators.required]
@@ -48,11 +55,15 @@ export class Categorias implements OnInit {
     this.cargarCategorias();
   }
 
+
   cargarCategorias(): void {
     this.cargando.set(true);
     this.error.set(false);
 
-    this.categoriasService.obtenerCategorias().subscribe({
+    this.categoriasService.obtenerCategorias(
+      this.busquedaAplicada(),
+      this.ordenAplicado()
+    ).subscribe({
       next: (categorias) => {
         this.categorias.set(categorias);
         this.cargando.set(false);
@@ -61,9 +72,35 @@ export class Categorias implements OnInit {
         this.categorias.set([]);
         this.error.set(true);
         this.cargando.set(false);
-      },
+      }
     });
   }
+
+
+  aplicarFiltros(): void {
+    const valores = this.filtros.getRawValue();
+
+    this.busquedaAplicada.set(valores.nombre.trim());
+    this.ordenAplicado.set(valores.orden);
+
+    this.cargarCategorias();
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.reset();
+
+    this.busquedaAplicada.set('');
+    this.ordenAplicado.set('');
+
+    this.cargarCategorias();
+  }
+
+  hayFiltrosAplicados(): boolean {
+    return Boolean(
+      this.busquedaAplicada() || this.ordenAplicado()
+    );
+  }
+
 
   abrirFormulario(): void {
     this.categoriaEnEdicion.set(null);
@@ -181,10 +218,13 @@ export class Categorias implements OnInit {
     });
   }
 
-  eliminarCategoria(categoria: Categoria): void {
-    const confirmar = window.confirm(
-      `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`
-    );
+  async eliminarCategoria(categoria: Categoria): Promise<void> {
+    const confirmar = await this.confirmacion.confirmar({
+      titulo: 'Eliminar categoría',
+      mensaje: `¿Seguro que quieres eliminar la categoría "${categoria.nombre}"?`,
+      aceptar: 'Eliminar categoría',
+      peligro: true
+    });
 
     if (!confirmar) {
       return;
@@ -256,12 +296,15 @@ export class Categorias implements OnInit {
 
   private desplazarAlFormulario(): void {
     setTimeout(() => {
+      // A20: el formulario se lleva a la vista (sin animación si se pide menos movimiento) y recibe el foco.
+      const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       document
         .getElementById('formulario-categoria')
-        ?.scrollIntoView({
-          behavior: 'smooth',
+        ?.scrollIntoView?.({
+          behavior: sinMovimiento ? 'auto' : 'smooth',
           block: 'start'
         });
+      document.getElementById('titulo-formulario')?.focus({ preventScroll: true });
     });
   }
 }

@@ -41,6 +41,12 @@ class AdministradorServiceEliminacionTests {
     @Mock
     private SesionService sesionService;
 
+    @Mock
+    private FavoritosRegistroService favoritosRegistroService;
+
+    @Mock
+    private AuditoriaService auditoriaService;
+
 	@InjectMocks
 	private AdministradorService administradorService;
 
@@ -96,6 +102,7 @@ class AdministradorServiceEliminacionTests {
         administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE);
 
         verify(administradorDAO).delete(objetivo);
+        verify(auditoriaService).registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
     }
 
     @ParameterizedTest
@@ -142,6 +149,7 @@ class AdministradorServiceEliminacionTests {
 
         InOrder orden = inOrder(administradorDAO, sesionService);
         orden.verify(administradorDAO).delete(objetivo);
+        verify(auditoriaService).registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
         orden.verify(sesionService).cerrarSesiones(EMAIL_OBJETIVO);
     }
 
@@ -156,6 +164,7 @@ class AdministradorServiceEliminacionTests {
         assertThrows(IllegalStateException.class,
                 () -> administradorService.eliminarAdministrador(ID_OBJETIVO, EMAIL_SOLICITANTE));
 
+        verifyNoInteractions(auditoriaService);
         verifyNoInteractions(sesionService);
     }
 }

@@ -1,0 +1,253 @@
+/* Confirmar compra. La página, botones, avisos e imagen vienen de ../tienda/tienda.css. */
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, .9fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.checkout-products h2,
+.checkout-form h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+.checkout-list {
+  display: grid;
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-product {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.product-blocked .checkout-product-image {
+  opacity: .6;
+}
+
+.checkout-product-name h3 {
+  margin: 0 0 .25rem;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.checkout-product-name p,
+.checkout-product-prices p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.checkout-product-name .aviso {
+  margin-top: .5rem;
+}
+
+.checkout-product-prices {
+  display: grid;
+  gap: .2rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.checkout-product-prices strong {
+  color: var(--color-text);
+}
+
+.checkout-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: .9rem 1.25rem;
+  border-radius: 8px;
+  background: var(--color-accent-subtle);
+  font-size: 1.15rem;
+}
+
+/* --- Formulario de pago --- */
+
+.checkout-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.checkout-form h2 {
+  margin: 0;
+}
+
+.form-section {
+  display: grid;
+  gap: .4rem;
+}
+
+.form-section label {
+  font-weight: 600;
+}
+
+.form-section select {
+  width: 100%;
+  min-height: 44px;
+  padding: .5rem .7rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+}
+
+.checkout-help {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.checkout-link {
+  justify-self: start;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+.pay-button {
+  width: 100%;
+  min-height: 48px;
+}
+
+/* --- Compra completada --- */
+
+.confirmation-card {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.confirmation-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.confirmation-banner h2 {
+  margin: 0;
+  font-family: var(--font-display, 'Playfair Display'), Georgia, serif;
+  font-weight: 500;
+}
+
+.confirmation-banner p {
+  margin: .2rem 0 0;
+  color: var(--color-text-secondary);
+}
+
+.confirmation-mark {
+  display: grid;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-accent-on);
+  background: var(--color-success);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.confirmation-details {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+}
+
+.confirmation-details div {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.confirmation-details dt {
+  color: var(--color-text-secondary);
+}
+
+.confirmation-details dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.referencia {
+  overflow-wrap: anywhere;
+}
+
+.confirmation-products {
+  display: grid;
+  gap: .4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.confirmation-products li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .6rem .8rem;
+  border-radius: 8px;
+  background: var(--color-background);
+}
+
+.confirmation-shipping {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.pending {
+  display: grid;
+  gap: .5rem;
+}
+
+.pending h2,
+.pending p {
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkout-form {
+    order: -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .checkout-product {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .checkout-product-prices {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .confirmation-details div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .15rem;
+  }
+}

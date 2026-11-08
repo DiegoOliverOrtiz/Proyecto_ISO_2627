@@ -74,10 +74,51 @@ const optionalImageUrlValidator =
   Validators.pattern(/^https?:\/\/.+/i);
 
 
+const passwordRules = [
+  {
+    label: '8 caracteres mínimo',
+    test: (password: string) => password.length >= 8,
+  },
+  {
+    label: '1 mayúscula (A-Z)',
+    test: (password: string) => /[A-Z]/.test(password),
+  },
+  {
+    label: '1 minúscula (a-z)',
+    test: (password: string) => /[a-z]/.test(password),
+  },
+  {
+    label: '1 número (0-9)',
+    test: (password: string) => /\d/.test(password),
+  },
+  {
+    label: '1 carácter especial (@, #, $, ...)',
+    test: (password: string) => /[^A-Za-z0-9\s]/.test(password),
+  },
+] as const;
+
+
+const passwordRequirementsValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const password = typeof control.value === 'string'
+    ? control.value
+    : '';
+
+  const unmetRequirements = passwordRules
+    .filter(rule => !rule.test(password))
+    .map(rule => rule.label);
+
+  return unmetRequirements.length
+    ? { passwordRequirements: unmetRequirements }
+    : null;
+};
+
+
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-register',
-  styleUrl: './register.css',
+  styleUrls: ['../acceso/acceso.css', './register.css'],
   templateUrl: './register.html',
 })
 export class Register {
@@ -100,6 +141,12 @@ export class Register {
   isSubmitting = false;
   avatarFailed = false;
   feedback: Feedback = null;
+  customerPasswordFocused = false;
+  sellerPasswordFocused = false;
+  customerPasswordHidden = true;
+  customerConfirmationHidden = true;
+  sellerPasswordHidden = true;
+  sellerConfirmationHidden = true;
 
 
   readonly clienteForm = this.formBuilder.nonNullable.group({
@@ -118,7 +165,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 
@@ -133,7 +180,8 @@ export class Register {
 
     contrasena: ['', [
       Validators.required,
-      Validators.minLength(8)
+      Validators.minLength(8),
+      passwordRequirementsValidator
     ]],
 
     repetirContrasena: ['', Validators.required],
@@ -159,7 +207,7 @@ export class Register {
         Validators.required,
         Validators.minLength(9),
         Validators.maxLength(9),
-        Validators.pattern(/^[0-9]{8}[A-Za-z]$/)
+        Validators.pattern(/^\d{8}[A-Za-z]$/)
       ]
     ],
 
@@ -174,7 +222,8 @@ export class Register {
 
     contrasena: ['', [
       Validators.required,
-      Validators.minLength(8)
+      Validators.minLength(8),
+      passwordRequirementsValidator
     ]],
 
     repetirContrasena: ['', Validators.required],
@@ -285,14 +334,14 @@ export class Register {
         control.hasError('pattern')
       )
     ) {
-      return 'El DNI debe tener 8 números y una letra.';
+      return 'El DNI/NIF debe tener 8 números y una letra.';
     }
 
     if (
       name === 'contrasena' &&
-      control.hasError('minlength')
+      (control.hasError('minlength') || control.hasError('passwordRequirements'))
     ) {
-      return 'La contraseña debe tener al menos 8 caracteres.';
+      return 'La contraseña debe cumplir todos los requisitos indicados.';
     }
 
     if (control.hasError('underage')) {
@@ -320,6 +369,19 @@ export class Register {
   passwordMismatch(form: AbstractControl): boolean {
     return form.hasError('passwordMismatch') &&
       Boolean(form.get('repetirContrasena')?.touched);
+  }
+
+
+  passwordRequirements(
+    form: AbstractControl
+  ): { label: string; met: boolean }[] {
+    const password = form.get('contrasena')?.value;
+    const value = typeof password === 'string' ? password : '';
+
+    return passwordRules.map(rule => ({
+      label: rule.label,
+      met: rule.test(value),
+    }));
   }
 
 
@@ -375,7 +437,7 @@ export class Register {
       };
 
       this.registrationService.registerCliente(request).subscribe({
-        next: () => this.completeRegistration(),
+        next: response => this.completeRegistration(response.mensaje),
         error: (error: unknown) => this.failRegistration(error),
       });
 
@@ -403,7 +465,7 @@ export class Register {
     };
 
     this.registrationService.registerVendedor(request).subscribe({
-      next: () => this.completeRegistration(),
+      next: response => this.completeRegistration(response.mensaje),
       error: (error: unknown) => this.failRegistration(error),
     });
   }
@@ -425,12 +487,12 @@ export class Register {
   }
 
 
-  private completeRegistration(): void {
+  private completeRegistration(mensaje: string): void {
     this.isSubmitting = false;
 
     this.feedback = {
       kind: 'success',
-      text: 'Registro realizado correctamente. El equipo administrador revisará tus datos antes de activar la cuenta.',
+      text: mensaje,
     };
 
     this.avatarFailed = false;

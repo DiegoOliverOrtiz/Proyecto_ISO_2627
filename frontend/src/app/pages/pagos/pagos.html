@@ -1,0 +1,128 @@
+<main class="pagina gestion-pagina">
+  <header class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mis métodos de pago</h1>
+      <p class="pagina-descripcion">Añade y consulta tus tarjetas, PayPal o Bizum para tus compras.</p>
+    </div>
+    <div class="gestion-acciones">
+      <a class="boton-secundario" routerLink="/perfil">Volver al perfil</a>
+      @if (!editando() && !cargando() && !mensajeError()) {
+        <button class="boton-principal" type="button" (click)="iniciarCreacion()">Añadir método</button>
+      }
+    </div>
+  </header>
+
+  @if (cargando()) {
+    <output class="estado">Cargando métodos de pago...</output>
+  } @else if (mensajeError()) {
+    <section class="estado" role="alert">
+      <p class="estado-titulo">{{ mensajeError() }}</p>
+      <button class="boton-secundario" type="button" (click)="cargarDatos()">Reintentar</button>
+    </section>
+  } @else {
+    @if (mensajeExito() && !editando()) {
+      <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
+    }
+
+    @if (editando()) {
+      <section class="tarjeta gestion-formulario" aria-labelledby="form-titulo">
+        <h2 id="form-titulo">Nuevo método de pago</h2>
+
+        <form [formGroup]="formulario" (ngSubmit)="guardarMetodo()">
+          <div class="gestion-campos">
+            <label class="ancho-completo">
+              Tipo de método
+              <select formControlName="tipo">
+                <option value="">Selecciona el tipo de pago...</option>
+                @for (tipo of tipos(); track tipo.codigo) {
+                  <option [value]="tipo.codigo">{{ tipo.nombre }}</option>
+                }
+              </select>
+            </label>
+
+            @if (tipoSeleccionado()) {
+              <label class="ancho-completo">
+                Nombre identificativo
+                <input type="text" formControlName="nombre" aria-describedby="ayuda-nombre-metodo"
+                       [attr.aria-invalid]="formulario.controls.nombre.touched && formulario.controls.nombre.invalid" />
+                <span id="ayuda-nombre-metodo" class="ayuda-campo">Por ejemplo: «Mi Visa personal».</span>
+                @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+                  <span class="error-campo">El nombre es obligatorio.</span>
+                }
+              </label>
+
+              @if (tipoSeleccionado() === 'TARJETA') {
+                <label>
+                  Número de tarjeta
+                  <input type="text" formControlName="numeroTarjeta" inputmode="numeric" autocomplete="cc-number"
+                         placeholder="XXXX XXXX XXXX XXXX" maxlength="19" />
+                </label>
+                <label>
+                  Titular
+                  <input type="text" formControlName="titular" autocomplete="cc-name" />
+                </label>
+                <label>
+                  Caducidad (MM/AA)
+                  <input type="text" formControlName="caducidad" inputmode="numeric" autocomplete="cc-exp"
+                         placeholder="12/28" maxlength="5" (input)="formatearCaducidad($event)" />
+                </label>
+                <label>
+                  CVV
+                  <input type="text" formControlName="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" />
+                </label>
+              }
+
+              @if (tipoSeleccionado() === 'PAYPAL') {
+                <label class="ancho-completo">
+                  Correo electrónico de PayPal
+                  <input type="email" formControlName="correoPaypal" autocomplete="email" />
+                </label>
+              }
+
+              @if (tipoSeleccionado() === 'BIZUM') {
+                <label class="ancho-completo">
+                  Número de teléfono Bizum
+                  <input type="tel" formControlName="telefonoBizum" autocomplete="tel" maxlength="9" />
+                </label>
+              }
+            }
+          </div>
+
+          @if (mensajeFormulario()) {
+            <p class="mensaje-formulario" role="alert">{{ mensajeFormulario() }}</p>
+          }
+
+          <div class="gestion-formulario-acciones">
+            <button class="boton-secundario" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="boton-principal" type="submit" [disabled]="guardando() || !tipoSeleccionado()">
+              {{ guardando() ? 'Guardando...' : 'Guardar método' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    } @else {
+      @if (metodosGuardados().length === 0) {
+        <section class="estado">
+          <p class="estado-titulo">Todavía no tienes métodos de pago.</p>
+          <p>Añade uno para poder pagar tus pedidos.</p>
+          <button class="boton-principal" type="button" (click)="iniciarCreacion()">Añadir método</button>
+        </section>
+      } @else {
+        <div class="gestion-rejilla">
+          @for (metodo of metodosGuardados(); track metodo.id) {
+            <article class="tarjeta gestion-tarjeta">
+              <h2>{{ metodo.nombre }}</h2>
+              <p><strong>Tipo:</strong> {{ nombreTipo(metodo.tipo) }}</p>
+              <p><strong>Referencia:</strong> {{ metodo.datosEnmascarados }}</p>
+              @if (metodo.titular) { <p><strong>Titular:</strong> {{ metodo.titular }}</p> }
+              @if (metodo.caducidad) { <p><strong>Caducidad:</strong> {{ metodo.caducidad }}</p> }
+              <div class="gestion-tarjeta-acciones">
+                <button class="boton-peligro" type="button" (click)="eliminarMetodo(metodo.id)">Eliminar</button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    }
+  }
+</main>

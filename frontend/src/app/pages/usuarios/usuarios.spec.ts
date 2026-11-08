@@ -12,6 +12,12 @@ import {
 } from 'vitest';
 
 import { Usuarios } from './usuarios';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
+
+// M8: la confirmación es un diálogo propio (asíncrono); se simula su respuesta.
+const simularConfirmacion = (aceptada: boolean) =>
+  vi.spyOn(TestBed.inject(ConfirmacionService), 'confirmar').mockResolvedValue(aceptada);
+
 import {
   ListadoUsuarios,
   UsuarioAdministracion,
@@ -105,14 +111,14 @@ describe('Usuarios', () => {
     expect(component.cargando()).toBe(false);
   });
 
-  it('no bloquea al usuario si se cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('no bloquea al usuario si se cancela la confirmacion', async () => {
+    const confirmar = simularConfirmacion(false);
 
     fixture.detectChanges();
 
-    component.bloquear(usuario);
+    await component.bloquear(usuario);
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirmar).toHaveBeenCalled();
     expect(
       usuariosServiceMock.bloquearUsuario
     ).not.toHaveBeenCalled();
@@ -120,12 +126,12 @@ describe('Usuarios', () => {
     expect(component.usuarioEnProceso()).toBeNull();
   });
 
-  it('bloquea al usuario y recarga el listado', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('bloquea al usuario y recarga el listado', async () => {
+    simularConfirmacion(true);
 
     fixture.detectChanges();
 
-    component.bloquear(usuario);
+    await component.bloquear(usuario);
 
     expect(
       usuariosServiceMock.bloquearUsuario
@@ -142,12 +148,12 @@ describe('Usuarios', () => {
     ).toHaveBeenCalledTimes(2);
   });
 
-  it('desbloquea al usuario y recarga el listado', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('desbloquea al usuario y recarga el listado', async () => {
+    simularConfirmacion(true);
 
     fixture.detectChanges();
 
-    component.desbloquear(usuario);
+    await component.desbloquear(usuario);
 
     expect(
       usuariosServiceMock.desbloquearUsuario
@@ -165,12 +171,12 @@ describe('Usuarios', () => {
   });
 
   // NUEVO TEST: Activar usuario feliz
-  it('activa al usuario y recarga el listado', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('activa al usuario y recarga el listado', async () => {
+    simularConfirmacion(true);
 
     fixture.detectChanges();
 
-    component.activar(usuario);
+    await component.activar(usuario);
 
     expect(
       usuariosServiceMock.activarUsuario
@@ -188,14 +194,14 @@ describe('Usuarios', () => {
   });
 
   // NUEVO TEST: Cancelar activación
-  it('no activa al usuario si se cancela la confirmacion', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('no activa al usuario si se cancela la confirmacion', async () => {
+    const confirmar = simularConfirmacion(false);
 
     fixture.detectChanges();
 
-    component.activar(usuario);
+    await component.activar(usuario);
 
-    expect(window.confirm).toHaveBeenCalled();
+    expect(confirmar).toHaveBeenCalled();
     expect(
       usuariosServiceMock.activarUsuario
     ).not.toHaveBeenCalled();
@@ -203,8 +209,8 @@ describe('Usuarios', () => {
     expect(component.usuarioEnProceso()).toBeNull();
   });
 
-  it('muestra el error del backend si falla el bloqueo', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('muestra el error del backend si falla el bloqueo', async () => {
+    simularConfirmacion(true);
 
     usuariosServiceMock.bloquearUsuario.mockReturnValue(
       throwError(
@@ -220,7 +226,7 @@ describe('Usuarios', () => {
 
     fixture.detectChanges();
 
-    component.bloquear(usuario);
+    await component.bloquear(usuario);
 
     expect(component.usuarioEnProceso()).toBeNull();
 
@@ -233,8 +239,8 @@ describe('Usuarios', () => {
     ).toHaveBeenCalledTimes(1);
   });
 
-  it('muestra un mensaje si el usuario ya no existe al desbloquear', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('muestra un mensaje si el usuario ya no existe al desbloquear', async () => {
+    simularConfirmacion(true);
 
     usuariosServiceMock.desbloquearUsuario.mockReturnValue(
       throwError(
@@ -247,12 +253,112 @@ describe('Usuarios', () => {
 
     fixture.detectChanges();
 
-    component.desbloquear(usuario);
+    await component.desbloquear(usuario);
 
     expect(component.usuarioEnProceso()).toBeNull();
 
     expect(component.mensajeError()).toBe(
       'El usuario ya no existe.'
     );
+  });
+  describe('marcado accesible (M9, M24)', () => {
+    const fila = () => (fixture.nativeElement as HTMLElement).querySelector('tbody tr') as HTMLElement;
+
+    it('el estado es un chip con texto', () => {
+      fixture.detectChanges();
+
+      const chip = fila().querySelector('.chip') as HTMLElement;
+      expect(chip.textContent?.trim()).toBe('Activo');
+      expect(chip.classList).toContain('chip-exito');
+    });
+
+    it('un usuario pendiente se muestra con chip de aviso y ofrece «Activar»', () => {
+      usuariosServiceMock.consultarUsuarios.mockReturnValue(
+        of({ ...listado, contenido: [{ ...usuario, estado: 'PENDIENTE' }] })
+      );
+      fixture.detectChanges();
+
+      expect(fila().querySelector('.chip')?.classList).toContain('chip-aviso');
+      const activar = fila().querySelector('button.boton-principal') as HTMLButtonElement;
+      expect(activar.getAttribute('title')).toBe('Activar');
+      expect(activar.getAttribute('aria-label')).toBe('Activar a Mario Muñoz');
+    });
+
+    it('las acciones son iconos con título y nombre accesible', () => {
+      fixture.detectChanges();
+
+      const acciones = Array.from(fila().querySelectorAll('.accion')) as HTMLElement[];
+      expect(acciones.map((a) => a.getAttribute('title'))).toEqual(['Ver detalle', 'Modificar', 'Bloquear']);
+      expect(acciones.every((a) => a.classList.contains('accion-icono'))).toBe(true);
+      expect(acciones.map((a) => a.getAttribute('aria-label'))).toEqual([
+        'Ver detalle de Mario Muñoz',
+        'Modificar a Mario Muñoz',
+        'Bloquear a Mario Muñoz'
+      ]);
+    });
+
+    it('sin resultados con filtros ofrece «Limpiar filtros»', () => {
+      usuariosServiceMock.consultarUsuarios.mockReturnValue(of({ ...listado, contenido: [] }));
+      fixture.detectChanges();
+      component.busqueda.set('zzz');
+      component.buscar();
+      fixture.detectChanges();
+
+      const boton = (fixture.nativeElement as HTMLElement).querySelector('.estado button') as HTMLButtonElement;
+      expect(boton.textContent?.trim()).toBe('Limpiar filtros');
+    });
+  });
+  describe('errores de operación (M8)', () => {
+    it('un error al bloquear se muestra como aviso sin ocultar el listado', async () => {
+      simularConfirmacion(true);
+      usuariosServiceMock.bloquearUsuario.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 404 }))
+      );
+      fixture.detectChanges();
+
+      await component.bloquear(usuario);
+      fixture.detectChanges();
+
+      const vista = fixture.nativeElement as HTMLElement;
+      expect(vista.querySelector('.aviso-error')?.textContent).toContain('El usuario ya no existe.');
+      expect(vista.querySelectorAll('tbody tr').length).toBe(1);
+    });
+
+    it('pide la confirmación con el diálogo común y marca bloquear como acción peligrosa', async () => {
+      const confirmar = simularConfirmacion(false);
+      fixture.detectChanges();
+
+      await component.bloquear(usuario);
+
+      expect(confirmar).toHaveBeenCalledWith(
+        expect.objectContaining({ titulo: 'Bloquear usuario', peligro: true, aceptar: 'Bloquear' })
+      );
+    });
+
+    it('un error al cargar el listado se muestra como estado, no como aviso', () => {
+      usuariosServiceMock.consultarUsuarios.mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 500 }))
+      );
+      fixture.detectChanges();
+
+      const vista = fixture.nativeElement as HTMLElement;
+      expect(vista.querySelector('.estado[role="alert"]')).not.toBeNull();
+      expect(vista.querySelector('.aviso-error')).toBeNull();
+    });
+  });
+  it('si falla la carga ofrece «Reintentar» y vuelve a consultar (M5)', () => {
+    usuariosServiceMock.consultarUsuarios.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+    fixture.detectChanges();
+    const vista = fixture.nativeElement as HTMLElement;
+
+    const reintentar = vista.querySelector('.estado[role="alert"] .boton-reintentar') as HTMLButtonElement;
+    expect(reintentar.textContent?.trim()).toBe('Reintentar');
+    reintentar.click();
+    fixture.detectChanges();
+
+    expect(usuariosServiceMock.consultarUsuarios).toHaveBeenCalledTimes(2);
+    expect(vista.querySelectorAll('tbody tr').length).toBe(1);
   });
 });

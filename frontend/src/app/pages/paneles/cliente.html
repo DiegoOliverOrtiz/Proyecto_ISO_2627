@@ -1,0 +1,742 @@
+
+
+
+<main class="client-content pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Catálogo de productos</h1>
+      <p class="pagina-descripcion">Explora los productos de la comunidad y guarda tus favoritos.</p>
+    </div>
+  </div>
+
+  @if (errorFavoritos()) {
+  <p class="status-message error-message" role="alert">
+    {{ errorFavoritos() }}
+  </p>
+
+  <button type="button" class="secondary-button" (click)="cargarFavoritos()">
+    Reintentar favoritos
+  </button>
+  }
+
+  @if (mensajeFavoritos()) {
+  <output class="status-message" aria-live="polite">
+    {{ mensajeFavoritos() }}
+  </output>
+  }
+
+  <!-- =====================================================
+       MENSAJE DE ERROR GENERAL
+       ===================================================== -->
+
+  @if (mensajeError()) {
+  <p class="error-message" role="alert">
+    {{ mensajeError() }}
+  </p>
+  }
+
+
+  <!-- =====================================================
+       ESTADO DEL CATÁLOGO
+       ===================================================== -->
+
+  @if (cargandoCatalogo()) {
+
+  <output class="status-message" aria-live="polite">
+    Cargando productos...
+  </output>
+
+  } @else if (errorCatalogo()) {
+
+  <p class="status-message error-message" role="alert">
+    {{ errorCatalogo() }}
+  </p>
+
+  <button class="secondary-button" type="button" (click)="cargarProductos()">
+    Reintentar
+  </button>
+
+  } @else if (
+  productos().length === 0 &&
+  !hayFiltrosActivos()
+  ) {
+
+  <div class="estado">
+    <p class="estado-titulo">Todavía no hay productos disponibles.</p>
+    <p>Vuelve más tarde: los vendedores añaden productos nuevos cada día.</p>
+  </div>
+
+  } @else {
+
+  <!-- ===================================================
+         FILTROS
+         =================================================== -->
+
+  <form class="catalog-filters" role="search" aria-label="Buscar y filtrar productos" (submit)="aplicarFiltros($event)">
+
+    <label class="filtro-busqueda">
+      Buscar por nombre
+
+      <input type="search" autocomplete="off" [value]="terminoBusqueda()" (input)="actualizarBusqueda($event)" />
+    </label>
+
+
+    <button class="secondary-button boton-filtros" type="button" aria-controls="filtros-avanzados"
+      [attr.aria-expanded]="filtrosAbiertos()" (click)="alternarFiltros()">
+      Filtros{{ numeroFiltrosAvanzados() ? ' (' + numeroFiltrosAvanzados() + ')' : '' }}
+    </button>
+    <div id="filtros-avanzados" class="filtros-avanzados" [class.abiertos]="filtrosAbiertos()">
+    <label>
+      Categoría
+
+      <select [value]="categoriaFiltro()" (change)="actualizarCategoria($event)">
+        <option value="">
+          Todas
+        </option>
+
+        @for (
+        categoria of categoriasDisponibles();
+        track categoria
+        ) {
+        <option [value]="categoria">
+          {{ categoria }}
+        </option>
+        }
+      </select>
+    </label>
+
+
+    <label>
+      Precio mínimo (€)
+
+      <input type="number" min="0" step="0.01" [value]="precioMinimo()" (input)="actualizarPrecioMinimo($event)" />
+    </label>
+
+
+    <label>
+      Precio máximo (€)
+
+      <input type="number" min="0" step="0.01" [value]="precioMaximo()" (input)="actualizarPrecioMaximo($event)" />
+    </label>
+
+
+    <label>
+      Disponibilidad
+
+      <select [value]="disponibilidadFiltro()" (change)="actualizarDisponibilidad($event)">
+        <option value="todos">
+          Todos
+        </option>
+
+        <option value="disponibles">
+          Con stock
+        </option>
+
+        <option value="agotados">
+          Agotados
+        </option>
+      </select>
+    </label>
+
+
+    <label class="favorites-filter">
+      <input
+        type="checkbox"
+        [checked]="soloFavoritos()"
+        [disabled]="!favoritosDisponibles()"
+        (change)="actualizarFiltroFavoritos($event)"
+      />
+      Solo favoritos
+    </label>
+
+    </div>
+    <button class="secondary-button" type="submit" [disabled]="cargandoCatalogo()">
+      Aplicar filtros
+    </button>
+
+
+    <button class="secondary-button" type="button" [disabled]="!hayFiltrosActivos()" (click)="limpiarFiltros()">
+      Limpiar filtros
+    </button>
+
+  </form>
+
+
+  <!-- ===================================================
+         RESULTADO DEL CATÁLOGO
+         =================================================== -->
+
+  @if (productosMostrados().length === 0) {
+  <div class="estado">
+    <p>
+      {{
+        soloFavoritos()
+          ? 'No tienes productos favoritos que coincidan con los filtros.'
+          : 'No se encontraron productos con esos filtros.'
+      }}
+    </p>
+    <button class="secondary-button" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
+  </div>
+
+  } @else {
+
+  <ul class="product-grid" aria-label="Productos">
+
+    @for (
+    producto of productosMostrados();
+    track producto.id
+    ) {
+
+    <li class="product-card" [class.product-blocked]="
+              !puedeConsultarDetalle(producto)
+            ">
+
+      <div class="marco-imagen product-image-frame">
+        @if (producto.imagen && !imagenesFallidas().has(producto.id)) {
+        <img class="product-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="320" height="240"
+          loading="lazy" (error)="marcarImagenFallida(producto.id)" />
+        } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 17l-5-5-9 8"></path></svg>
+        <span class="visually-hidden">Producto sin imagen</span>
+        }
+      </div>
+
+      <div class="product-heading">
+
+        <h3>{{ producto.nombre }}</h3>
+
+        @if (producto.soloPremium) {
+
+        <span class="premium-badge">
+          Premium
+        </span>
+
+        }
+
+      </div>
+
+
+      <p class="product-category">
+        {{ producto.categoria }}
+      </p>
+
+
+      <p class="product-seller">
+        Vendedor:
+        {{ producto.vendedor }}
+      </p>
+
+
+      @if (
+      producto.precioOriginal !== null &&
+      producto.precio !== null &&
+      producto.precioOriginal > producto.precio
+      ) {
+
+      <p class="original-price">
+        Antes:
+        {{
+        producto.precioOriginal
+        | number:'1.2-2'
+        }}
+        €
+      </p>
+
+      }
+
+
+      <p class="product-price">
+        {{
+        producto.precio
+        | number:'1.2-2'
+        }}
+        €
+      </p>
+
+
+      @if (producto.descuento > 0) {
+
+      <p>
+        Descuento:
+        {{ producto.descuento }}
+        %
+      </p>
+
+      }
+
+
+      @if (
+      producto.descuentoPremium > 0
+      ) {
+
+      <p>
+        Descuento Premium:
+        {{ producto.descuentoPremium }}
+        %
+      </p>
+
+      }
+
+
+      <p class="product-stock">
+        {{
+        producto.stock > 0
+        ? 'Disponible'
+        : 'Agotado'
+        }}
+        · Stock:
+        {{ producto.stock }}
+      </p>
+
+
+      @if (
+      !puedeConsultarDetalle(producto)
+      ) {
+
+      <p class="premium-message"><output>
+        Solo clientes Premium pueden consultar
+        este producto. Hazte Premium para acceder
+        a productos exclusivos y ver sus
+        descuentos Premium.
+      </output></p>
+
+      }
+
+
+      @if (productoConMensaje() === producto.id) {
+      @if (errorCarrito()) {
+      <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
+      }
+      @if (exitoCarrito()) {
+      <output class="status-message">
+        {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
+      </output>
+      }
+      }
+
+      <div class="product-actions">
+        <button
+          class="favorite-button"
+          type="button"
+          [class.favorite-selected]="esFavorito(producto.id)"
+          [disabled]="!favoritosDisponibles() || modificandoFavorito() !== null"
+          [attr.aria-pressed]="esFavorito(producto.id)"
+          [attr.aria-label]="
+            esFavorito(producto.id)
+              ? 'Quitar ' + producto.nombre + ' de favoritos'
+              : 'Guardar ' + producto.nombre + ' en favoritos'
+          "
+          [attr.aria-busy]="modificandoFavorito() === producto.id"
+          (click)="cambiarFavorito(producto)"
+        >
+          <span aria-hidden="true">
+            {{ esFavorito(producto.id) ? '♥' : '♡' }}
+          </span>
+        </button>
+        <button class="secondary-button" type="button"
+          [disabled]="!puedeConsultarDetalle(producto) || cargandoDetalle()" (click)="verDetalle(producto)">
+          Ver detalle
+        </button>
+        <button class="primary-button catalog-cart-button" type="button" aria-label="Añadir al carrito"
+          title="Añadir al carrito"
+          [disabled]="!puedeConsultarDetalle(producto) || !producto.esVisible || producto.stock <= 0 || anadiendoProducto() !== null"
+          [attr.aria-busy]="anadiendoProducto() === producto.id" (click)="anadirAlCarrito(producto, 1)">
+          <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 3h2l3 12h11l2-8H6"></path>
+            <circle cx="9" cy="20" r="1"></circle>
+            <circle cx="18" cy="20" r="1"></circle>
+          </svg>
+        </button>
+      </div>
+
+    </li>
+
+    }
+
+  </ul>
+
+  }
+
+  }
+
+
+  <!-- =====================================================
+       CARGA DEL DETALLE
+       ===================================================== -->
+
+  @if (cargandoDetalle()) {
+
+  <output class="status-message" aria-live="polite">
+    Cargando detalle...
+  </output>
+
+  }
+
+
+  <!-- =====================================================
+       ERROR DEL DETALLE
+       ===================================================== -->
+
+  @if (errorDetalle()) {
+
+  <p class="status-message error-message" role="alert">
+    {{ errorDetalle() }}
+  </p>
+
+  }
+
+
+  <!-- =====================================================
+       MODAL DE DETALLE
+       ===================================================== -->
+
+  @if (detalle(); as producto) {
+
+  <dialog open class="product-detail" aria-modal="true" aria-labelledby="detail-title"
+    (keydown)="manejarTecladoDetalle($event)">
+
+    <!-- ===================================================
+           CABECERA DEL MODAL
+           =================================================== -->
+
+    <div class="detail-heading">
+
+      <div class="detail-title-block">
+
+        <h2 id="detail-title">
+          {{ producto.nombre }}
+        </h2>
+
+
+        @if (producto.descripcion) {
+
+        <p class="detail-description">
+          {{ producto.descripcion }}
+        </p>
+
+        }
+
+      </div>
+
+
+      <button class="detail-close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">
+        <span aria-hidden="true">
+          ×
+        </span>
+      </button>
+
+    </div>
+
+
+    <!-- ===================================================
+           COLUMNA IZQUIERDA
+           =================================================== -->
+
+    <div class="detail-product-visual">
+
+      <div class="marco-imagen detail-image-frame">
+        @if (producto.imagen && !imagenesFallidas().has(producto.id)) {
+        <img class="detail-image" [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="520" height="390"
+          (error)="marcarImagenFallida(producto.id)" />
+        } @else {
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 17l-5-5-9 8"></path></svg>
+        <span class="visually-hidden">Producto sin imagen</span>
+        }
+      </div>
+
+
+      <!-- PRECIO -->
+
+      <div class="detail-price-under-image">
+
+        @if (
+        producto.precioOriginal !== null &&
+        producto.precio !== null &&
+        producto.precioOriginal > producto.precio
+        ) {
+
+        <p class="detail-price-original">
+          Antes:
+          {{
+          producto.precioOriginal
+          | number:'1.2-2'
+          }}
+          €
+        </p>
+
+        }
+
+
+        <p class="detail-price">
+          {{
+          producto.precio
+          | number:'1.2-2'
+          }}
+          €
+        </p>
+
+
+        @if (
+        producto.descuentoAplicado > 0
+        ) {
+
+        <span class="detail-discount-badge">
+          -{{ producto.descuentoAplicado }}
+          % aplicado
+        </span>
+
+        }
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+           COLUMNA DERECHA
+           =================================================== -->
+
+    <div class="detail-side">
+
+      <div class="detail-info" aria-label="Información del producto">
+
+        <div class="detail-data-card">
+
+          <span class="detail-data-label">
+            Categoría
+          </span>
+
+          <strong>
+            {{ producto.categoria }}
+          </strong>
+
+        </div>
+
+
+        <div class="detail-data-card">
+
+          <span class="detail-data-label">
+            Vendedor
+          </span>
+
+          <strong>
+            {{ producto.vendedor }}
+          </strong>
+
+        </div>
+
+
+        @if (producto.descuento > 0) {
+        <div class="detail-data-card">
+          <span class="detail-data-label">Descuento</span>
+          <strong>{{ producto.descuento }} %</strong>
+        </div>
+        }
+
+
+        @if (producto.descuentoPremium > 0) {
+        <div class="detail-data-card">
+          <span class="detail-data-label">Descuento Premium</span>
+          <strong>{{ producto.descuentoPremium }} %</strong>
+        </div>
+        }
+
+
+        <div class="detail-data-card">
+
+          <span class="detail-data-label">
+            Stock disponible
+          </span>
+
+          <strong>
+            {{ producto.stock }}
+
+            {{
+            producto.stock === 1
+            ? 'unidad'
+            : 'unidades'
+            }}
+          </strong>
+
+        </div>
+
+      </div>
+
+      <section class="detail-reviews" aria-labelledby="reviews-title" aria-live="polite">
+        <h3 id="reviews-title">Valoraciones</h3>
+        @if (cargandoValoraciones()) {
+        <p><output>Cargando valoraciones...</output></p>
+        } @else if (errorValoraciones()) {
+        <p role="alert">{{ errorValoraciones() }}</p>
+        <button type="button" class="secondary-button"
+          (click)="cargarValoracionesProducto(producto.id)">
+          Reintentar
+        </button>
+        } @else if (valoraciones(); as resumen) {
+        @if (resumen.total === 0) {
+        <p>Aún no hay valoraciones para este producto.</p>
+        } @else {
+        <p class="reviews-summary">
+          Media: <strong>{{ resumen.media | number:'1.1-1' }} / 5</strong>
+          · {{ resumen.total }} {{ resumen.total === 1 ? 'valoración' : 'valoraciones' }}
+        </p>
+        <ul class="reviews-list">
+          @for (valoracion of resumen.valoraciones; track $index) {
+          <li>
+            <p class="review-score">{{ valoracion.puntuacion }} / 5 · Cliente verificado</p>
+            <p>{{ valoracion.comentario || 'Sin comentario.' }}</p>
+          </li>
+          }
+        </ul>
+        }
+        }
+      </section>
+
+
+      <button
+        type="button"
+        class="favorite-button detail-favorite-button"
+        [class.favorite-selected]="esFavorito(producto.id)"
+        [disabled]="!favoritosDisponibles() || modificandoFavorito() !== null"
+        [attr.aria-pressed]="esFavorito(producto.id)"
+        [attr.aria-label]="
+          esFavorito(producto.id)
+            ? 'Quitar ' + producto.nombre + ' de favoritos'
+            : 'Guardar ' + producto.nombre + ' en favoritos'
+        "
+        [attr.aria-busy]="modificandoFavorito() === producto.id"
+        (click)="cambiarFavorito(producto)"
+      >
+        <span aria-hidden="true">
+          {{ esFavorito(producto.id) ? '♥' : '♡' }}
+        </span>
+
+        {{
+          esFavorito(producto.id)
+            ? 'Quitar de favoritos'
+            : 'Guardar en favoritos'
+        }}
+      </button>
+
+      <!-- HU-39: añadir el producto a una lista propia o quitarlo de ella -->
+      <div class="detail-lists" aria-label="Listas de productos">
+        @if (listasPersonales().length === 0) {
+        <p class="detail-lists-empty">
+          @if (cargandoListas()) {
+          Cargando tus listas...
+          } @else {
+          No tienes listas propias. <a routerLink="/listas">Crea una en Mis listas</a>.
+          }
+        </p>
+        } @else {
+        <label for="lista-destino">Lista</label>
+        <select id="lista-destino" [value]="listaSeleccionada()" (change)="actualizarListaSeleccionada($event)">
+          @for (lista of listasPersonales(); track lista.id) {
+          <option [value]="lista.id">{{ lista.nombre }}</option>
+          }
+        </select>
+        <button type="button" class="secondary-button" [disabled]="modificandoLista()"
+          (click)="cambiarProductoEnLista(producto)">
+          {{ estaEnListaSeleccionada(producto.id) ? 'Quitar de la lista' : 'Añadir a la lista' }}
+        </button>
+        }
+
+        @if (errorListas()) {
+        <output class="status-message error-message" role="alert">{{ errorListas() }}</output>
+        }
+        @if (mensajeListas()) {
+        <output class="status-message">{{ mensajeListas() }}</output>
+        }
+      </div>
+
+      <!-- =================================================
+             ZONA DE COMPRA
+             ================================================= -->
+
+      @if (producto.stock > 0) {
+
+      <div class="detail-purchase" aria-label="Seleccionar cantidad">
+
+        <!-- SELECTOR DE CANTIDAD -->
+
+        <div class="quantity-selector">
+
+          <button type="button" aria-label="Reducir cantidad"
+            [disabled]="cantidadDetalle() <= 1 || anadiendoProducto() !== null" (click)="reducirCantidad()">
+            −
+          </button>
+
+
+          <output aria-live="polite" [attr.aria-label]="
+                  'Cantidad seleccionada: ' +
+                  cantidadDetalle()
+                ">
+            {{ cantidadDetalle() }}
+          </output>
+
+
+          <button type="button" aria-label="Aumentar cantidad" [disabled]="
+                  cantidadDetalle() >=
+                  producto.stock || anadiendoProducto() !== null
+                " (click)="
+                  aumentarCantidad(
+                    producto.stock
+                  )
+                ">
+            +
+          </button>
+
+        </div>
+
+
+        <button class="
+                primary-button
+                detail-cart-button
+              " type="button"
+          [disabled]="anadiendoProducto() !== null || !puedeConsultarDetalle(producto) || !producto.esVisible"
+          [attr.aria-busy]="anadiendoProducto() === producto.id" (click)="anadirAlCarrito(producto, cantidadDetalle())">
+          {{ anadiendoProducto() === producto.id ? 'Añadiendo...' : 'Añadir al carrito' }}
+        </button>
+
+      </div>
+
+      } @else {
+
+      <p class="detail-out-of-stock"><output>
+        Producto agotado
+      </output></p>
+
+      }
+
+
+      @if (productoConMensaje() === producto.id) {
+      @if (errorCarrito()) {
+      <output class="status-message error-message" role="alert">{{ errorCarrito() }}</output>
+      }
+      @if (exitoCarrito()) {
+      <output class="status-message">
+        {{ exitoCarrito() }} Importe del carrito: {{ importeCarrito() | number:'1.2-2' }} €.
+      </output>
+      }
+      }
+
+      <!-- =================================================
+             STOCK BAJO
+             ================================================= -->
+
+      @if (
+      producto.stock > 0 &&
+      producto.stock < 5 ) { <p class="low-stock-notice"><output>
+        Aviso: quedan pocas unidades
+        ({{ producto.stock }}).
+        </output></p>
+
+        }
+
+    </div>
+
+  </dialog>
+
+  }
+
+</main>

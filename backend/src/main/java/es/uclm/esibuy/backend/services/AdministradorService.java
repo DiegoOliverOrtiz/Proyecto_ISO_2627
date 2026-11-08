@@ -1,8 +1,10 @@
 package es.uclm.esibuy.backend.services;
 
-import java.time.LocalDate;
+import java.net.URI;
+
 import java.util.Locale;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import es.uclm.esibuy.backend.dao.AdministradorDAO;
+import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dto.ListadoUsuariosResponse;
 import es.uclm.esibuy.backend.dto.ModificarUsuarioRequest;
@@ -24,9 +27,7 @@ import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.UltimoAdministradorException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import es.uclm.esibuy.backend.model.Administrador;
-import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Usuario;
-import es.uclm.esibuy.backend.model.Vendedor;
 import jakarta.validation.Validator;
 
 @Service
@@ -36,26 +37,36 @@ public class AdministradorService {
 			"No se ha podido identificar al solicitante.";
 
 	private final AdministradorDAO administradorDAO;
+	private final CategoriaDAO categoriaDAO;
 	private final UsuarioDAO usuarioDAO;
 	private final PasswordEncoder passwordEncoder;
 	private final PasswordPolicy passwordPolicy;
 	private final Validator validator;
 	private final SesionService sesionService;
+	private final FavoritosRegistroService favoritosRegistroService;
+	private final AuditoriaService auditoriaService;
 
+	@Autowired
 	public AdministradorService(
 			AdministradorDAO administradorDAO,
+			CategoriaDAO categoriaDAO,
 			UsuarioDAO usuarioDAO,
 			PasswordEncoder passwordEncoder,
 			PasswordPolicy passwordPolicy,
 			Validator validator,
-			SesionService sesionService) {
+			SesionService sesionService,
+			FavoritosRegistroService favoritosRegistroService,
+			AuditoriaService auditoriaService) {
 
 		this.administradorDAO = administradorDAO;
+		this.categoriaDAO = categoriaDAO;
 		this.usuarioDAO = usuarioDAO;
 		this.passwordEncoder = passwordEncoder;
 		this.passwordPolicy = passwordPolicy;
 		this.validator = validator;
 		this.sesionService = sesionService;
+		this.favoritosRegistroService = favoritosRegistroService;
+		this.auditoriaService = auditoriaService;
 	}
 
 	public ListadoUsuariosResponse consultarUsuarios(
@@ -123,33 +134,29 @@ public class AdministradorService {
 					"Los apellidos son obligatorios.");
 		}
 
+		validarTelefono(request.telefono());
+		validarImagenPerfil(request.imagenPerfil());
+
 		usuario.setNombre(
 				request.nombre().trim());
 
 		usuario.setApellidos(
 				request.apellidos().trim());
 
-		usuario.setTelefono(
-				request.telefono());
+		if (request.telefono() != null) {
+			usuario.setTelefono(request.telefono().isBlank() ? null : request.telefono());
+		}
 
 		usuario.setImagenPerfil(
-				request.imagenPerfil());
+				request.imagenPerfil() == null
+						? null
+						: request.imagenPerfil().trim());
 
 		/*
 		 * Campos específicos según
 		 * el tipo de usuario
 		 */
-		switch (usuario) {
-
-			case Cliente cliente -> modificarDatosCliente(cliente, request);
-
-			case Vendedor vendedor -> vendedor.setDniNif(request.dniNif());
-
-			case Administrador administrador -> administrador.setSede(request.sede());
-
-			default -> throw new IllegalStateException(
-					"Tipo de usuario no soportado.");
-		}
+		DatosRolUsuario.modificar(usuario, request, categoriaDAO);
 
 		/*
 		 * Persistimos los cambios
@@ -161,30 +168,35 @@ public class AdministradorService {
 				usuarioGuardado);
 	}
 
-	private void modificarDatosCliente(
-			Cliente cliente,
-			ModificarUsuarioRequest request) {
+	private void validarTelefono(String telefono) {
+		if (telefono != null && !telefono.isBlank()
+				&& !telefono.matches("^\\+?[0-9\\s().-]{7,20}$")) {
+			throw new IllegalArgumentException("Introduce un teléfono válido o deja el campo vacío.");
+		}
+	}
 
-		if (request.fechaNacimiento() == null) {
-			throw new IllegalArgumentException(
-					"La fecha de nacimiento es obligatoria.");
+	private void validarImagenPerfil(String imagenPerfil) {
+		if (imagenPerfil == null || imagenPerfil.isBlank()) {
+			return;
 		}
 
-		LocalDate fechaLimite =
-				LocalDate.now().minusYears(18);
-
-		if (request.fechaNacimiento()
-				.isAfter(fechaLimite)) {
-
-			throw new IllegalArgumentException(
-					"El cliente debe ser mayor de edad.");
+		String url = imagenPerfil.trim();
+		if (url.length() > 1000) {
+			throw new IllegalArgumentException("La URL de la imagen de perfil no puede superar 1000 caracteres.");
 		}
 
-		cliente.setDniNif(
-				request.dniNif());
-
-		cliente.setFechaNacimiento(
-				request.fechaNacimiento());
+		try {
+			URI uri = URI.create(url);
+			if (!"https".equalsIgnoreCase(uri.getScheme())
+					|| uri.getHost() == null
+					|| uri.getUserInfo() != null) {
+				throw new IllegalArgumentException(
+						"La imagen de perfil debe utilizar una URL HTTPS válida.");
+			}
+		} catch (IllegalArgumentException exception) {
+			throw new IllegalArgumentException(
+					"La imagen de perfil debe utilizar una URL HTTPS válida.", exception);
+		}
 	}
 
 	public RegistroUsuarioResponse registrar(
@@ -197,7 +209,8 @@ public class AdministradorService {
 		}
 
 		passwordPolicy.validate(
-				request.contrasena());
+				request.contrasena(),
+				java.util.List.of(request.nombre(), request.apellidos(), request.email()));
 
 		String email =
 				request.email()
@@ -243,6 +256,14 @@ public class AdministradorService {
 			Administrador guardado =
 					administradorDAO.save(
 							administrador);
+
+			auditoriaService.registrarAltaAdministrador();
+
+			if (favoritosRegistroService != null) {
+				favoritosRegistroService.crearListaPredeterminada(
+					guardado.getId()
+				);
+			}
 
 			return new RegistroUsuarioResponse(
 					guardado.getId(),
@@ -382,6 +403,7 @@ public class AdministradorService {
 		}
 
 		administradorDAO.delete(objetivo);
+		auditoriaService.registrarEliminacionUsuarioPorAdministrador("ADMINISTRADOR");
 
 		sesionService.cerrarSesiones(
 				objetivo.getEmail());

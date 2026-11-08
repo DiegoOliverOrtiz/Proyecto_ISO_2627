@@ -1,0 +1,141 @@
+<main class="lists-page pagina">
+  <div class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mis listas</h1>
+      <p class="pagina-descripcion">
+        Organiza los productos que te interesan. Puedes añadirlos desde el detalle de cada producto del catálogo.
+      </p>
+    </div>
+  </div>
+
+  @if (exito()) {
+    <output class="aviso aviso-exito">{{ exito() }}</output>
+  }
+
+  @if (cargando()) {
+    <output class="estado">Cargando listas...</output>
+  } @else if (error() && listas().length === 0) {
+    <!-- M5: error con «Reintentar», sin la caja vacía ni el formulario detrás. -->
+    <section class="estado" role="alert">
+      <p class="estado-titulo">{{ error() }}</p>
+      <button type="button" class="boton-secundario" (click)="cargarListas()">Reintentar</button>
+    </section>
+  } @else {
+    @if (error()) {
+      <p class="aviso aviso-error" role="alert">{{ error() }}</p>
+    }
+
+    <form class="new-list tarjeta" (submit)="$event.preventDefault(); crear()">
+      <label for="nueva-lista">Nueva lista</label>
+      <div class="new-list-row">
+        <input
+          id="nueva-lista"
+          type="text"
+          placeholder="Por ejemplo: alimentación"
+          [maxLength]="maxNombre"
+          [formControl]="nombreNueva"
+          [attr.aria-invalid]="nombreNueva.touched && nombreNueva.invalid"
+          [attr.aria-describedby]="nombreNueva.touched && nombreNueva.invalid ? 'nueva-lista-error' : null" />
+        <button type="submit" class="boton-principal" [disabled]="operacion()">Crear lista</button>
+      </div>
+      @if (nombreNueva.touched && nombreNueva.hasError('required')) {
+        <p id="nueva-lista-error" class="field-error">El nombre de la lista es obligatorio.</p>
+      }
+      @if (nombreNueva.hasError('maxlength')) {
+        <p id="nueva-lista-error" class="field-error">El nombre no puede superar {{ maxNombre }} caracteres.</p>
+      }
+    </form>
+
+    <div class="lists-layout">
+      <ul class="lists-menu" aria-label="Tus listas">
+        @for (lista of listas(); track lista.id) {
+          <li>
+            <button
+              type="button"
+              [class.selected]="seleccionada()?.id === lista.id"
+              [attr.aria-current]="seleccionada()?.id === lista.id"
+              (click)="seleccionar(lista)">
+              <span>{{ lista.predeterminada ? '♥ ' : '' }}{{ lista.nombre }}</span>
+              <span class="count">({{ lista.productoIds.length }})</span>
+            </button>
+          </li>
+        }
+      </ul>
+
+      <section class="list-detail tarjeta" aria-live="polite">
+        @if (cargandoLista()) {
+          <output class="message">Cargando productos...</output>
+        } @else if (seleccionada(); as lista) {
+          <div class="list-title">
+            @if (renombrando() === lista.id) {
+              <form class="rename-form" (submit)="$event.preventDefault(); renombrar(lista)">
+                <label for="renombrar-lista">Nuevo nombre</label>
+                <input id="renombrar-lista" type="text" [maxLength]="maxNombre" [formControl]="nombreRenombrar" />
+                <div class="list-actions">
+                  <button type="submit" class="boton-principal" [disabled]="operacion()">Guardar</button>
+                  <button type="button" class="boton-secundario" (click)="cancelarRenombrar()">Cancelar</button>
+                </div>
+                @if (nombreRenombrar.hasError('required')) {
+                  <p class="field-error">El nombre de la lista es obligatorio.</p>
+                }
+              </form>
+            } @else {
+              <h2>{{ lista.nombre }}</h2>
+              @if (!lista.predeterminada) {
+                <div class="list-actions">
+                  <button type="button" class="boton-secundario" [disabled]="operacion()" (click)="iniciarRenombrar(lista)">
+                    Renombrar
+                  </button>
+                  <button type="button" class="boton-peligro" [disabled]="operacion()" (click)="eliminar(lista)">
+                    Eliminar lista
+                  </button>
+                </div>
+              }
+            }
+          </div>
+
+          @if (lista.productos.length === 0) {
+            <p class="message">Esta lista no tiene productos.</p>
+          } @else {
+            <ul class="products">
+              @for (producto of lista.productos; track producto.id) {
+                <li class="product" [class.unavailable]="!producto.disponible">
+                  <div class="marco-imagen product-thumb">
+                    @if (producto.imagen) {
+                      <img [src]="urlImagen(producto.imagen)" [alt]="producto.nombre" width="64" height="64" />
+                    } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <circle cx="9" cy="10" r="2"></circle>
+                        <path d="M21 17l-5-5-9 8"></path>
+                      </svg>
+                    }
+                  </div>
+                  <div class="product-info">
+                    <strong>{{ producto.nombre }}</strong>
+                    @if (producto.precio !== null) {
+                      <span class="precio">{{ producto.precio | number: '1.2-2' }} €</span>
+                    }
+                    @if (!producto.disponible) {
+                      <span class="unavailable-message">
+                        {{ producto.aviso || 'Producto no disponible' }}: no se puede comprar
+                      </span>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="boton-secundario"
+                    [disabled]="operacion()"
+                    [attr.aria-label]="'Quitar ' + producto.nombre + ' de la lista'"
+                    (click)="quitarProducto(lista, producto)">
+                    Quitar de la lista
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </section>
+    </div>
+  }
+</main>

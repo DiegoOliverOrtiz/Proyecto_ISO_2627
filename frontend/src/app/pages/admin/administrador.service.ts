@@ -1,3 +1,4 @@
+import type { RespuestaTokenCsrf } from '../../shared/models/respuesta-token-csrf';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
@@ -16,10 +17,6 @@ export interface RegistroAdministradorRequest {
 export interface RegistroUsuarioResponse {
   id: string;
   tipoUsuario: string;
-}
-
-interface RespuestaTokenCsrf {
-  token: string;
 }
 
 @Injectable({ providedIn: 'root' })

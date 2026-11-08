@@ -2,9 +2,23 @@ package es.uclm.esibuy.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.mongodb.client.MongoClient;
+import es.uclm.esibuy.backend.dao.TipoMetodoPagoDAO;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+		"TOTP_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+		"PERSONAL_DATA_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+		"server.ssl.enabled=false",
+		"TOTP_MIGRATE_KEY=false"
+})
 class BackendApplicationTests {
+
+	@MockitoBean
+	private MongoClient mongoClient;
+
+	@MockitoBean
+	private TipoMetodoPagoDAO tipoMetodoPagoDAO;
 
 	@Test
 	void contextLoads() {

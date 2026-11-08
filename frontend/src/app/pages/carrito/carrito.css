@@ -1,0 +1,192 @@
+/* Carrito. La página, botones, avisos, chips e imagen vienen de ../tienda/tienda.css. */
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.cart-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'imagen producto unidad subtotal'
+    'imagen acciones acciones acciones';
+  align-items: start;
+  gap: .75rem 1.25rem;
+}
+
+.cart-image { grid-area: imagen; }
+.cart-product { grid-area: producto; min-width: 0; }
+.unit-price { grid-area: unidad; }
+.subtotal { grid-area: subtotal; }
+
+.product-blocked .cart-image {
+  opacity: .6;
+}
+
+.cart-product h2 {
+  margin: 0 0 .3rem;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.cart-product p {
+  margin: 0 0 .35rem;
+}
+
+.seller {
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.seller strong {
+  color: var(--color-text);
+}
+
+.availability {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.line-warning {
+  margin: .4rem 0 0;
+  font-size: .9rem;
+}
+
+.unit-price,
+.subtotal {
+  display: grid;
+  justify-items: end;
+  gap: .15rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.unit-price span,
+.subtotal span {
+  color: var(--color-text-secondary);
+  font-size: .85rem;
+}
+
+.subtotal .precio {
+  font-size: 1.15rem;
+}
+
+.cart-line-actions {
+  display: flex;
+  grid-area: acciones;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+
+.quantity-selector {
+  display: grid;
+  grid-template-columns: 44px 4rem 44px;
+  overflow: hidden;
+  min-height: 44px;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.quantity-selector button {
+  border: 0;
+  color: var(--color-brand);
+  background: transparent;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quantity-selector button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.quantity-selector input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-inline: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* --- Resumen --- */
+
+.cart-summary {
+  display: grid;
+  gap: .9rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.cart-summary h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.summary-row,
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.summary-row {
+  color: var(--color-text-secondary);
+}
+
+.summary-total {
+  align-items: baseline;
+  padding-top: .9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.cart-summary .motivo-desactivado {
+  margin-top: -.4rem;
+}
+
+@media (max-width: 860px) {
+  .cart-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cart-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  .cart-line {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-areas:
+      'imagen producto'
+      'unidad subtotal'
+      'acciones acciones';
+  }
+
+  .unit-price {
+    justify-items: start;
+    text-align: left;
+  }
+}

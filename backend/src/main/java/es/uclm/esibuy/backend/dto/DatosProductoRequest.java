@@ -15,4 +15,6 @@ public interface DatosProductoRequest {
     int descuento();
 
     int descuentoPremium();
+
+    Boolean soloPremium();
 }

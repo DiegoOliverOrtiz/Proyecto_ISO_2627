@@ -1,0 +1,59 @@
+/* Favoritos. La página, tarjetas, botones, avisos e imagen vienen de ../tienda/tienda.css. */
+
+.favorites-count {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+}
+
+.favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.favorite-card {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+
+.favorite-card.unavailable .marco-imagen {
+  opacity: .6;
+}
+
+.favorite-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.favorite-content h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.favorite-content p {
+  margin: 0;
+}
+
+.favorite-content .aviso {
+  align-self: stretch;
+}
+
+.favorite-no-price {
+  color: var(--color-text-secondary);
+}
+
+.favorite-actions {
+  display: grid;
+  align-self: stretch;
+  gap: .5rem;
+  margin-top: auto;
+  padding-top: .5rem;
+}

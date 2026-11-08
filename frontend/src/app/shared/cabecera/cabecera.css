@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem 1.5rem;
+  padding: .75rem clamp(1rem, 5vw, 4.5rem);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.marca {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--color-brand);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.marca span {
+  color: var(--color-accent);
+}
+
+.boton-menu {
+  display: none;
+}
+
+.navegacion {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .25rem 1rem;
+}
+
+.navegacion ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navegacion a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 .75rem;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.navegacion a:hover {
+  color: var(--color-brand);
+  background: var(--color-accent-subtle);
+}
+
+.navegacion a.activo {
+  color: var(--color-brand);
+  background: var(--color-accent-subtle);
+}
+
+.cerrar-sesion,
+.boton-menu {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--color-border-input);
+  border-radius: 8px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cerrar-sesion:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.cerrar-sesion:hover:not(:disabled),
+.boton-menu:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .barra {
+    flex-basis: 100%;
+  }
+
+  .boton-menu {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .navegacion {
+    display: none;
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navegacion.abierta {
+    display: flex;
+  }
+
+  .navegacion ul {
+    flex-direction: column;
+  }
+
+  .navegacion a {
+    width: 100%;
+  }
+}

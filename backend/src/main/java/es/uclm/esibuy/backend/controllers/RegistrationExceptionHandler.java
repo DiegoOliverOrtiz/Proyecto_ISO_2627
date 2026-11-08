@@ -6,15 +6,20 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import es.uclm.esibuy.backend.dto.ApiErrorResponse;
+import es.uclm.esibuy.backend.dto.RegistroPublicoResponse;
 import es.uclm.esibuy.backend.exceptions.CategoriaConProductosException;
 import es.uclm.esibuy.backend.exceptions.CategoriaNoEncontradaException;
+import es.uclm.esibuy.backend.exceptions.CorreoYaRegistradoException;
 import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
 import es.uclm.esibuy.backend.exceptions.EstadoProductoException;
 import es.uclm.esibuy.backend.exceptions.InvalidProductException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.exceptions.NombreCategoriaDuplicadoException;
+import es.uclm.esibuy.backend.exceptions.ProductoAjenoException;
+import es.uclm.esibuy.backend.exceptions.ProductoConPedidosEnCursoException;
 import es.uclm.esibuy.backend.exceptions.ProductoNoEncontradoException;
 import es.uclm.esibuy.backend.exceptions.UsuarioNoEncontradoException;
 import java.util.ArrayList;
@@ -24,6 +29,10 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class RegistrationExceptionHandler {
+	@ExceptionHandler(CorreoYaRegistradoException.class)
+	public ResponseEntity<RegistroPublicoResponse> handlePublicDuplicateEmail() {
+		return ResponseEntity.accepted().body(RegistroPublicoResponse.confirmacion());
+	}
 
 	@ExceptionHandler(DuplicateRegistrationException.class)
 	public ResponseEntity<ApiErrorResponse> handleDuplicateRegistration() {
@@ -85,10 +94,30 @@ public class RegistrationExceptionHandler {
 				.body(new ApiErrorResponse(exception.getMessage()));
 	}
 
+	@ExceptionHandler(ProductoConPedidosEnCursoException.class)
+	public ResponseEntity<ApiErrorResponse> handleProductWithOrdersInProgress(
+			ProductoConPedidosEnCursoException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(ProductoAjenoException.class)
+	public ResponseEntity<ApiErrorResponse> handleForeignProduct(ProductoAjenoException exception) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ApiErrorResponse> handleInvalidQuery(IllegalArgumentException exception) {
 		return ResponseEntity.badRequest()
 				.body(new ApiErrorResponse(exception.getMessage()));
+	}
+
+	// El límite multipart del contenedor (5 MB) se responde igual que el resto de imágenes rechazadas.
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ApiErrorResponse> handleUploadTooLarge() {
+		return ResponseEntity.badRequest()
+				.body(new ApiErrorResponse("La imagen debe ser PNG, JPG o GIF y no superar 5 MB."));
 	}
 
 	@ExceptionHandler(CategoriaConProductosException.class)

@@ -1,5 +1,7 @@
 .DS_Store
 .env
+/.certs/
 *.p12
 *.pfx
 .scannerwork/
+/documents/HU*.md

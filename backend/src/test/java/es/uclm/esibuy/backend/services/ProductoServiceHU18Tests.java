@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -27,6 +28,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import es.uclm.esibuy.backend.dao.CategoriaDAO;
 import es.uclm.esibuy.backend.dao.ClienteDAO;
+import es.uclm.esibuy.backend.dao.PedidoDAO;
 import es.uclm.esibuy.backend.dao.ProductoDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.ConsultarProductosResponse;
@@ -66,12 +68,15 @@ class ProductoServiceHU18Tests {
     @Mock
     private ClienteDAO clienteDAO;
 
+    @Mock
+    private PedidoDAO pedidoDAO;
+
     private ProductoService productoService;
 
     @BeforeEach
     void setUp() {
         productoService = new ProductoService(
-                productoDAO, vendedorDAO, categoriaDAO, validator, productoImagenService, clienteDAO);
+                productoDAO, vendedorDAO, categoriaDAO, validator, productoImagenService, clienteDAO, pedidoDAO);
     }
 
     @Test
@@ -134,6 +139,53 @@ class ProductoServiceHU18Tests {
         assertEquals(100, guardado.getDescuentoPremium());
     }
 
+    @ParameterizedTest
+    @CsvSource({ "false, true", "true, false" })
+    void modificaLaMarcaSoloPremium(boolean actual, boolean nueva) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado mecánico", "Periféricos", "Retroiluminado", 59.99, 10, 15, 20, nueva);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        assertEquals(nueva, productoGuardado().isSoloPremium());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void conservaLaMarcaSoloPremiumSiNoSeEnvia(boolean actual) {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(actual);
+        prepararModificacionValida(producto);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, null);
+
+        assertEquals(actual, productoGuardado().isSoloPremium());
+    }
+
+    @Test
+    void modificaElDescuentoPremiumSinCambiarLaMarcaSoloPremium() {
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        producto.setSoloPremium(true);
+        prepararModificacionValida(producto);
+        ModificarProductoRequest request = new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 35, null);
+
+        productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, request, null);
+
+        Producto guardado = productoGuardado();
+        assertEquals(35, guardado.getDescuentoPremium());
+        assertTrue(guardado.isSoloPremium());
+    }
+
+    @Test
+    void rechazaDescuentoPremiumInvalidoAunqueSeIndiqueSoloPremium() {
+        assertDatosInvalidos(new ModificarProductoRequest(
+                "Teclado", "Periféricos", null, 10.0, 1, 0, 101, true));
+    }
+
     @Test
     void conservaLaImagenActualSiNoSeEnviaOtra() {
         prepararModificacionValida(crearProducto(NOMBRE_COMERCIAL));
@@ -159,6 +211,26 @@ class ProductoServiceHU18Tests {
     }
 
     @Test
+    void rechazaUnaImagenInvalidaYConservaLaAnterior() {
+        MockMultipartFile imagen = crearImagen();
+        Producto producto = crearProducto(NOMBRE_COMERCIAL);
+        when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
+        when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
+        when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
+        IllegalArgumentException imagenInvalida = new IllegalArgumentException("Imagen no válida");
+        when(productoImagenService.guardar(imagen)).thenThrow(imagenInvalida);
+
+        IllegalArgumentException lanzada = assertThrows(
+                IllegalArgumentException.class,
+                () -> productoService.modificarProducto(EMAIL_VENDEDOR, ID_PRODUCTO, REQUEST_VALIDO, imagen));
+
+        assertSame(imagenInvalida, lanzada);
+        verify(productoDAO, never()).save(any());
+        verify(productoImagenService, never()).eliminar(any());
+        assertEquals(IMAGEN_ACTUAL, producto.getImagen());
+    }
+
+    @Test
     void eliminaLaImagenNuevaYConservaLaAnteriorSiFallaElGuardado() {
         MockMultipartFile imagen = crearImagen();
         RuntimeException errorGuardado = new IllegalStateException("Fallo de base de datos");
@@ -166,7 +238,7 @@ class ProductoServiceHU18Tests {
         when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
         when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(crearProducto(NOMBRE_COMERCIAL)));
         when(productoImagenService.guardar(imagen)).thenReturn(IMAGEN_NUEVA);
-        when(productoDAO.save(any(Producto.class))).thenThrow(errorGuardado);
+        when(productoDAO.actualizarDatos(any(Producto.class), org.mockito.ArgumentMatchers.anyInt())).thenThrow(errorGuardado);
 
         RuntimeException lanzada = assertThrows(
                 RuntimeException.class,
@@ -297,12 +369,13 @@ class ProductoServiceHU18Tests {
         when(vendedorDAO.findByEmail(EMAIL_VENDEDOR)).thenReturn(Optional.of(crearVendedor(true, false)));
         when(categoriaDAO.existsByNombreIgnoreCase("Periféricos")).thenReturn(true);
         when(productoDAO.findById(ID_PRODUCTO)).thenReturn(Optional.of(producto));
-        when(productoDAO.save(any(Producto.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+        when(productoDAO.actualizarDatos(any(Producto.class), org.mockito.ArgumentMatchers.anyInt()))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
     }
 
     private Producto productoGuardado() {
         ArgumentCaptor<Producto> guardado = ArgumentCaptor.forClass(Producto.class);
-        verify(productoDAO).save(guardado.capture());
+        verify(productoDAO).actualizarDatos(guardado.capture(), org.mockito.ArgumentMatchers.anyInt());
         return guardado.getValue();
     }
 

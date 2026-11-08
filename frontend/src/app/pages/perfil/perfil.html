@@ -1,0 +1,423 @@
+<main class="profile-page pagina">
+  <header class="pagina-cabecera">
+    <div>
+      <h1 class="pagina-titulo">Mi perfil</h1>
+      <p class="pagina-descripcion">Consulta y actualiza los datos asociados a tu cuenta.</p>
+    </div>
+
+    <!-- M13: una sola acción en la cabecera; direcciones y pagos van junto a los datos. -->
+    @if (perfil() && !editando()) {
+      <button class="boton-principal" type="button" (click)="iniciarEdicion()">Editar perfil</button>
+    }
+  </header>
+
+  @if (cargando()) {
+    <output class="estado">Cargando perfil...</output>
+  } @else if (mensajeError()) {
+    <p class="aviso aviso-error" role="alert">{{ mensajeError() }}</p>
+    <button class="boton-secundario" type="button" (click)="cargarPerfil()">Reintentar</button>
+  } @else if (perfil(); as datos) {
+    @if (mensajeExito()) {
+      <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
+    }
+
+    <section class="profile-card" aria-labelledby="datos-personales">
+      <div class="profile-card-heading">
+        @if (datos.imagenPerfil) {
+          <img class="profile-image" [src]="datos.imagenPerfil" alt="" width="72" height="72" />
+        } @else {
+          <div class="profile-placeholder" aria-hidden="true">{{ inicial(datos.nombre) }}</div>
+        }
+        <div>
+          <p class="profile-type">{{ nombreTipoUsuario(datos.tipoUsuario) }}</p>
+          <h2 id="datos-personales">{{ datos.nombre }} {{ datos.apellidos }}</h2>
+        </div>
+      </div>
+
+      <!-- M13: al editar se oculta la ficha de lectura; el formulario ya muestra los valores. -->
+      @if (!editando()) {
+      <dl class="profile-data">
+        <div><dt>Correo electrónico</dt><dd>{{ datos.email }}</dd></div>
+        @if (datos.telefono && datos.tipoUsuario !== 'ADMIN') {
+          <div><dt>Teléfono</dt><dd>{{ datos.telefono }}</dd></div>
+        }
+        @if (datos.dniNif) {
+          <div><dt>DNI/NIF</dt><dd>{{ datos.dniNif }}</dd></div>
+        }
+        @if (datos.fechaNacimiento) {
+          <div><dt>Fecha de nacimiento</dt><dd>{{ datos.fechaNacimiento | date: 'dd/MM/yyyy' }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'CLIENTE' && datos.esPremium !== null) {
+          <div><dt>Tipo de cliente</dt><dd>{{ datos.esPremium ? 'Premium' : 'Normal' }}</dd></div>
+        }
+        @if (datos.nombreComercial) {
+          <div><dt>Nombre comercial</dt><dd>{{ datos.nombreComercial }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'VENDEDOR') {
+          <div><dt>Categoría</dt><dd>{{ datos.categoria ?? 'No hay una categoría asociada' }}</dd></div>
+        }
+        @if (datos.tipoUsuario === 'ADMIN') {
+          @if (datos.sede) {
+            <div><dt>Sede</dt><dd>{{ datos.sede }}</dd></div>
+          }
+          @if (datos.fechaIncorporacion) {
+            <div><dt>Fecha de incorporación</dt><dd>{{ datos.fechaIncorporacion | date: 'dd/MM/yyyy' }}</dd></div>
+          }
+        }
+      </dl>
+
+      @if (datos.tipoUsuario === 'CLIENTE') {
+        <nav class="profile-links" aria-label="Gestión de la cuenta">
+          <a class="boton-secundario" routerLink="/perfil/direcciones">Mis direcciones</a>
+          <a class="boton-secundario" routerLink="/perfil/pagos">Mis métodos de pago</a>
+        </nav>
+      }
+
+      <section class="two-factor-card" aria-labelledby="segundo-factor-titulo">
+        <div class="two-factor-heading">
+          <p class="account-type-kicker">Seguridad</p>
+          <h3 id="segundo-factor-titulo">Segundo factor de autenticación</h3>
+          @if (datos.totpActivado) {
+            <p>El acceso con contraseña está protegido con un código adicional.</p>
+
+            @if (datos.tipoUsuario === 'CLIENTE' && !datos.emailOtpActivado) {
+              <label class="totp-code-label" for="totp-disable-code">
+                Código actual o de respaldo
+              </label>
+
+              <input
+                id="totp-disable-code"
+                class="totp-code-input"
+                type="text"
+                maxlength="32"
+                autocomplete="one-time-code"
+                [disabled]="cargandoTOTP()"
+                [ngModel]="codigoTOTP()"
+                (ngModelChange)="codigoTOTP.set($event)"
+              />
+
+              <small>Usa un código distinto del que utilizaste para iniciar sesión.</small>
+
+              <button
+                class="boton-secundario"
+                type="button"
+                (click)="desactivarTOTP()"
+                [disabled]="cargandoTOTP()">
+                Desactivar TOTP
+              </button>
+            } @else if (datos.emailOtpActivado && datos.tipoUsuario === 'CLIENTE') {
+              <p>Desactiva primero la verificación por correo para poder desactivar TOTP.</p>
+            } @else {
+              <p>La verificación en dos pasos es obligatoria para tu rol y no puede desactivarse.</p>
+            }
+          } @else if (!configuracionTOTP()) {
+            <p>Protege tu cuenta con Google Authenticator, Authy u otra aplicación compatible.</p>
+            <button class="boton-principal" type="button" (click)="configurarTOTP()" [disabled]="cargandoTOTP()">
+              Configurar segundo factor
+            </button>
+          } @else {
+            <p>{{ mensajeTOTP() }}</p>
+            @if (configuracionTOTP()?.qrDataUrl) {
+              <img class="totp-qr" [src]="configuracionTOTP()?.qrDataUrl" alt="Código QR para configurar TOTP" width="210" height="210" />
+            }
+            <label class="totp-code-label" for="totp-confirmation-code">Código de la aplicación</label>
+            <input id="totp-confirmation-code" class="totp-code-input" type="text" maxlength="6"
+                   inputmode="numeric" autocomplete="one-time-code"
+                   [ngModel]="codigoTOTP()" (ngModelChange)="codigoTOTP.set($event)" />
+            <button class="boton-principal" type="button" (click)="confirmarTOTP()" [disabled]="cargandoTOTP()">
+              Confirmar activación
+            </button>
+          }
+          @if (mensajeTOTP() && !configuracionTOTP()) {
+            <p class="two-factor-success"><output>{{ mensajeTOTP() }}</output></p>
+          }
+          @if (errorTOTP()) {
+            <p class="field-error" role="alert">{{ errorTOTP() }}</p>
+          }
+          @if (codigosRespaldo().length > 0) {
+            <div class="backup-codes">
+              <strong>Códigos de respaldo</strong>
+              <p>Guárdalos ahora. Solo se muestran después de activar TOTP.</p>
+              <code>{{ codigosRespaldo().join(' · ') }}</code>
+            </div>
+          }
+        </div>
+      </section>
+      }
+
+      @if (datos.tipoUsuario === 'CLIENTE') {
+        <section class="two-factor-card"
+                 aria-labelledby="tercer-factor-titulo">
+
+          <div class="two-factor-heading">
+            <p class="account-type-kicker">Seguridad</p>
+
+            <h3 id="tercer-factor-titulo">
+              Tercer factor de autenticación
+            </h3>
+
+            <p>
+              Al activarla, tendrás que confirmar un código
+              enviado a tu correo después de introducir
+              la contraseña y el código de tu aplicación.
+            </p>
+
+            @if (!datos.totpActivado) {
+              <p>
+                Para activar esta opción, primero configura
+                el segundo factor de autenticación.
+              </p>
+            }
+
+            <label>
+              <input
+                type="checkbox"
+                [checked]="datos.emailOtpActivado"
+                [disabled]="guardandoEmailOtp() || cargandoTOTP() || !datos.totpActivado"
+                (change)="actualizarPreferenciaEmailOtp($event)"
+              />
+
+              Exigir código por correo al iniciar sesión
+            </label>
+
+            @if (errorEmailOtp()) {
+              <p class="field-error" role="alert">
+                {{ errorEmailOtp() }}
+              </p>
+            }
+          </div>
+        </section>
+      }
+
+      @if (datos.tipoUsuario === 'CLIENTE' && !editando()) {
+        <section class="account-type-card" [class.account-type-premium]="datos.esPremium === true" aria-labelledby="tipo-cuenta">
+          <div class="account-type-icon" aria-hidden="true">★</div>
+          <div class="account-type-content">
+            <p class="account-type-kicker">Tipo de cuenta</p>
+            <h3 id="tipo-cuenta">Cliente {{ datos.esPremium ? 'Premium' : 'Normal' }}</h3>
+            @if (datos.esPremium) {
+              <p>Disfrutas de las ventajas Premium y del acceso que corresponda a este tipo de cuenta.</p>
+              <button class="account-type-button account-type-button-light" type="button" (click)="cambiarTipoCliente()" [disabled]="guardando()">
+                Volver a cliente normal
+              </button>
+            } @else {
+              <p>Hazte Premium para acceder a sus ventajas y a los productos que te correspondan.</p>
+              <button class="account-type-button" type="button" (click)="cambiarTipoCliente()" [disabled]="guardando()">
+                Hacerme cliente Premium
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="account-benefits" aria-labelledby="informacion-premium">
+          <div class="account-benefits-heading">
+            <p class="account-type-kicker">Información de la cuenta</p>
+            <h3 id="informacion-premium">¿Qué cambia con Premium?</h3>
+            <p>Consulta las consecuencias antes de cambiar tu tipo de cliente.</p>
+          </div>
+          <div class="account-benefits-grid">
+            <article class="benefit-item benefit-positive">
+              <span class="benefit-mark" aria-hidden="true">✓</span>
+              <div>
+                <h4>Ventajas Premium</h4>
+                <p>Acceso a los productos disponibles exclusivamente para clientes Premium.</p>
+                <p>Aplicación de las ventajas y descuentos Premium definidos en el catálogo.</p>
+              </div>
+            </article>
+            <article class="benefit-item benefit-warning">
+              <span class="benefit-mark" aria-hidden="true">!</span>
+              <div>
+                <h4>Si vuelves a Normal</h4>
+                <p>Perderás las ventajas asociadas a Premium.</p>
+                <p>No podrás comprar productos exclusivos para clientes Premium.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      }
+
+      @if ((datos.tipoUsuario === 'CLIENTE' || datos.tipoUsuario === 'VENDEDOR') && !editando()) {
+        <section class="account-deletion-card" aria-labelledby="dar-de-baja-titulo">
+          <div>
+            <p class="account-type-kicker">Cuenta</p>
+            <h3 id="dar-de-baja-titulo">Eliminar mi cuenta</h3>
+            <p>La baja elimina tu cuenta y sus datos personales. La operación requiere dos confirmaciones.</p>
+          </div>
+          <button class="boton-peligro" type="button" (click)="iniciarBaja()" [disabled]="bajaEnCurso()">
+            Dar de baja
+          </button>
+          @if (errorBaja()) {
+            <p class="field-error" role="alert">{{ errorBaja() }}</p>
+          }
+        </section>
+      }
+
+      @if (editando()) {
+        <form class="edit-form" [formGroup]="formulario" (ngSubmit)="guardarCambios()">
+          <div class="form-grid">
+            <label>
+              Nombre
+              <input type="text" formControlName="nombre" autocomplete="given-name" />
+              @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+                <span class="field-error">El nombre es obligatorio.</span>
+              }
+            </label>
+
+            <label>
+              Apellidos
+              <input type="text" formControlName="apellidos" autocomplete="family-name" />
+              @if (formulario.controls.apellidos.touched && formulario.controls.apellidos.invalid) {
+                <span class="field-error">Los apellidos son obligatorios.</span>
+              }
+            </label>
+
+            @if (datos.tipoUsuario !== 'ADMIN') {
+              <label>
+                Teléfono
+                <input type="tel" formControlName="telefono" autocomplete="tel" />
+                <span class="field-help">Déjalo vacío para conservar el actual.</span>
+                @if (datos.telefono) {
+                  <span class="field-help">
+                    <input type="checkbox" formControlName="eliminarTelefono" />
+                    Eliminar el teléfono guardado
+                  </span>
+                }
+                @if (formulario.controls.telefono.touched && formulario.controls.telefono.hasError('pattern')) {
+                  <span class="field-error">Introduce un teléfono válido o deja el campo vacío.</span>
+                }
+              </label>
+            }
+
+            <label>
+              Imagen de perfil
+              <input type="url" formControlName="imagenPerfil" placeholder="https://ejemplo.com/imagen.jpg" />
+              @if (formulario.controls.imagenPerfil.hasError('pattern')) {
+                <small class="campo-error">Introduce una URL HTTPS válida.</small>
+              }
+            </label>
+
+            @if (datos.tipoUsuario === 'CLIENTE' || datos.tipoUsuario === 'VENDEDOR') {
+              <label>
+                DNI/NIF
+                <input type="text" formControlName="dniNif" aria-describedby="ayuda-dni" />
+                <span id="ayuda-dni" class="field-help">Déjalo vacío para conservar el actual, que se muestra protegido en la consulta.</span>
+                @if (formulario.controls.dniNif.touched && formulario.controls.dniNif.hasError('pattern')) {
+                  <span class="field-error">El DNI/NIF debe tener 8 números y una letra.</span>
+                }
+              </label>
+            }
+
+            @if (datos.tipoUsuario === 'VENDEDOR') {
+              <label>
+                Categoría
+                <select formControlName="categoriaId">
+                  <option value="">Conservar la categoría actual</option>
+                  @for (categoria of categorias(); track categoria.id) {
+                    <option [value]="categoria.id">{{ categoria.nombre }}</option>
+                  }
+                </select>
+                <span class="field-help">Solo se pueden seleccionar categorías existentes.</span>
+              </label>
+            }
+
+            @if (datos.tipoUsuario === 'CLIENTE') {
+              <label>
+                Fecha de nacimiento
+                <input type="date" formControlName="fechaNacimiento" [max]="fechaMaximaNacimiento" />
+                @if (formulario.controls.fechaNacimiento.touched && formulario.controls.fechaNacimiento.hasError('menorDeEdad')) {
+                  <span class="field-error">Debes ser mayor de edad.</span>
+                }
+              </label>
+
+            }
+
+            @if (datos.tipoUsuario === 'ADMIN') {
+              <label>
+                Sede
+                <input type="text" formControlName="sede" />
+              </label>
+            }
+          </div>
+
+          <div class="protected-fields">
+            <p><strong>Correo electrónico:</strong> {{ datos.email }} (no modificable)</p>
+            @if (datos.tipoUsuario === 'ADMIN' && datos.fechaIncorporacion) {
+              <p><strong>Fecha de incorporación:</strong> {{ datos.fechaIncorporacion | date: 'dd/MM/yyyy' }} (no modificable)</p>
+            }
+            <p class="field-help">La contraseña, direcciones y pagos se gestionan fuera de esta pantalla.</p>
+          </div>
+
+          @if (mensajeFormulario()) {
+            <p class="form-message" role="alert">{{ mensajeFormulario() }}</p>
+          }
+
+          <div class="form-actions">
+            <button class="boton-secundario" type="button" (click)="cancelarEdicion()" [disabled]="guardando()">Cancelar</button>
+            <button class="boton-principal" type="submit" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      }
+    </section>
+
+    @if (mostrandoConfirmacionTipo()) {
+      <div class="confirmation-backdrop" (click)="$event.target === $event.currentTarget && cancelarCambioTipoCliente()" (keydown.escape)="cancelarCambioTipoCliente()">
+        <dialog open class="confirmation-dialog" aria-modal="true" aria-labelledby="confirmacion-tipo-titulo">
+          <div class="confirmation-icon" aria-hidden="true">★</div>
+          <p class="account-type-kicker">Cambio de cuenta</p>
+          <h2 id="confirmacion-tipo-titulo">
+            {{ tipoPremiumPendiente() ? '¿Quieres hacerte cliente Premium?' : '¿Quieres volver a cliente normal?' }}
+          </h2>
+          @if (tipoPremiumPendiente()) {
+            <p>Disfrutarás de las ventajas Premium y del acceso a los productos que te correspondan.</p>
+          } @else {
+            <p>Al volver a cliente normal perderás las ventajas asociadas a Premium.</p>
+          }
+          <div class="confirmation-actions">
+            <button class="boton-secundario" type="button" (click)="cancelarCambioTipoCliente()">Cancelar</button>
+            <button class="boton-principal" type="button" (click)="confirmarCambioTipoCliente()">
+              {{ tipoPremiumPendiente() ? 'Sí, hacerme Premium' : 'Sí, volver a Normal' }}
+            </button>
+          </div>
+        </dialog>
+      </div>
+    }
+
+    @if (pasoConfirmacionBaja() === 1) {
+      <div class="confirmation-backdrop">
+        <section class="confirmation-dialog confirmation-dialog-danger" role="alertdialog" aria-modal="true"
+                 aria-labelledby="confirmacion-baja-uno">
+          <p class="account-type-kicker">Aviso 1 de 2</p>
+          <h2 id="confirmacion-baja-uno">¿Quieres iniciar la baja?</h2>
+          @if (datos.tipoUsuario === 'CLIENTE') {
+            <p>Se eliminarán tu perfil, direcciones, métodos de pago y carrito. Tus pedidos se conservarán sin datos que te identifiquen.</p>
+          } @else {
+            <p>Se eliminarán tu perfil y tus productos. Los pedidos finalizados conservarán su histórico; con pedidos en curso la baja se rechazará.</p>
+          }
+          <div class="confirmation-actions">
+            <button class="boton-secundario" type="button" (click)="cancelarBaja()">Cancelar</button>
+            <button class="danger-button" type="button" (click)="continuarBaja()">Continuar</button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (pasoConfirmacionBaja() === 2) {
+      <div class="confirmation-backdrop">
+        <section class="confirmation-dialog confirmation-dialog-danger" role="alertdialog" aria-modal="true"
+                 aria-labelledby="confirmacion-baja-dos">
+          <p class="account-type-kicker">Aviso 2 de 2</p>
+          <h2 id="confirmacion-baja-dos">La eliminación es permanente</h2>
+          <p>Perderás el acceso a esta cuenta y no podrás recuperar los datos eliminados. Confirma solo si quieres completar la baja.</p>
+          <div class="confirmation-actions">
+            <button class="boton-secundario" type="button" (click)="cancelarBaja()" [disabled]="bajaEnCurso()">Cancelar</button>
+            <button class="danger-button" type="button" (click)="continuarBaja()" [disabled]="bajaEnCurso()">
+              {{ bajaEnCurso() ? 'Eliminando...' : 'Eliminar mi cuenta' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+  }
+</main>

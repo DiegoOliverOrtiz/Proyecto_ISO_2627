@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import {
   ListadoUsuarios,
   UsuarioAdministracion,
@@ -14,10 +15,11 @@ import {
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink],
   templateUrl: './usuarios.html',
-  styleUrl: './usuarios.css'
+  styleUrls: ['../tienda/tienda.css', './usuarios.css']
 })
 export class Usuarios implements OnInit {
   private readonly usuariosService = inject(UsuariosService);
+  private readonly confirmacion = inject(ConfirmacionService);
 
   readonly listado = signal<ListadoUsuarios | null>(null);
   readonly cargando = signal(false);
@@ -80,10 +82,12 @@ export class Usuarios implements OnInit {
     return total === 0 || this.pagina() >= total - 1;
   }
 
-  activar(usuario: UsuarioAdministracion): void {
-    const seguro = window.confirm(
-      `¿Quieres activar la cuenta de ${usuario.nombre} ${usuario.apellidos}?`
-    );
+  async activar(usuario: UsuarioAdministracion): Promise<void> {
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Activar cuenta',
+      mensaje: `¿Quieres activar la cuenta de ${usuario.nombre} ${usuario.apellidos}?`,
+      aceptar: 'Activar'
+    });
 
     if (!seguro) {
       return;
@@ -106,10 +110,13 @@ export class Usuarios implements OnInit {
     });
   }
 
-  bloquear(usuario: UsuarioAdministracion): void {
-    const seguro = window.confirm(
-      `¿Quieres bloquear a ${usuario.nombre} ${usuario.apellidos}?`
-    );
+  async bloquear(usuario: UsuarioAdministracion): Promise<void> {
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Bloquear usuario',
+      mensaje: `¿Quieres bloquear a ${usuario.nombre} ${usuario.apellidos}? No podrá iniciar sesión mientras esté bloqueado.`,
+      aceptar: 'Bloquear',
+      peligro: true
+    });
 
     if (!seguro) {
       return;
@@ -118,10 +125,12 @@ export class Usuarios implements OnInit {
     this.ejecutarCambioBloqueo(usuario, true);
   }
 
-  desbloquear(usuario: UsuarioAdministracion): void {
-    const seguro = window.confirm(
-      `¿Quieres desbloquear a ${usuario.nombre} ${usuario.apellidos}?`
-    );
+  async desbloquear(usuario: UsuarioAdministracion): Promise<void> {
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Desbloquear usuario',
+      mensaje: `¿Quieres desbloquear a ${usuario.nombre} ${usuario.apellidos}?`,
+      aceptar: 'Desbloquear'
+    });
 
     if (!seguro) {
       return;
@@ -162,7 +171,7 @@ export class Usuarios implements OnInit {
     });
   }
 
-  private cargarUsuarios(): void {
+  cargarUsuarios(): void {
     this.cargando.set(true);
     this.mensajeError.set('');
 

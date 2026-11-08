@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
+import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import {
   ListadoUsuarios,
   UsuarioAdministracion,
@@ -16,15 +16,16 @@ import { AuthService } from '../login/auth.service';
 @Component({
   selector: 'app-administradores',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './administradores.html',
-  styleUrl: '../usuarios/usuarios.css'
+  styleUrls: ['../tienda/tienda.css', '../usuarios/usuarios.css']
 })
 export class Administradores implements OnInit {
 
   private readonly usuariosService = inject(UsuariosService);
   private readonly administradorService = inject(AdministradorService);
   private readonly authService = inject(AuthService);
+  private readonly confirmacion = inject(ConfirmacionService);
 
   readonly listado = signal<ListadoUsuarios | null>(null);
 
@@ -106,7 +107,7 @@ export class Administradores implements OnInit {
     );
   }
 
-  bloquear(admin: UsuarioAdministracion): void {
+  async bloquear(admin: UsuarioAdministracion): Promise<void> {
 
     this.mensajeError.set('');
     this.mensajeExito.set('');
@@ -118,9 +119,12 @@ export class Administradores implements OnInit {
       return;
     }
 
-    const seguro = window.confirm(
-      `¿Estás seguro de que deseas bloquear al administrador ${admin.nombre} ${admin.apellidos}?`
-    );
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Bloquear administrador',
+      mensaje: `¿Estás seguro de que deseas bloquear al administrador ${admin.nombre} ${admin.apellidos}?`,
+      aceptar: 'Bloquear',
+      peligro: true
+    });
 
     if (!seguro) {
       return;
@@ -132,7 +136,7 @@ export class Administradores implements OnInit {
     );
   }
 
-  desbloquear(admin: UsuarioAdministracion): void {
+  async desbloquear(admin: UsuarioAdministracion): Promise<void> {
 
     this.mensajeError.set('');
     this.mensajeExito.set('');
@@ -144,9 +148,11 @@ export class Administradores implements OnInit {
       return;
     }
 
-    const seguro = window.confirm(
-      `¿Estás seguro de que deseas desbloquear al administrador ${admin.nombre} ${admin.apellidos}?`
-    );
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Desbloquear administrador',
+      mensaje: `¿Estás seguro de que deseas desbloquear al administrador ${admin.nombre} ${admin.apellidos}?`,
+      aceptar: 'Desbloquear'
+    });
 
     if (!seguro) {
       return;
@@ -158,11 +164,14 @@ export class Administradores implements OnInit {
     );
   }
 
-  eliminar(id: string, nombre: string): void {
+  async eliminar(id: string, nombre: string): Promise<void> {
 
-    const seguro = window.confirm(
-      `¿Estás seguro de que deseas eliminar al administrador ${nombre}?\n\nEsta es una acción destructiva y no se puede deshacer.`
-    );
+    const seguro = await this.confirmacion.confirmar({
+      titulo: 'Eliminar administrador',
+      mensaje: `¿Estás seguro de que deseas eliminar al administrador ${nombre}? Es una acción destructiva y no se puede deshacer.`,
+      aceptar: 'Eliminar administrador',
+      peligro: true
+    });
 
     if (!seguro) {
       return;
@@ -194,7 +203,7 @@ export class Administradores implements OnInit {
           const mensajeBackend =
             error.error?.error;
 
-          alert(
+          this.mensajeError.set(
             mensajeBackend ||
             'No se pudo eliminar el administrador. Inténtalo de nuevo.'
           );
@@ -320,7 +329,7 @@ export class Administradores implements OnInit {
       });
   }
 
-  private cargarAdministradores(): void {
+  cargarAdministradores(): void {
 
     this.cargando.set(true);
     this.mensajeError.set('');

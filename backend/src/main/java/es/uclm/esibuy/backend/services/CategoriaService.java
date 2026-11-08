@@ -1,7 +1,9 @@
 package es.uclm.esibuy.backend.services;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,28 @@ public class CategoriaService {
 
     public List<Categoria> obtenerTodas() {
         return categoriaDAO.findAll();
+    }
+
+    public List<Categoria> buscarCategorias(String nombre, String orden) {
+        String filtro = nombre == null
+                ? ""
+                : nombre.strip().toLowerCase(Locale.ROOT);
+
+        Comparator<Categoria> comparador = Comparator.comparing(
+                Categoria::getNombre,
+                String.CASE_INSENSITIVE_ORDER).thenComparing(
+                        Categoria::getNombre);
+
+        if ("desc".equalsIgnoreCase(orden)) {
+            comparador = comparador.reversed();
+        }
+
+        return categoriaDAO.findAll().stream()
+                .filter(categoria -> categoria.getNombre()
+                        .toLowerCase(Locale.ROOT)
+                        .contains(filtro))
+                .sorted(comparador)
+                .toList();
     }
 
     public Optional<Categoria> obtenerPorId(String id) {

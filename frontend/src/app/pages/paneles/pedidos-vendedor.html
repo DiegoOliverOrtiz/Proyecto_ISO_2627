@@ -1,0 +1,201 @@
+<main class="pagina">
+    <div class="pagina-cabecera">
+        <div>
+            <h1 class="pagina-titulo">Pedidos de mis productos</h1>
+            <p class="pagina-descripcion">
+                Consulta los pedidos recibidos y su estado.
+                Solo se muestran los productos de tu tienda.
+            </p>
+        </div>
+
+        <button type="button" class="boton-secundario" [disabled]="cargando()" (click)="cargarPedidos()">
+            Actualizar
+        </button>
+    </div>
+
+    <!-- M15: patrón ARIA de pestañas, con flechas, Inicio y Fin. -->
+    <div class="pestañas" role="tablist" aria-label="Tipo de pedidos">
+        <button type="button" role="tab" id="pestana-activos" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'activos'" [attr.aria-selected]="pestana() === 'activos'"
+            [attr.tabindex]="pestana() === 'activos' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('activos')">
+            Pedidos activos
+        </button>
+
+        <button type="button" role="tab" id="pestana-historico" aria-controls="panel-pedidos"
+            [class.seleccionada]="pestana() === 'historico'" [attr.aria-selected]="pestana() === 'historico'"
+            [attr.tabindex]="pestana() === 'historico' ? 0 : -1" (keydown)="teclaPestana($event)"
+            (click)="cambiarPestana('historico')">
+            Histórico
+        </button>
+    </div>
+
+    @if (mensajeExito()) {
+    <p class="aviso aviso-exito"><output>{{ mensajeExito() }}</output></p>
+    }
+
+    @if (errorAccion()) {
+    <p class="aviso aviso-error" role="alert">{{ errorAccion() }}</p>
+    }
+
+    <div role="tabpanel" id="panel-pedidos" [attr.aria-labelledby]="'pestana-' + pestana()">
+    @if (cargando()) {
+    <p class="estado"><output>Cargando pedidos...</output></p>
+    } @else if (error()) {
+    <section class="estado" role="alert">
+        <p class="estado-titulo">{{ error() }}</p>
+        <button type="button" class="boton-secundario" (click)="cargarPedidos()">Reintentar</button>
+    </section>
+    } @else if (pedidos().length === 0) {
+    <div class="estado">
+        @if (pestana() === 'activos') {
+        <p class="estado-titulo">No tienes pedidos activos</p>
+        <p>Los pedidos aparecerán aquí cuando los clientes completen el pago.</p>
+        } @else {
+        <p class="estado-titulo">Tu histórico está vacío</p>
+        <p>Los pedidos finalizados aparecerán aquí.</p>
+        }
+    </div>
+    } @else {
+    <div class="lista-pedidos">
+        @for (pedido of pedidos(); track pedido.id) {
+        <article class="tarjeta tarjeta-pedido">
+            <div class="cabecera-pedido">
+                <div>
+                    <h3>Pedido #{{ referenciaPedido(pedido.id) }}</h3>
+                    <p>
+                        Fecha:
+                        {{ (pedido.fechaPago || pedido.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}
+                    </p>
+                    <p>Cliente: {{ pedido.clienteNombre }}</p>
+                </div>
+
+                <span class="chip" [class]="'chip ' + claseChip(pedido.estado)">{{ textoEstado(pedido.estado) }}</span>
+            </div>
+
+            <div class="resumen">
+                <p>
+                    <strong>Productos propios:</strong>
+                    {{ pedido.productos.length }}
+                </p>
+
+                <p>
+                    <strong>Importe de tu tienda:</strong>
+                    {{ pedido.importeProductosPropios | number:'1.2-2' }} €
+                </p>
+            </div>
+
+            <div class="acciones">
+                <button type="button" class="boton-secundario boton-detalle" [attr.data-pedido]="pedido.id" (click)="abrirDetalle(pedido)">
+                    Ver detalle
+                </button>
+
+                @if (puedeAceptar(pedido)) {
+                <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
+                    (click)="aceptarPedido(pedido)">
+                    {{ pedidoEnProceso() === pedido.id ? 'Aceptando...' : 'Aceptar y enviar' }}
+                </button>
+                }
+            </div>
+        </article>
+        }
+    </div>
+    }
+    </div>
+
+    @if (cargandoDetalle()) {
+    <p class="estado"><output>Cargando detalle del pedido...</output></p>
+    }
+
+    @if (errorDetalle()) {
+    <p class="aviso aviso-error" role="alert">{{ errorDetalle() }}</p>
+    }
+
+    @if (pedidoSeleccionado(); as detalle) {
+    <section class="tarjeta detalle" aria-label="Detalle del pedido">
+        <div class="cabecera-detalle">
+            <div>
+                <h2 id="titulo-detalle" class="titulo-detalle" tabindex="-1">Detalle del pedido</h2>
+                <p>Referencia: {{ detalle.id }}</p>
+            </div>
+
+            <button type="button" class="boton-secundario" (click)="cerrarDetalle()">
+                Cerrar
+            </button>
+        </div>
+
+        <p>
+            <strong>Estado:</strong>
+            <span class="chip" [class]="'chip ' + claseChip(detalle.estado)">{{ textoEstado(detalle.estado) }}</span>
+        </p>
+        <p>Cliente: {{ detalle.clienteNombre }}</p>
+
+        <h3>Productos de tu tienda</h3>
+
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Producto</th>
+                        <th scope="col">Cantidad</th>
+                        <th scope="col">Precio unitario</th>
+                        <th scope="col">Subtotal</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @for (producto of detalle.productos; track producto.productoId) {
+                    <tr>
+                        <td>{{ producto.nombreProducto }}</td>
+                        <td>{{ producto.cantidad }}</td>
+                        <td>{{ producto.precioCompra | number:'1.2-2' }} €</td>
+                        <td>
+                            {{ producto.precioCompra * producto.cantidad | number:'1.2-2' }} €
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="total">
+            Importe de tus productos:
+            <span class="importe">{{ detalle.importeProductosPropios | number:'1.2-2' }} €</span>
+        </p>
+
+        @if (detalle.direccionEnvio; as direccion) {
+        <div class="direccion">
+            <h3>Dirección de envío</h3>
+            <p>
+                {{ direccion['calle'] }}
+                {{ direccion['numero'] }}
+                @if (direccion['portal']) {
+                , portal {{ direccion['portal'] }}
+                }
+                @if (direccion['piso']) {
+                , piso {{ direccion['piso'] }}
+                }
+            </p>
+            <p>
+                {{ direccion['codigoPostal'] }}
+                {{ direccion['ciudad'] }}
+                ({{ direccion['provincia'] }})
+            </p>
+        </div>
+        }
+
+        @if (puedeAceptar(detalle)) {
+        <div class="acciones">
+            <button type="button" class="boton-principal" [disabled]="pedidoEnProceso() !== null"
+                (click)="aceptarPedido(detalle)">
+                {{ pedidoEnProceso() === detalle.id ? 'Aceptando...' : 'Aceptar y enviar' }}
+            </button>
+        </div>
+        <p class="nota">
+            Al aceptar el pedido pasa a «Enviado» (envío simulado) y el cliente
+            ya no podrá cancelarlo.
+        </p>
+        }
+    </section>
+    }
+</main>

@@ -34,8 +34,7 @@ export interface CategoriaRegistro {
 }
 
 export interface RegistrationResponse {
-  id: string;
-  tipoUsuario: string;
+  mensaje: string;
 }
 
 @Injectable({ providedIn: 'root' })

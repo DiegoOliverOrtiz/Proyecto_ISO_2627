@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -29,7 +31,7 @@ import es.uclm.esibuy.backend.dao.UsuarioDAO;
 import es.uclm.esibuy.backend.dao.VendedorDAO;
 import es.uclm.esibuy.backend.dto.RegistroClienteRequest;
 import es.uclm.esibuy.backend.dto.RegistroVendedorRequest;
-import es.uclm.esibuy.backend.exceptions.DuplicateRegistrationException;
+import es.uclm.esibuy.backend.exceptions.CorreoYaRegistradoException;
 import es.uclm.esibuy.backend.exceptions.InvalidRegistrationException;
 import es.uclm.esibuy.backend.model.Cliente;
 import es.uclm.esibuy.backend.model.Vendedor;
@@ -57,6 +59,9 @@ class RegistrationSecurityTests {
     @Mock
     private CategoriaDAO categoriaDAO;
 
+    @Mock
+    private BajaUsuarioService bajaUsuarioService;
+
     private SoporteRegistro soporteRegistro() {
         return new SoporteRegistro(
                 usuarioDAO,
@@ -77,6 +82,93 @@ class RegistrationSecurityTests {
         assertThrows(
                 InvalidRegistrationException.class,
                 () -> policy.validate("Password123!"));
+    }
+
+    @Test
+    void rejectsPasswordContainingNormalizedPersonalDataOrApplicationName() {
+        PasswordPolicy policy = new PasswordPolicy();
+        List<String> customerIdentifiers = List.of("Ana", "García", "ana@example.com");
+        List<String> otherIdentifiers = List.of("Otra persona");
+        List<String> sellerIdentifiers = List.of("Tienda Luna");
+
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("GarcíaClave9!", customerIdentifiers));
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("MiEsibuyClave9!", otherIdentifiers));
+        assertThrows(
+                InvalidRegistrationException.class,
+                () -> policy.validate("TiendaLunaClave9!", sellerIdentifiers));
+        policy.validate("ClaveSegura9!", List.of("Ana", "García", "ana@example.com", "Tienda Luna"));
+    }
+
+    @Test
+    void rejectsPasswordContainingBirthDatePhoneOrDniNumbers() {
+        PasswordPolicy policy = new PasswordPolicy();
+
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!19061972Za", List.of("19061972")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!600123456Za", List.of("+34 600 123 456")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!12345678Za", List.of("12345678Z")));
+        assertThrows(InvalidRegistrationException.class,
+                () -> policy.validate("Qx!12345678Za", List.of("12345678")));
+
+        policy.validate("Qx!1972Za", List.of("19061972"));
+        policy.validate("Qx!1234567Za", List.of("+34 600 123 456"));
+    }
+
+    @Test
+    void customerRegistrationPassesBirthDatePhoneAndDniToPasswordPolicy() {
+        ClienteService service = new ClienteService(
+                clienteDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+        List<String> personalPasswords = List.of(
+                "Qx!19061972Za",
+                "Qx!600123456Za",
+                "Qx!12345678Za");
+
+        for (String password : personalPasswords) {
+            RegistroClienteRequest request = new RegistroClienteRequest(
+                    "Ana",
+                    "García",
+                    LocalDate.of(1972, Month.JUNE, 19),
+                    "12345678Z",
+                    "ana@example.com",
+                    password,
+                    "+34 600 123 456",
+                    null,
+                    false);
+
+            assertThrows(InvalidRegistrationException.class, () -> service.registrar(request));
+        }
+
+        verifyNoInteractions(clienteDAO, usuarioDAO);
+    }
+
+    @Test
+    void sellerRegistrationPassesPhoneAndDniToPasswordPolicy() {
+        VendedorService service = new VendedorService(
+                vendedorDAO,
+                categoriaDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+        RegistroVendedorRequest request = new RegistroVendedorRequest(
+                "Ana",
+                "García",
+                "12345678Z",
+                "ana@example.com",
+                "Qx!600123456Za",
+                "000000000000000000000000",
+                "Tienda Segura",
+                "+34 600 123 456",
+                null);
+
+        assertThrows(InvalidRegistrationException.class, () -> service.registrar(request));
+        verifyNoInteractions(vendedorDAO, categoriaDAO, usuarioDAO);
     }
 
     @Test
@@ -121,7 +213,7 @@ class RegistrationSecurityTests {
             return cliente;
         });
 
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -169,7 +261,7 @@ class RegistrationSecurityTests {
         when(usuarioDAO.existsByEmail("ana@example.com"))
                 .thenReturn(true);
 
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -183,16 +275,71 @@ class RegistrationSecurityTests {
                 false);
 
         assertThrows(
-                DuplicateRegistrationException.class,
+                CorreoYaRegistradoException.class,
                 () -> service.registrar(request));
 
         verify(clienteDAO, never()).save(any(Cliente.class));
     }
 
     @Test
+    void sellerWithEmailAlreadyUsedGetsGenericErrorWithoutPersisting() {
+        String categoriaId = "6abe34098deff53da8a2c052";
+        when(categoriaDAO.existsById(categoriaId)).thenReturn(true);
+        when(vendedorDAO.existsByNombreComercial("Tienda Segura")).thenReturn(false);
+        when(usuarioDAO.existsByEmail("tienda@example.com")).thenReturn(true);
+
+        VendedorService service = new VendedorService(
+                vendedorDAO,
+                categoriaDAO,
+                soporteRegistro(),
+                bajaUsuarioService);
+
+        RegistroVendedorRequest request = new RegistroVendedorRequest(
+                "Ana",
+                "García",
+                "12345678Z",
+                "tienda@example.com",
+                "V4!qZ8#nLp",
+                categoriaId,
+                "Tienda Segura",
+                null,
+                null);
+
+        assertThrows(
+                CorreoYaRegistradoException.class,
+                () -> service.registrar(request));
+
+        verify(vendedorDAO, never()).save(any(Vendedor.class));
+    }
+
+    @Test
+    void concurrentDuplicateEmailAlsoGetsGenericError() {
+        when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false, true);
+        when(clienteDAO.save(any(Cliente.class)))
+                .thenThrow(new DuplicateKeyException("uq_usuario_email"));
+
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
+
+        RegistroClienteRequest request = new RegistroClienteRequest(
+                "Ana",
+                "García",
+                LocalDate.of(1998, Month.APRIL, 12),
+                "12345678Z",
+                "ana@example.com",
+                "ClaveSegura9!",
+                null,
+                null,
+                false);
+
+        assertThrows(
+                CorreoYaRegistradoException.class,
+                () -> service.registrar(request));
+    }
+
+    @Test
     void storesSellerWithEncodedPasswordAndRejectsDuplicateCommercialName() {
 
-        String rawPassword = "SeguraVenta9!";
+        String rawPassword = "V4!qZ8#nLp";
         String categoriaId = "6abe34098deff53da8a2c052";
 
         // Simulamos que la categoría existe.
@@ -217,7 +364,8 @@ class RegistrationSecurityTests {
         VendedorService service = new VendedorService(
                 vendedorDAO,
                 categoriaDAO,
-                soporteRegistro());
+                soporteRegistro(),
+                bajaUsuarioService);
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
@@ -264,9 +412,14 @@ class RegistrationSecurityTests {
         when(vendedorDAO.existsByNombreComercial("Tienda Segura"))
                 .thenReturn(true);
 
-        assertThrows(
-                DuplicateRegistrationException.class,
+        InvalidRegistrationException exception = assertThrows(
+                InvalidRegistrationException.class,
                 () -> service.registrar(request));
+
+        // El nombre comercial es público: se indica en su campo.
+        assertEquals(
+                List.of("Ese nombre comercial ya está en uso. Elige otro."),
+                exception.getFieldErrors().get("nombreComercial"));
     }
 
     @Test
@@ -277,14 +430,15 @@ class RegistrationSecurityTests {
         VendedorService service = new VendedorService(
                 vendedorDAO,
                 categoriaDAO,
-                soporteRegistro());
+                soporteRegistro(),
+                bajaUsuarioService);
 
         RegistroVendedorRequest request = new RegistroVendedorRequest(
                 "Ana",
                 "García",
                 "12345678Z",
                 "tienda@example.com",
-                "SeguraVenta9!",
+                "V4!qZ8#nLp",
                 categoriaId,
                 "Tienda Segura",
                 null,
@@ -304,7 +458,7 @@ class RegistrationSecurityTests {
 
     @Test
     void serviceRejectsPasswordThatDoesNotMeetStrengthPolicy() {
-        ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+        ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
 
         RegistroClienteRequest request = new RegistroClienteRequest(
                 "Ana",
@@ -326,7 +480,7 @@ class RegistrationSecurityTests {
 
         @Test
         void rejectsCustomersYoungerThanEighteenBeforePersisting() {
-                ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+                ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
                 RegistroClienteRequest request = new RegistroClienteRequest(
                                 "Ana",
                                 "García",
@@ -347,7 +501,7 @@ class RegistrationSecurityTests {
                 when(usuarioDAO.existsByEmail("ana@example.com")).thenReturn(false);
                 when(passwordEncoder.encode("ClaveSegura9!")).thenReturn("bcrypt-hash");
                 when(clienteDAO.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-                ClienteService service = new ClienteService(clienteDAO, soporteRegistro());
+                ClienteService service = new ClienteService(clienteDAO, soporteRegistro(), bajaUsuarioService);
                 RegistroClienteRequest request = new RegistroClienteRequest(
                                 "Ana",
                                 "García",

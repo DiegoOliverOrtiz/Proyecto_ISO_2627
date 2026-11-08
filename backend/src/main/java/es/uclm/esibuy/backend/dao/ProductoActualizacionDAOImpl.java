@@ -1,0 +1,79 @@
+package es.uclm.esibuy.backend.dao;
+
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
+
+import es.uclm.esibuy.backend.model.Producto;
+
+public class ProductoActualizacionDAOImpl implements ProductoActualizacionDAO {
+    private static final String CAMPO_STOCK = "stock";
+    private final MongoTemplate mongoTemplate;
+
+    public ProductoActualizacionDAOImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
+
+    @Override
+    public Producto actualizarDatos(Producto producto, int stockAnterior) {
+        Query query = Query.query(Criteria.where("id").is(producto.getId()).and(CAMPO_STOCK).is(stockAnterior));
+        Update update = new Update().set("nombre", producto.getNombre()).set("categoria", producto.getCategoria())
+                .set("descripcion", producto.getDescripcion()).set("precio", producto.getPrecio())
+                .set(CAMPO_STOCK, producto.getStock()).set("descuento", producto.getDescuento())
+                .set("descuentoPremium", producto.getDescuentoPremium()).set("soloPremium", producto.isSoloPremium())
+                .set("imagen", producto.getImagen());
+        comprobarActualizacion(mongoTemplate.updateFirst(query, update, Producto.class).getMatchedCount());
+        return producto;
+    }
+
+    @Override
+    public void actualizarVisibilidad(String id, boolean visible) {
+        comprobarActualizacion(mongoTemplate.updateFirst(Query.query(Criteria.where("id").is(id)),
+                new Update().set("esVisible", visible), Producto.class).getMatchedCount());
+    }
+
+    @Override
+    public void descontarStock(Producto producto, int cantidad) {
+        if (cantidad <= 0) throw new IllegalArgumentException("La cantidad debe ser mayor que cero.");
+        Query query = Query.query(Criteria.where("id").is(producto.getId())
+                .and(CAMPO_STOCK).gte(cantidad).and("esVisible").is(true)
+                .and("precio").is(producto.getPrecio())
+                .andOperator(
+                        valorPredeterminadoCompatible("descuento", producto.getDescuento(), 0),
+                        valorPredeterminadoCompatible("descuentoPremium", producto.getDescuentoPremium(), 0),
+                        valorPredeterminadoCompatible("soloPremium", producto.isSoloPremium(), false)));
+        long modificados = mongoTemplate.updateFirst(query, new Update().inc(CAMPO_STOCK, -cantidad), Producto.class)
+                .getModifiedCount();
+        if (modificados != 1) {
+            throw new IllegalArgumentException("El producto ha cambiado o no hay stock suficiente.");
+        }
+    }
+
+    @Override
+    public void reponerStock(String productoId, int cantidad) {
+        if (productoId == null || productoId.isBlank() || cantidad <= 0) {
+            throw new IllegalArgumentException("El producto y la cantidad deben ser válidos.");
+        }
+
+        long modificados = mongoTemplate.updateFirst(
+                Query.query(Criteria.where("id").is(productoId)),
+                new Update().inc(CAMPO_STOCK, cantidad),
+                Producto.class).getModifiedCount();
+        comprobarActualizacion(modificados);
+    }
+
+    private Criteria valorPredeterminadoCompatible(String campo, Object valor, Object predeterminado) {
+        if (!predeterminado.equals(valor)) return Criteria.where(campo).is(valor);
+        // Spring conserva el valor predeterminado del primitivo si el campo no existe
+        // en documentos antiguos; un null explícito no es un primitivo válido.
+        return new Criteria().orOperator(Criteria.where(campo).is(valor), Criteria.where(campo).exists(false));
+    }
+
+    private void comprobarActualizacion(long encontrados) {
+        if (encontrados != 1) {
+            throw new OptimisticLockingFailureException("El producto ha cambiado. Actualiza e inténtalo de nuevo.");
+        }
+    }
+}

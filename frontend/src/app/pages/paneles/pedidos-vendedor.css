@@ -1,0 +1,141 @@
+/*
+ * Pedidos del vendedor. La página, la cabecera, las tarjetas, los botones, los chips, los estados
+ * y los avisos vienen de ../tienda/tienda.css. Solo usa tokens de styles.css.
+ */
+
+.pagina-cabecera,
+.cabecera-pedido,
+.cabecera-detalle {
+  align-items: flex-start;
+}
+
+.cabecera-pedido,
+.cabecera-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cabecera-pedido p {
+  margin: .25rem 0 0;
+  color: var(--color-text-secondary);
+}
+
+.detalle h2 {
+  margin-top: 0;
+}
+
+.pestañas {
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pestañas button {
+  min-height: 44px;
+  padding: .75rem 1.25rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pestañas button[aria-selected='true'] {
+  border-bottom-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.lista-pedidos {
+  display: grid;
+  gap: 1rem;
+}
+
+.tarjeta-pedido h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.detalle {
+  margin-top: 2rem;
+}
+
+.tabla-contenedor {
+  position: relative;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.titulo-detalle {
+  scroll-margin-top: 5rem;
+}
+
+th,
+td {
+  padding: .8rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+th:nth-child(n + 2),
+td:nth-child(n + 2) {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.importe {
+  white-space: nowrap;
+}
+
+.total {
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.direccion {
+  margin-top: 1.5rem;
+}
+
+.nota {
+  color: var(--color-text-secondary);
+  font-size: .9rem;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+/* A6: la referencia completa no cabe en una línea a 320 px. */
+.cabecera-detalle > div {
+  min-width: 0;
+}
+
+.cabecera-detalle p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .pestañas button {
+    padding: .75rem;
+  }
+}

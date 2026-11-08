@@ -50,4 +50,27 @@ describe('Home', () => {
     expect(registerLink).toBeTruthy();
     expect(registerLink?.textContent).toContain('Registrarse');
   });
+
+  describe('enlaces del inicio (A9)', () => {
+    it('el logo es un enlace al inicio', () => {
+      const logo = (fixture.nativeElement as HTMLElement).querySelector('a.logo');
+
+      expect(logo?.getAttribute('href')).toBe('/');
+      expect(logo?.getAttribute('aria-label')).toBe('ESIBuy, inicio');
+    });
+
+    it('«Explorar productos» lleva a iniciar sesión', () => {
+      const explorar = (fixture.nativeElement as HTMLElement).querySelector('a.primary-button');
+
+      expect(explorar?.textContent).toContain('Explorar productos');
+      expect(explorar?.getAttribute('href')).toBe('/login');
+    });
+
+    it('no quedan enlaces vacíos ni botones sin acción', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+
+      expect(compiled.querySelectorAll('a[href="#"]').length).toBe(0);
+      expect(compiled.querySelectorAll('button').length).toBe(0);
+    });
+  });
 });
