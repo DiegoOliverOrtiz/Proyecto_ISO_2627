@@ -95,27 +95,32 @@ public class VirusTotalService {
                     .retrieve()
                     .body(String.class);
 
-            try {
-                JsonNode raiz = objectMapper.readTree(respuesta);
-                String estado = raiz.at("/data/attributes/status").asText();
-                if ("completed".equalsIgnoreCase(estado)) {
-                    int maliciosos = raiz.at("/data/attributes/stats/malicious").asInt();
-                    int sospechosos = raiz.at("/data/attributes/stats/suspicious").asInt();
-                    if (maliciosos > 0 || sospechosos > 0) {
-                        throw new IllegalArgumentException("La imagen ha sido rechazada por VirusTotal.");
-                    }
-                    return;
-                }
-            } catch (IllegalArgumentException exception) {
-                throw exception;
-            } catch (Exception exception) {
-                throw new IllegalStateException("Respuesta no válida de VirusTotal.", exception);
+            if (analisisCompletado(respuesta)) {
+                return;
             }
 
             dormir();
         }
 
         throw new IllegalStateException("VirusTotal no terminó el análisis dentro del tiempo esperado.");
+    }
+
+    private boolean analisisCompletado(String respuesta) {
+        JsonNode raiz;
+        try {
+            raiz = objectMapper.readTree(respuesta);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Respuesta no válida de VirusTotal.", exception);
+        }
+        if (!"completed".equalsIgnoreCase(raiz.at("/data/attributes/status").asText())) {
+            return false;
+        }
+        int maliciosos = raiz.at("/data/attributes/stats/malicious").asInt();
+        int sospechosos = raiz.at("/data/attributes/stats/suspicious").asInt();
+        if (maliciosos > 0 || sospechosos > 0) {
+            throw new IllegalArgumentException("La imagen ha sido rechazada por VirusTotal.");
+        }
+        return true;
     }
 
     private String extraer(String json, String ruta, String mensaje) {
