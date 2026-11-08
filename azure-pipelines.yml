@@ -1,7 +1,7 @@
+
 # Azure Pipelines Configuration - ESIBuy
 # Validación automática al integrar en main y develop, y en las ramas release/*.
-# release/* se incluye porque Render despliega release/sprint2 solo tras pasar el CI
-# («After CI Checks Pass»); sin pipeline en esa rama no hay checks que esperar.
+# release/* se incluye porque Render despliega release/sprint2 solo tras pasar el CI.
 # Los push a feature/* no lanzan la pipeline.
 # CodeQL se ejecuta en GitHub Actions: .github/workflows/codeql.yml
 # SonarScanner utiliza el sonar-project.properties de cada carpeta.
@@ -122,6 +122,7 @@ stages:
         artifact: 'backend-sonar'
       displayName: 'Publicar clases Java y JaCoCo'
 
+
 # ========== STAGE 2: BUILD FRONTEND ==========
 - stage: BuildFrontend
   displayName: 'Build & Test Frontend'
@@ -153,6 +154,7 @@ stages:
       workingDirectory: frontend
       displayName: 'npm build (production)'
 
+
 # ========== STAGE 3: ESCÁNER DE SECRETOS ==========
 - stage: SecretScan
   displayName: 'Secret Scan'
@@ -166,6 +168,7 @@ stages:
         docker run --rm -v "$(Build.SourcesDirectory):/repo" \
           ghcr.io/gitleaks/gitleaks:v8.24.3 detect --source /repo --no-git --redact --verbose
       displayName: 'Gitleaks (secretos en el repositorio)'
+
 
 # ========== STAGE 4: SONARQUBE ==========
 - stage: Sonarqube
@@ -200,43 +203,44 @@ stages:
       env:
         SONAR_TOKEN: $(SQ_TOKEN)
 
-# ========== FINAL NOTIFICATION ==========
+
+# ========== STAGE 5: NOTIFICACIÓN FINAL ==========
 - stage: Notification
   displayName: 'Pipeline Complete'
   dependsOn: [BuildBackend, BuildFrontend, SecretScan, Sonarqube]
   condition: always()
   jobs:
 
-  - job: NotifyOk
-    displayName: 'Pipeline OK'
-    condition: |
-      and(
-        not(canceled()),
-        eq(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
-        eq(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
-        eq(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
-        eq(stageDependencies.Sonarqube.SonarqubeJob.result, 'Succeeded')
-      )
-    steps:
-    - script: |
-        echo "##[section]PIPELINE OK - Builds, tests, secretos y envío a SonarQube completados."
-        echo "Consulta en SonarQube el resultado del Quality Gate de cada proyecto."
-      displayName: 'Summary'
+  - job: PipelineSummary
+    displayName: 'Pipeline Complete'
+    condition: always()
 
-  - job: NotifyFail
-    displayName: 'Pipeline con errores o incompleta'
-    condition: |
-      and(
-        not(canceled()),
-        or(
-          ne(stageDependencies.BuildBackend.MavenBuild.result, 'Succeeded'),
-          ne(stageDependencies.BuildFrontend.NPMBuild.result, 'Succeeded'),
-          ne(stageDependencies.SecretScan.Gitleaks.result, 'Succeeded'),
-          ne(stageDependencies.Sonarqube.SonarqubeJob.result, 'Succeeded')
-        )
-      )
+    variables:
+      backendResult: $[ stageDependencies.BuildBackend.MavenBuild.result ]
+      frontendResult: $[ stageDependencies.BuildFrontend.NPMBuild.result ]
+      secretsResult: $[ stageDependencies.SecretScan.Gitleaks.result ]
+      sonarResult: $[ stageDependencies.Sonarqube.SonarqubeJob.result ]
+
     steps:
     - script: |
-        echo "##[error]PIPELINE CON ERRORES O INCOMPLETA - Revisa las fases anteriores."
-        exit 1
-      displayName: 'Summary'
+        echo "======================================"
+        echo "RESULTADOS DE LA PIPELINE"
+        echo "======================================"
+
+        echo "Backend: $(backendResult)"
+        echo "Frontend: $(frontendResult)"
+        echo "Gitleaks: $(secretsResult)"
+        echo "SonarQube: $(sonarResult)"
+
+        if [[ "$(backendResult)" == "Succeeded" &&
+              "$(frontendResult)" == "Succeeded" &&
+              "$(secretsResult)" == "Succeeded" &&
+              "$(sonarResult)" == "Succeeded" ]]; then
+
+          echo "##[section]PIPELINE OK - Builds, tests, secretos y SonarQube completados."
+
+        else
+          echo "##[error]PIPELINE CON ERRORES O INCOMPLETA - Revisa las fases anteriores."
+          exit 1
+        fi
+      displayName: 'Comprobar resultado global'
